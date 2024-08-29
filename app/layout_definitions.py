@@ -4,6 +4,43 @@ from dash import dcc, html
 from scripts.config import market_tickers
 from data_fetchers import SeasonalDataFetcher
 
+# Define constants for repeated strings, styles, and default values
+DEFAULT_MARKET = 'Australian Dollar'
+DEFAULT_YEARS = [15, 35]
+
+CHECKLIST_OPTIONS = {
+    'years': [
+        {'label': '15 Years', 'value': 15},
+        {'label': '35 Years', 'value': 35}
+    ],
+    'ohlc': [
+        {'label': 'Show OHLC', 'value': 'OHLC'}
+    ],
+    'open_interest': [
+        {'label': 'Show Open Interest', 'value': 'Open Interest'}
+    ],
+    'oi_percentages': [
+        {'label': 'Show % of OI', 'value': 'OI Percentages'}
+    ],
+    'positions_change': [
+        {'label': 'Show % Change in Positions', 'value': 'Positions Change'}
+    ],
+    'net_positions': [
+        {'label': 'Show Net Positions', 'value': 'Net Positions'}
+    ],
+    'net_positions_change': [
+        {'label': 'Show % Change in Net Positions', 'value': 'Net Positions Change'}
+    ],
+    'index_26w': [
+        {'label': 'Show 26-Week Index', 'value': '26W Index'}
+    ]
+}
+
+BUTTON_STYLES = {'margin-bottom': '3px'}
+CHECKLIST_STYLES = {'margin-bottom': '10px'}
+LAYOUT_STYLES = {'display': 'flex'}
+GRAPH_STYLES = {'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
+
 def format_market_name(market_name):
     """
     Format the market name to match the expected format used in data fetching functions.
@@ -14,24 +51,25 @@ def format_market_name(market_name):
     Returns:
         str: The formatted market name.
     """
-    formatted_name = market_name.upper().replace(' ', '_')
-    return formatted_name
+    return market_name.upper().replace(' ', '_')
 
 def create_layout(app):
+    """
+    Create and set the layout for the Dash application.
+
+    Args:
+        app (dash.Dash): The Dash application instance.
+    """
     # Create market links using market_tickers
     market_links = [html.A(name, id={'type': 'market-link', 'index': ticker}, href='#', style={'margin-right': '10px'}) for
                     name, ticker in market_tickers.items()]
 
-    # Define default market and years
-    default_market = 'Australian Dollar'
-    default_years = [15, 35]
-
-    app.layout = html.Div(style={'display': 'flex'}, children=[
+    app.layout = html.Div(style=LAYOUT_STYLES, children=[
         html.Div(
             children=[
                 dcc.Graph(id='combined-chart'),
             ],
-            style={'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
+            style=GRAPH_STYLES
         ),
         html.Div(
             id='right-panel',
@@ -41,65 +79,48 @@ def create_layout(app):
                     className='content',
                     children=[
                         html.Div(
-                            children=[html.Div(market_link, style={'margin-bottom': '3px'}) for market_link in
+                            children=[html.Div(market_link, style=BUTTON_STYLES) for market_link in
                                       market_links],
                             style={'display': 'flex', 'flexDirection': 'column', 'margin-bottom': '10px'}
                         ),
                         dcc.Checklist(
                             id='years-checklist',
-                            options=[
-                                {'label': '15 Years', 'value': 15},
-                                {'label': '35 Years', 'value': 35}
-                            ],
-                            value=default_years
+                            options=CHECKLIST_OPTIONS['years'],
+                            value=DEFAULT_YEARS
                         ),
                         dcc.Checklist(
                             id='ohlc-checklist',
-                            options=[
-                                {'label': 'Show OHLC', 'value': 'OHLC'}
-                            ],
+                            options=CHECKLIST_OPTIONS['ohlc'],
                             value=['OHLC']
                         ),
                         dcc.Checklist(
                             id='open-interest-checklist',
-                            options=[
-                                {'label': 'Show Open Interest', 'value': 'Open Interest'}
-                            ],
+                            options=CHECKLIST_OPTIONS['open_interest'],
                             value=[]  # Default to not show Open Interest
                         ),
                         dcc.Checklist(
                             id='oi-percentages-checklist',
-                            options=[
-                                {'label': 'Show % of OI', 'value': 'OI Percentages'}
-                            ],
+                            options=CHECKLIST_OPTIONS['oi_percentages'],
                             value=[]  # Default to not show % of OI
                         ),
                         dcc.Checklist(
                             id='positions-change-checklist',
-                            options=[
-                                {'label': 'Show % Change in Positions', 'value': 'Positions Change'}
-                            ],
+                            options=CHECKLIST_OPTIONS['positions_change'],
                             value=[]  # Default to not show % Change in Positions
                         ),
                         dcc.Checklist(
                             id='net-positions-checklist',
-                            options=[
-                                {'label': 'Show Net Positions', 'value': 'Net Positions'}
-                            ],
+                            options=CHECKLIST_OPTIONS['net_positions'],
                             value=[]  # Default to not show Net Positions
                         ),
                         dcc.Checklist(
                             id='net-positions-change-checklist',
-                            options=[
-                                {'label': 'Show % Change in Net Positions', 'value': 'Net Positions Change'}
-                            ],
+                            options=CHECKLIST_OPTIONS['net_positions_change'],
                             value=[]  # Default to not show % Change in Net Positions
                         ),
                         dcc.Checklist(
                             id='26w-index-checklist',
-                            options=[
-                                {'label': 'Show 26-Week Index', 'value': '26W Index'}
-                            ],
+                            options=CHECKLIST_OPTIONS['index_26w'],
                             value=[]  # Default to not show 26-Week Index
                         ),
                         html.Div([
@@ -107,7 +128,7 @@ def create_layout(app):
                             html.Button('Next Year', id='next-year-button', n_clicks=0)
                         ]),
                         dcc.Store(id='current-year', data=2024),
-                        dcc.Store(id='stored-market', data=default_market),
+                        dcc.Store(id='stored-market', data=DEFAULT_MARKET),
                     ]
                 ),
             ],
