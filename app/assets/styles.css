@@ -1,0 +1,27 @@
+#right-panel {
+    width: 300px;
+    transition: width 0.3s ease;
+    overflow: hidden;
+    position: relative;
+}
+
+#right-panel.collapsed {
+    width: 50px; /* Width of the collapsed panel */
+    transition: width 0.3s ease; /* Ensure transition is applied when collapsing */
+    overflow: hidden; /* Hide overflow content */
+}
+
+#right-panel.collapsed #toggle-button {
+    display: block; /* Ensure toggle button is visible */
+}
+
+#right-panel.collapsed > *:not(#toggle-button) {
+    display: none; /* Hide all children except the toggle button */
+}
+
+#toggle-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+}
