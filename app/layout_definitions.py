@@ -129,6 +129,7 @@ def create_layout(app):
                         ]),
                         dcc.Store(id='current-year', data=2024),
                         dcc.Store(id='stored-market', data=DEFAULT_MARKET),
+
                     ]
                 ),
             ],

@@ -334,6 +334,9 @@ def register_callbacks(app):
                           col=1)
                 update_yaxis(fig, row=7, col=1, title='26-Week Index')
 
+        # Update the x-axis to hide the range slider
+        fig.update_xaxes(rangeslider=dict(visible=False))
+
         fig.update_layout(title=f'{stored_market} Data Overview', height=2000, showlegend=True)
 
         return fig
