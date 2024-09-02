@@ -1,6 +1,6 @@
-# layout_definitions.py
 import dash
 from dash import dcc, html
+import dash_bootstrap_components as dbc  # Correct import
 from scripts.config import market_tickers
 from data_fetchers import SeasonalDataFetcher
 
@@ -74,7 +74,7 @@ def create_layout(app):
         html.Div(
             id='right-panel',
             children=[
-                html.Button('>>', id='toggle-button', n_clicks=0),
+                html.Button('<>', id='toggle-button', n_clicks=0),
                 html.Div(
                     className='content',
                     children=[
@@ -93,36 +93,47 @@ def create_layout(app):
                             options=CHECKLIST_OPTIONS['ohlc'],
                             value=['OHLC']
                         ),
-                        dcc.Checklist(
-                            id='open-interest-checklist',
-                            options=CHECKLIST_OPTIONS['open_interest'],
-                            value=[]  # Default to not show Open Interest
-                        ),
-                        dcc.Checklist(
-                            id='oi-percentages-checklist',
-                            options=CHECKLIST_OPTIONS['oi_percentages'],
-                            value=[]  # Default to not show % of OI
-                        ),
-                        dcc.Checklist(
-                            id='positions-change-checklist',
-                            options=CHECKLIST_OPTIONS['positions_change'],
-                            value=[]  # Default to not show % Change in Positions
-                        ),
-                        dcc.Checklist(
-                            id='net-positions-checklist',
-                            options=CHECKLIST_OPTIONS['net_positions'],
-                            value=[]  # Default to not show Net Positions
-                        ),
-                        dcc.Checklist(
-                            id='net-positions-change-checklist',
-                            options=CHECKLIST_OPTIONS['net_positions_change'],
-                            value=[]  # Default to not show % Change in Net Positions
-                        ),
-                        dcc.Checklist(
-                            id='26w-index-checklist',
-                            options=CHECKLIST_OPTIONS['index_26w'],
-                            value=[]  # Default to not show 26-Week Index
-                        ),
+                        # Foldable "Legacy - Combined" section
+                        html.Div([
+                            html.Button('Legacy - Combined', id='legacy-combined-toggle', n_clicks=0,
+                                        style={'width': '100%', 'textAlign': 'left'}),
+                            dbc.Collapse(  # Correct use of dbc.Collapse
+                                children=[
+                                    dcc.Checklist(
+                                        id='open-interest-checklist',
+                                        options=CHECKLIST_OPTIONS['open_interest'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='oi-percentages-checklist',
+                                        options=CHECKLIST_OPTIONS['oi_percentages'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='positions-change-checklist',
+                                        options=CHECKLIST_OPTIONS['positions_change'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='net-positions-checklist',
+                                        options=CHECKLIST_OPTIONS['net_positions'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='net-positions-change-checklist',
+                                        options=CHECKLIST_OPTIONS['net_positions_change'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='26w-index-checklist',
+                                        options=CHECKLIST_OPTIONS['index_26w'],
+                                        value=[]
+                                    ),
+                                ],
+                                id='legacy-combined-collapse',  # Correct ID for collapsible content
+                                is_open=False  # Initial state is collapsed
+                            )
+                        ]),
                         html.Div([
                             html.Button('Previous Year', id='prev-year-button', n_clicks=0),
                             html.Button('Next Year', id='next-year-button', n_clicks=0)

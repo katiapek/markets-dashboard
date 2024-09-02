@@ -51,6 +51,28 @@ def add_shape(fig, x0, x1, y0, y1, row, col, color='gray', dash='dash'):
     fig.add_shape(type='line', x0=x0, x1=x1, y0=y0, y1=y1, line=dict(color=color, dash=dash), row=row, col=col)
 
 def register_callbacks(app):
+
+    # Callback to toggle the foldable menu for "Legacy - Combined"
+    @app.callback(
+        Output('legacy-combined-collapse', 'is_open'),
+        [Input('legacy-combined-toggle', 'n_clicks')],
+        [State('legacy-combined-collapse', 'is_open')]
+    )
+    def toggle_legacy_combined(n_clicks, is_open):
+        """
+        Toggle the visibility of the 'Legacy - Combined' section.
+
+        Args:
+            n_clicks (int): Number of clicks on the toggle button.
+            is_open (bool): Current state of the collapse (open/closed).
+
+        Returns:
+            bool: Updated state of the collapse.
+        """
+        if n_clicks:
+            return not is_open
+        return is_open
+
     @app.callback(
         Output('active-subplots', 'data'),
         [Input('open-interest-checklist', 'value'),
