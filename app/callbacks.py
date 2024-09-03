@@ -111,6 +111,7 @@ def register_callbacks(app):
     )
     def update_active_subplots(*values):
         active_subplots = []
+        # For COT Legacy Combined
         if 'Open Interest' in values[0]:
             active_subplots.append(('Open Interest', '_cot_legacy_combined'))
         if 'OI Percentages' in values[1]:
@@ -123,7 +124,7 @@ def register_callbacks(app):
             active_subplots.append(('Net Positions Change', '_cot_legacy_combined'))
         if '26W Index' in values[5]:
             active_subplots.append(('26W Index', '_cot_legacy_combined'))
-        # For Futures Only
+        # For COT Legacy Futures Only
         if 'Open Interest' in values[6]:
             active_subplots.append(('Open Interest', '_cot_legacy_futures_only'))
         if 'OI Percentages' in values[7]:
