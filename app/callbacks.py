@@ -74,29 +74,68 @@ def register_callbacks(app):
         return is_open
 
     @app.callback(
+        Output('legacy-futures-only-collapse', 'is_open'),
+        [Input('legacy-futures-only-toggle', 'n_clicks')],
+        [State('legacy-futures-only-collapse', 'is_open')]
+    )
+    def toggle_legacy_futures_only(n_clicks, is_open):
+        """
+        Toggle the visibility of the 'Legacy - Futures Only' section.
+
+        Args:
+            n_clicks (int): Number of clicks on the toggle button.
+            is_open (bool): Current state of the collapse (open/closed).
+
+        Returns:
+            bool: Updated state of the collapse.
+        """
+        if n_clicks:
+            return not is_open
+        return is_open
+
+    @app.callback(
         Output('active-subplots', 'data'),
-        [Input('open-interest-checklist', 'value'),
-         Input('oi-percentages-checklist', 'value'),
-         Input('positions-change-checklist', 'value'),
-         Input('net-positions-checklist', 'value'),
-         Input('net-positions-change-checklist', 'value'),
-         Input('26w-index-checklist', 'value')],
+        [Input('open-interest-legacy-combined-checklist', 'value'),
+         Input('oi-percentages-legacy-combined-checklist', 'value'),
+         Input('positions-change-legacy-combined-checklist', 'value'),
+         Input('net-positions-legacy-combined-checklist', 'value'),
+         Input('net-positions-change-legacy-combined-checklist', 'value'),
+         Input('26w-index-legacy-combined-checklist', 'value'),
+         Input('open-interest-legacy-futures-only-checklist', 'value'),
+         Input('oi-percentages-legacy-futures-only-checklist', 'value'),
+         Input('positions-change-legacy-futures-only-checklist', 'value'),
+         Input('net-positions-legacy-futures-only-checklist', 'value'),
+         Input('net-positions-change-legacy-futures-only-checklist', 'value'),
+         Input('26w-index-legacy-futures-only-checklist', 'value')],
         prevent_initial_call=True
     )
     def update_active_subplots(*values):
         active_subplots = []
         if 'Open Interest' in values[0]:
-            active_subplots.append('Open Interest')
+            active_subplots.append(('Open Interest', '_cot_legacy_combined'))
         if 'OI Percentages' in values[1]:
-            active_subplots.append('OI Percentages')
+            active_subplots.append(('OI Percentages', '_cot_legacy_combined'))
         if 'Positions Change' in values[2]:
-            active_subplots.append('Positions Change')
+            active_subplots.append(('Positions Change', '_cot_legacy_combined'))
         if 'Net Positions' in values[3]:
-            active_subplots.append('Net Positions')
+            active_subplots.append(('Net Positions', '_cot_legacy_combined'))
         if 'Net Positions Change' in values[4]:
-            active_subplots.append('Net Positions Change')
+            active_subplots.append(('Net Positions Change', '_cot_legacy_combined'))
         if '26W Index' in values[5]:
-            active_subplots.append('26W Index')
+            active_subplots.append(('26W Index', '_cot_legacy_combined'))
+        # For Futures Only
+        if 'Open Interest' in values[6]:
+            active_subplots.append(('Open Interest', '_cot_legacy_futures_only'))
+        if 'OI Percentages' in values[7]:
+            active_subplots.append(('OI Percentages', '_cot_legacy_futures_only'))
+        if 'Positions Change' in values[8]:
+            active_subplots.append(('Positions Change', '_cot_legacy_futures_only'))
+        if 'Net Positions' in values[9]:
+            active_subplots.append(('Net Positions', '_cot_legacy_futures_only'))
+        if 'Net Positions Change' in values[10]:
+            active_subplots.append(('Net Positions Change', '_cot_legacy_futures_only'))
+        if '26W Index' in values[11]:
+            active_subplots.append(('26W Index', '_cot_legacy_futures_only'))
         return active_subplots
 
     @app.callback(
@@ -118,7 +157,8 @@ def register_callbacks(app):
             df = SeasonalDataFetcher.fetch_seasonal_data(format_market_name(stored_market), years)
             if not df.empty:
                 df = df.apply(pd.to_numeric, errors='coerce')
-                add_trace(fig, df['Day_of_Year'], df['Indexed_Cumulative_Percent_Change'], f'{years} Years', row=1, col=1)
+                add_trace(fig, df['Day_of_Year'], df['Indexed_Cumulative_Percent_Change'], f'{years} Years', row=1,
+                          col=1)
 
         # Add OHLC chart
         if 'OHLC' in ohlc_visibility:
@@ -130,85 +170,89 @@ def register_callbacks(app):
                 update_yaxis(fig, row=1, col=1, title='OHLC Prices', secondary_y=True)
 
         row_index = 2
-        for subplot in active_subplots:
+        for subplot, table_suffix in active_subplots:
             if subplot == 'Open Interest':
-                df = OpenInterestDataFetcher.fetch_open_interest_data(stored_market, current_year)
+                df = OpenInterestDataFetcher.fetch_open_interest_data(stored_market, current_year, table_suffix)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
-                    add_trace(fig, df['Day_of_Year'], df['open_interest_all'], 'Open Interest', row=row_index, col=1,
+                    add_trace(fig, df['Day_of_Year'], df['open_interest_all'], f'Open Interest ({table_suffix})',
+                              row=row_index, col=1,
                               line_color=COLORS['open_interest'])
                     update_yaxis(fig, row=row_index, col=1, title='Open Interest')
 
             elif subplot == 'OI Percentages':
-                df = OpenInterestPercentagesFetcher.fetch_open_interest_percentages(stored_market, current_year)
+                df = OpenInterestPercentagesFetcher.fetch_open_interest_percentages(stored_market, current_year,
+                                                                                    table_suffix)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
                     add_trace(fig, df['Day_of_Year'], df['pct_of_oi_noncomm_long_all'],
-                              '% of OI Non-Commercials Long', row=row_index, col=1,
+                              f'% of OI Non-Commercials Long ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['oi_percentages_long'])
                     add_trace(fig, df['Day_of_Year'], df['pct_of_oi_noncomm_short_all'],
-                              '% of OI Non-Commercials Short', row=row_index, col=1,
+                              f'% of OI Non-Commercials Short ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['oi_percentages_short'])
                     add_trace(fig, df['Day_of_Year'], df['pct_of_oi_comm_long_all'],
-                              '% of OI Commercials Long', row=row_index, col=1,
+                              f'% of OI Commercials Long ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['oi_percentages_long'])
                     add_trace(fig, df['Day_of_Year'], df['pct_of_oi_comm_short_all'],
-                              '% of OI Commercials Short', row=row_index, col=1,
+                              f'% of OI Commercials Short ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['oi_percentages_short'])
                     update_yaxis(fig, row=row_index, col=1, title='% of Open Interest')
 
+            # Continue adding cases for other subplots with the dynamic `table_suffix`
+
             elif subplot == 'Positions Change':
-                df = PositionsChangeDataFetcher.fetch_positions_change_data(stored_market, current_year)
+                df = PositionsChangeDataFetcher.fetch_positions_change_data(stored_market, current_year, table_suffix)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
                     add_trace(fig, df['Day_of_Year'], df['pct_change_noncomm_long'],
-                              '% Change Non-Commercials Long', row=row_index, col=1,
+                              f'% Change Non-Commercials Long ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['positions_change_long'])
                     add_trace(fig, df['Day_of_Year'], df['pct_change_noncomm_short'],
-                              '% Change Non-Commercials Short', row=row_index, col=1,
+                              f'% Change Non-Commercials Short ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['positions_change_short'])
                     add_trace(fig, df['Day_of_Year'], df['pct_change_comm_long'],
-                              '% Change Commercials Long', row=row_index, col=1,
+                              f'% Change Commercials Long ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['positions_change_long'])
                     add_trace(fig, df['Day_of_Year'], df['pct_change_comm_short'],
-                              '% Change Commercials Short', row=row_index, col=1,
+                              f'% Change Commercials Short ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['positions_change_short'])
                     update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
 
             elif subplot == 'Net Positions':
-                df = NetPositionsDataFetcher.fetch_net_positions_data(stored_market, current_year)
+                df = NetPositionsDataFetcher.fetch_net_positions_data(stored_market, current_year, table_suffix)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
                     add_trace(fig, df['Day_of_Year'], df['noncomm_net_positions'],
-                              'Net Positions Non-Commercials', row=row_index, col=1,
+                              f'Net Positions Non-Commercials ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['net_positions_long'])
                     add_trace(fig, df['Day_of_Year'], df['comm_net_positions'],
-                              'Net Positions Commercials', row=row_index, col=1,
+                              f'Net Positions Commercials ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['net_positions_short'])
                     update_yaxis(fig, row=row_index, col=1, title='Net Positions')
 
             elif subplot == 'Net Positions Change':
-                df = PositionsChangeNetDataFetcher.fetch_positions_change_net_data(stored_market, current_year)
+                df = PositionsChangeNetDataFetcher.fetch_positions_change_net_data(stored_market, current_year, table_suffix)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
                     add_trace(fig, df['Day_of_Year'],
                               df['pct_change_noncomm_net_positions'],
-                              '% Change Net Positions Non-Commercials', row=row_index, col=1,
+                              f'% Change Net Positions Non-Commercials ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['net_positions_change_long'])
                     add_trace(fig, df['Day_of_Year'],
                               df['pct_change_comm_net_positions'],
-                              '% Change Net Positions Commercials', row=row_index, col=1,
+                              f'% Change Net Positions Commercials ({table_suffix})', row=row_index, col=1,
                               line_color=COLORS['net_positions_change_short'])
                     update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
 
             elif subplot == '26W Index':
-                df = Index26WDataFetcher.fetch_26w_index_data(stored_market, current_year)
+                df = Index26WDataFetcher.fetch_26w_index_data(stored_market, current_year, table_suffix)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
                     add_trace(fig, df['Day_of_Year'], df['noncomm_26w_index'],
-                              'Non-Commercials 26W Index', row=row_index, col=1, line_color=COLORS['index_26w_noncomm'])
+                              f'Non-Commercials 26W Index ({table_suffix})', row=row_index, col=1, line_color=COLORS['index_26w_noncomm'])
                     add_trace(fig, df['Day_of_Year'], df['comm_26w_index'],
-                              'Commercials 26W Index', row=row_index, col=1, line_color=COLORS['index_26w_comm'])
+                              f'Commercials 26W Index ({table_suffix})', row=row_index, col=1, line_color=COLORS['index_26w_comm'])
                     add_shape(fig, df['Day_of_Year'].min(), df['Day_of_Year'].max(), 50, 50, row=row_index, col=1)
                     update_yaxis(fig, row=row_index, col=1, title='26-Week Index')
 

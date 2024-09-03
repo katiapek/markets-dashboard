@@ -87,18 +87,20 @@ class OpenInterestDataFetcher(BaseDataFetcher):
     """
 
     @staticmethod
-    def fetch_open_interest_data(market, year):
+    def fetch_open_interest_data(market, year, table_suffix):
         """
         Fetch Open Interest data for a given market and year.
 
         Args:
             market (str): The market name.
             year (int): The year for which to fetch the Open Interest data.
+            table_suffix (str): The table suffix indicating combined or futures-only.
+
 
         Returns:
             pd.DataFrame: DataFrame containing the Open Interest data with additional 'Day_of_Year' column.
         """
-        table_name = f"{market.lower().replace(' ', '_')}_cot_legacy_combined"
+        table_name = f"{market.lower().replace(' ', '_')}{table_suffix}"
         query = f"""
         SELECT report_date_as_yyyy_mm_dd, open_interest_all
         FROM {table_name}
@@ -118,18 +120,20 @@ class OpenInterestPercentagesFetcher(BaseDataFetcher):
     """
 
     @staticmethod
-    def fetch_open_interest_percentages(market, year):
+    def fetch_open_interest_percentages(market, year, table_suffix):
         """
         Fetch Open Interest Percentages data for a given market and year.
 
         Args:
             market (str): The market name.
             year (int): The year for which to fetch the Open Interest Percentages data.
+            table_suffix (str): The table suffix indicating combined or futures-only.
+
 
         Returns:
             pd.DataFrame: DataFrame containing the Open Interest Percentages data with additional 'Day_of_Year' column.
         """
-        table_name = f"{market.lower().replace(' ', '_')}_cot_legacy_combined"
+        table_name = f"{market.lower().replace(' ', '_')}{table_suffix}"
         query = f"""
         SELECT report_date_as_yyyy_mm_dd, 
                pct_of_oi_noncomm_long_all,
@@ -157,18 +161,20 @@ class PositionsChangeDataFetcher(BaseDataFetcher):
     """
 
     @staticmethod
-    def fetch_positions_change_data(market, year):
+    def fetch_positions_change_data(market, year, table_suffix):
         """
         Fetch Positions Change data for a given market and year.
 
         Args:
             market (str): The market name.
             year (int): The year for which to fetch the Positions Change data.
+            table_suffix (str): The table suffix indicating combined or futures-only.
+
 
         Returns:
             pd.DataFrame: DataFrame containing the Positions Change data with additional 'Day_of_Year' column.
         """
-        table_name = f"{market.lower().replace(' ', '_')}_cot_legacy_combined_calc"
+        table_name = f"{market.lower().replace(' ', '_')}{table_suffix}_calc"
         query = f"""
         SELECT report_date_as_yyyy_mm_dd, 
                pct_change_noncomm_long,
@@ -196,18 +202,20 @@ class NetPositionsDataFetcher(BaseDataFetcher):
     """
 
     @staticmethod
-    def fetch_net_positions_data(market, year):
+    def fetch_net_positions_data(market, year, table_suffix):
         """
         Fetch Net Positions data for a given market and year.
 
         Args:
             market (str): The market name.
             year (int): The year for which to fetch the Net Positions data.
+            table_suffix (str): The table suffix indicating combined or futures-only.
+
 
         Returns:
             pd.DataFrame: DataFrame containing the Net Positions data with additional 'Day_of_Year' column.
         """
-        table_name = f"{market.lower().replace(' ', '_')}_cot_legacy_combined_calc"
+        table_name = f"{market.lower().replace(' ', '_')}{table_suffix}_calc"
         query = f"""
         SELECT report_date_as_yyyy_mm_dd, 
                noncomm_net_positions,
@@ -231,18 +239,20 @@ class PositionsChangeNetDataFetcher(BaseDataFetcher):
     """
 
     @staticmethod
-    def fetch_positions_change_net_data(market, year):
+    def fetch_positions_change_net_data(market, year, table_suffix):
         """
         Fetch Positions Change Net data for a given market and year.
 
         Args:
             market (str): The market name.
             year (int): The year for which to fetch the Positions Change Net data.
+            table_suffix (str): The table suffix indicating combined or futures-only.
+
 
         Returns:
             pd.DataFrame: DataFrame containing the Positions Change Net data with additional 'Day_of_Year' column.
         """
-        table_name = f"{market.lower().replace(' ', '_')}_cot_legacy_combined_calc"
+        table_name = f"{market.lower().replace(' ', '_')}{table_suffix}_calc"
         query = f"""
         SELECT report_date_as_yyyy_mm_dd, 
                pct_change_noncomm_net_positions,
@@ -266,18 +276,20 @@ class Index26WDataFetcher(BaseDataFetcher):
     """
 
     @staticmethod
-    def fetch_26w_index_data(market, year):
+    def fetch_26w_index_data(market, year, table_suffix):
         """
         Fetch 26-Week Index data for a given market and year.
 
         Args:
             market (str): The market name.
             year (int): The year for which to fetch the 26-Week Index data.
+            table_suffix (str): The table suffix indicating combined or futures-only.
+
 
         Returns:
             pd.DataFrame: DataFrame containing the 26-Week Index data with additional 'Day_of_Year' column.
         """
-        table_name = f"{market.lower().replace(' ', '_')}_cot_legacy_combined_calc"
+        table_name = f"{market.lower().replace(' ', '_')}{table_suffix}_calc"
         query = f"""
         SELECT report_date_as_yyyy_mm_dd, 
                noncomm_26w_index,

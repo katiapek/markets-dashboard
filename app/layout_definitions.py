@@ -100,37 +100,78 @@ def create_layout(app):
                             dbc.Collapse(  # Correct use of dbc.Collapse
                                 children=[
                                     dcc.Checklist(
-                                        id='open-interest-checklist',
+                                        id='open-interest-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['open_interest'],
                                         value=[]
                                     ),
                                     dcc.Checklist(
-                                        id='oi-percentages-checklist',
+                                        id='oi-percentages-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['oi_percentages'],
                                         value=[]
                                     ),
                                     dcc.Checklist(
-                                        id='positions-change-checklist',
+                                        id='positions-change-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['positions_change'],
                                         value=[]
                                     ),
                                     dcc.Checklist(
-                                        id='net-positions-checklist',
+                                        id='net-positions-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions'],
                                         value=[]
                                     ),
                                     dcc.Checklist(
-                                        id='net-positions-change-checklist',
+                                        id='net-positions-change-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions_change'],
                                         value=[]
                                     ),
                                     dcc.Checklist(
-                                        id='26w-index-checklist',
+                                        id='26w-index-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['index_26w'],
                                         value=[]
                                     ),
                                 ],
                                 id='legacy-combined-collapse',  # Correct ID for collapsible content
+                                is_open=False  # Initial state is collapsed
+                            )
+                        ]),
+                        # Foldable "Legacy - Futures Only" section
+                        html.Div([
+                            html.Button('Legacy - Futures Only', id='legacy-futures-only-toggle', n_clicks=0,
+                                        style={'width': '100%', 'textAlign': 'left'}),
+                            dbc.Collapse(  # Correct use of dbc.Collapse
+                                children=[
+                                    dcc.Checklist(
+                                        id='open-interest-legacy-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['open_interest'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='oi-percentages-legacy-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['oi_percentages'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='positions-change-legacy-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['positions_change'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='net-positions-legacy-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['net_positions'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='net-positions-change-legacy-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['net_positions_change'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='26w-index-legacy-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['index_26w'],
+                                        value=[]
+                                    ),
+                                ],
+                                id='legacy-futures-only-collapse',  # Correct ID for collapsible content
                                 is_open=False  # Initial state is collapsed
                             )
                         ]),
