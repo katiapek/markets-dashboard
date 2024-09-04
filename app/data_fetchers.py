@@ -81,13 +81,14 @@ class OHLCDataFetcher(BaseDataFetcher):
             df['Day_of_Year'] = df['Date'].dt.dayofyear
         return df
 
+
 class OpenInterestDataFetcher(BaseDataFetcher):
     """
     Data fetcher for Open Interest data.
     """
 
     @staticmethod
-    def fetch_open_interest_data(market, year, table_suffix):
+    def fetch_open_interest_data(market, year, table_suffix, report_type):
         """
         Fetch Open Interest data for a given market and year.
 
@@ -95,14 +96,27 @@ class OpenInterestDataFetcher(BaseDataFetcher):
             market (str): The market name.
             year (int): The year for which to fetch the Open Interest data.
             table_suffix (str): The table suffix indicating combined or futures-only.
+            report_type (str): The report type, e.g., 'legacy' or 'disaggregated'.
 
 
         Returns:
             pd.DataFrame: DataFrame containing the Open Interest data with additional 'Day_of_Year' column.
         """
         table_name = f"{market.lower().replace(' ', '_')}{table_suffix}"
+        # print(f"Fetching from Table {table_name} and report: {report_type}")
+        # Select columns based on the report type
+        if report_type == 'legacy':
+            columns = 'report_date_as_yyyy_mm_dd, open_interest_all'
+        elif report_type == 'disaggregated':
+            columns = 'report_date_as_yyyy_mm_dd, open_interest_all'
+            # m_money_positions_long_all, m_money_positions_short_all,
+            # prod_merc_positions_long, prod_merc_positions_short, swap_positions_long_all,
+            # swap_positions_short_all
+        else:
+            raise ValueError(f"Unknown report type: {report_type}")
+
         query = f"""
-        SELECT report_date_as_yyyy_mm_dd, open_interest_all
+        SELECT {columns}
         FROM {table_name}
         WHERE report_date_as_yyyy_mm_dd BETWEEN ? AND ?
         """
@@ -120,7 +134,7 @@ class OpenInterestPercentagesFetcher(BaseDataFetcher):
     """
 
     @staticmethod
-    def fetch_open_interest_percentages(market, year, table_suffix):
+    def fetch_open_interest_percentages(market, year, table_suffix, report_type):
         """
         Fetch Open Interest Percentages data for a given market and year.
 
@@ -128,31 +142,64 @@ class OpenInterestPercentagesFetcher(BaseDataFetcher):
             market (str): The market name.
             year (int): The year for which to fetch the Open Interest Percentages data.
             table_suffix (str): The table suffix indicating combined or futures-only.
-
+            report_type (str): The report type, e.g., 'legacy' or 'disaggregated'.
 
         Returns:
             pd.DataFrame: DataFrame containing the Open Interest Percentages data with additional 'Day_of_Year' column.
         """
         table_name = f"{market.lower().replace(' ', '_')}{table_suffix}"
+
+        # Select columns based on the report type
+        if report_type == 'legacy':
+            columns = ('report_date_as_yyyy_mm_dd, '
+                       'pct_of_oi_noncomm_long_all, '
+                       'pct_of_oi_noncomm_short_all, '
+                       'pct_of_oi_comm_long_all, '
+                       'pct_of_oi_comm_short_all')
+
+            numeric_columns = [
+                'pct_of_oi_noncomm_long_all',
+                'pct_of_oi_noncomm_short_all',
+                'pct_of_oi_comm_long_all',
+                'pct_of_oi_comm_short_all'
+            ]
+
+        elif report_type == 'disaggregated':
+            columns = ('report_date_as_yyyy_mm_dd, '
+                       'pct_of_oi_m_money_long_all, pct_of_oi_m_money_short_all,'
+                       'pct_of_oi_prod_merc_long, pct_of_oi_prod_merc_short,'
+                       'pct_of_oi_swap_long_all, pct_of_oi_swap_short_all')
+
+            numeric_columns = [
+                'pct_of_oi_m_money_long_all',
+                'pct_of_oi_m_money_short_all',
+                'pct_of_oi_prod_merc_long',
+                'pct_of_oi_prod_merc_short',
+                'pct_of_oi_swap_long_all',
+                'pct_of_oi_swap_short_all'
+            ]
+
+        else:
+            raise ValueError(f"Unknown report type: {report_type}")
+
         query = f"""
-        SELECT report_date_as_yyyy_mm_dd, 
-               pct_of_oi_noncomm_long_all,
-               pct_of_oi_noncomm_short_all,
-               pct_of_oi_comm_long_all,
-               pct_of_oi_comm_short_all
+        SELECT {columns}
         FROM {table_name}
         WHERE report_date_as_yyyy_mm_dd BETWEEN ? AND ?
         """
         params = (f'{year}-01-01', f'{year}-12-31')
         df = OpenInterestPercentagesFetcher.fetch_data(query, params)
+
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
             df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
-            df['pct_of_oi_noncomm_long_all'] = pd.to_numeric(df['pct_of_oi_noncomm_long_all'], errors='coerce')
-            df['pct_of_oi_noncomm_short_all'] = pd.to_numeric(df['pct_of_oi_noncomm_short_all'], errors='coerce')
-            df['pct_of_oi_comm_long_all'] = pd.to_numeric(df['pct_of_oi_comm_long_all'], errors='coerce')
-            df['pct_of_oi_comm_short_all'] = pd.to_numeric(df['pct_of_oi_comm_short_all'], errors='coerce')
+
+            # Convert the relevant columns to numeric, based on report type
+            for col in numeric_columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
             df.sort_values(by='Day_of_Year', inplace=True)
+
         return df
 
 class PositionsChangeDataFetcher(BaseDataFetcher):
@@ -161,7 +208,7 @@ class PositionsChangeDataFetcher(BaseDataFetcher):
     """
 
     @staticmethod
-    def fetch_positions_change_data(market, year, table_suffix):
+    def fetch_positions_change_data(market, year, table_suffix, report_type):
         """
         Fetch Positions Change data for a given market and year.
 
@@ -169,30 +216,61 @@ class PositionsChangeDataFetcher(BaseDataFetcher):
             market (str): The market name.
             year (int): The year for which to fetch the Positions Change data.
             table_suffix (str): The table suffix indicating combined or futures-only.
-
+            report_type (str): The report type, e.g., 'legacy' or 'disaggregated'.
 
         Returns:
             pd.DataFrame: DataFrame containing the Positions Change data with additional 'Day_of_Year' column.
         """
         table_name = f"{market.lower().replace(' ', '_')}{table_suffix}_calc"
+
+        # Select columns based on the report type
+        if report_type == 'legacy':
+            columns = ('report_date_as_yyyy_mm_dd, '
+                       'pct_change_noncomm_long, '
+                       'pct_change_noncomm_short, '
+                       'pct_change_comm_long, '
+                       'pct_change_comm_short')
+
+            numeric_columns = ['report_date_as_yyyy_mm_dd',
+                               'pct_change_noncomm_long',
+                               'pct_change_noncomm_short',
+                               'pct_change_comm_long',
+                               'pct_change_comm_short']
+
+        elif report_type == 'disaggregated':
+
+            columns = ('report_date_as_yyyy_mm_dd, '
+                       'pct_change_m_money_long, pct_change_m_money_short,'
+                       'pct_change_prod_merc_long, pct_change_prod_merc_short,'
+                       'pct_change_swap_long, pct_change_swap_short')
+
+            numeric_columns = [
+                'report_date_as_yyyy_mm_dd',
+                'pct_change_m_money_long', 'pct_change_m_money_short',
+                'pct_change_prod_merc_long', 'pct_change_prod_merc_short',
+                'pct_change_swap_long', 'pct_change_swap_short']
+
+            print(f"TABLE: {table_name} COLUMNS: {columns}")
+
+        else:
+            raise ValueError(f"Unknown report type: {report_type}")
+
         query = f"""
-        SELECT report_date_as_yyyy_mm_dd, 
-               pct_change_noncomm_long,
-               pct_change_noncomm_short,
-               pct_change_comm_long,
-               pct_change_comm_short
+        SELECT {columns}
         FROM {table_name}
         WHERE report_date_as_yyyy_mm_dd BETWEEN ? AND ?
         """
         params = (f'{year}-01-01', f'{year}-12-31')
         df = PositionsChangeDataFetcher.fetch_data(query, params)
+
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
             df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
-            df['pct_change_noncomm_long'] = pd.to_numeric(df['pct_change_noncomm_long'], errors='coerce')
-            df['pct_change_noncomm_short'] = pd.to_numeric(df['pct_change_noncomm_short'], errors='coerce')
-            df['pct_change_comm_long'] = pd.to_numeric(df['pct_change_comm_long'], errors='coerce')
-            df['pct_change_comm_short'] = pd.to_numeric(df['pct_change_comm_short'], errors='coerce')
+
+            # Convert the relevant columns to numeric, based on report type
+            for col in numeric_columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
             df.sort_values(by='Day_of_Year', inplace=True)
         return df
 

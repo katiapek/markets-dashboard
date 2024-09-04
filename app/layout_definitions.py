@@ -175,6 +175,34 @@ def create_layout(app):
                                 is_open=False  # Initial state is collapsed
                             )
                         ]),
+                        # Foldable COT Disaggregated Combined
+                        html.Div([
+                            html.Button('Disaggregated - Combined', id='disaggregated-combined-toggle', n_clicks=0,
+                                        style={'width': '100%', 'textAlign': 'left'}),
+                            dbc.Collapse(
+                                children=[
+                                    dcc.Checklist(
+                                        id='open-interest-disaggregated-combined-checklist',
+                                        options=CHECKLIST_OPTIONS['open_interest'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='oi-percentages-disaggregated-combined-checklist',
+                                        options=CHECKLIST_OPTIONS['oi_percentages'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='positions-change-disaggregated-combined-checklist',
+                                        options=CHECKLIST_OPTIONS['positions_change'],
+                                        value=[]
+                                    ),
+                                    # Add other checklists for Disaggregated Combined...
+                                ],
+                                id='disaggregated-combined-collapse',
+                                is_open=False
+                            )
+                        ]),
+
                         html.Div([
                             html.Button('Previous Year', id='prev-year-button', n_clicks=0),
                             html.Button('Next Year', id='next-year-button', n_clicks=0)

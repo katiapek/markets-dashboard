@@ -94,6 +94,16 @@ def register_callbacks(app):
         return is_open
 
     @app.callback(
+        Output('disaggregated-combined-collapse', 'is_open'),
+        [Input('disaggregated-combined-toggle', 'n_clicks')],
+        [State('disaggregated-combined-collapse', 'is_open')]
+    )
+    def toggle_disaggregated_combined(n_clicks, is_open):
+        if n_clicks:
+            return not is_open
+        return is_open
+
+    @app.callback(
         Output('active-subplots', 'data'),
         [Input('open-interest-legacy-combined-checklist', 'value'),
          Input('oi-percentages-legacy-combined-checklist', 'value'),
@@ -106,37 +116,49 @@ def register_callbacks(app):
          Input('positions-change-legacy-futures-only-checklist', 'value'),
          Input('net-positions-legacy-futures-only-checklist', 'value'),
          Input('net-positions-change-legacy-futures-only-checklist', 'value'),
-         Input('26w-index-legacy-futures-only-checklist', 'value')],
+         Input('26w-index-legacy-futures-only-checklist', 'value'),
+         Input('open-interest-disaggregated-combined-checklist', 'value'),
+         Input('oi-percentages-disaggregated-combined-checklist', 'value'),
+         Input('positions-change-disaggregated-combined-checklist', 'value'),
+         ],
+
         prevent_initial_call=True
     )
     def update_active_subplots(*values):
         active_subplots = []
         # For COT Legacy Combined
         if 'Open Interest' in values[0]:
-            active_subplots.append(('Open Interest', '_cot_legacy_combined'))
+            active_subplots.append(('Open Interest', '_cot_legacy_combined', 'legacy'))
         if 'OI Percentages' in values[1]:
-            active_subplots.append(('OI Percentages', '_cot_legacy_combined'))
+            active_subplots.append(('OI Percentages', '_cot_legacy_combined', 'legacy'))
         if 'Positions Change' in values[2]:
-            active_subplots.append(('Positions Change', '_cot_legacy_combined'))
+            active_subplots.append(('Positions Change', '_cot_legacy_combined', 'legacy'))
         if 'Net Positions' in values[3]:
-            active_subplots.append(('Net Positions', '_cot_legacy_combined'))
+            active_subplots.append(('Net Positions', '_cot_legacy_combined', 'legacy'))
         if 'Net Positions Change' in values[4]:
-            active_subplots.append(('Net Positions Change', '_cot_legacy_combined'))
+            active_subplots.append(('Net Positions Change', '_cot_legacy_combined', 'legacy'))
         if '26W Index' in values[5]:
-            active_subplots.append(('26W Index', '_cot_legacy_combined'))
+            active_subplots.append(('26W Index', '_cot_legacy_combined', 'legacy'))
         # For COT Legacy Futures Only
         if 'Open Interest' in values[6]:
-            active_subplots.append(('Open Interest', '_cot_legacy_futures_only'))
+            active_subplots.append(('Open Interest', '_cot_legacy_futures_only', 'legacy'))
         if 'OI Percentages' in values[7]:
-            active_subplots.append(('OI Percentages', '_cot_legacy_futures_only'))
+            active_subplots.append(('OI Percentages', '_cot_legacy_futures_only', 'legacy'))
         if 'Positions Change' in values[8]:
-            active_subplots.append(('Positions Change', '_cot_legacy_futures_only'))
+            active_subplots.append(('Positions Change', '_cot_legacy_futures_only', 'legacy'))
         if 'Net Positions' in values[9]:
-            active_subplots.append(('Net Positions', '_cot_legacy_futures_only'))
+            active_subplots.append(('Net Positions', '_cot_legacy_futures_only', 'legacy'))
         if 'Net Positions Change' in values[10]:
-            active_subplots.append(('Net Positions Change', '_cot_legacy_futures_only'))
+            active_subplots.append(('Net Positions Change', '_cot_legacy_futures_only', 'legacy'))
         if '26W Index' in values[11]:
-            active_subplots.append(('26W Index', '_cot_legacy_futures_only'))
+            active_subplots.append(('26W Index', '_cot_legacy_futures_only', 'legacy'))
+        # For COT Disaggregated Combined
+        if 'Open Interest' in values[12]:
+            active_subplots.append(('Open Interest', '_cot_disaggregated_combined', 'disaggregated'))
+        if 'OI Percentages' in values[13]:
+            active_subplots.append(('OI Percentages', '_cot_disaggregated_combined', 'disaggregated'))
+        if 'Positions Change' in values[14]:
+            active_subplots.append(('Positions Change', '_cot_disaggregated_combined', 'disaggregated'))
         return active_subplots
 
     @app.callback(
@@ -171,10 +193,13 @@ def register_callbacks(app):
                 update_yaxis(fig, row=1, col=1, title='OHLC Prices', secondary_y=True)
 
         row_index = 2
-        for subplot, table_suffix in active_subplots:
+        for subplot, table_suffix, report_type in active_subplots:
             if subplot == 'Open Interest':
-                df = OpenInterestDataFetcher.fetch_open_interest_data(stored_market, current_year, table_suffix)
+                df = OpenInterestDataFetcher.fetch_open_interest_data(stored_market, current_year, table_suffix,
+                                                                      report_type)
+
                 if not df.empty:
+                    # print(f"Drawing from {table_suffix} table and {report_type} report")
                     df = df.apply(pd.to_numeric, errors='coerce')
                     add_trace(fig, df['Day_of_Year'], df['open_interest_all'], f'Open Interest ({table_suffix})',
                               row=row_index, col=1,
@@ -182,43 +207,92 @@ def register_callbacks(app):
                     update_yaxis(fig, row=row_index, col=1, title='Open Interest')
 
             elif subplot == 'OI Percentages':
-                df = OpenInterestPercentagesFetcher.fetch_open_interest_percentages(stored_market, current_year,
-                                                                                    table_suffix)
-                if not df.empty:
-                    df = df.apply(pd.to_numeric, errors='coerce')
-                    add_trace(fig, df['Day_of_Year'], df['pct_of_oi_noncomm_long_all'],
-                              f'% of OI Non-Commercials Long ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['oi_percentages_long'])
-                    add_trace(fig, df['Day_of_Year'], df['pct_of_oi_noncomm_short_all'],
-                              f'% of OI Non-Commercials Short ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['oi_percentages_short'])
-                    add_trace(fig, df['Day_of_Year'], df['pct_of_oi_comm_long_all'],
-                              f'% of OI Commercials Long ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['oi_percentages_long'])
-                    add_trace(fig, df['Day_of_Year'], df['pct_of_oi_comm_short_all'],
-                              f'% of OI Commercials Short ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['oi_percentages_short'])
-                    update_yaxis(fig, row=row_index, col=1, title='% of Open Interest')
+                df = OpenInterestPercentagesFetcher.fetch_open_interest_percentages(
+                    stored_market, current_year, table_suffix, report_type
+                )
 
-            # Continue adding cases for other subplots with the dynamic `table_suffix`
+                if not df.empty:
+                    if report_type == 'legacy':
+                        # Add traces for Legacy report
+                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_noncomm_long_all'],
+                                  f'% of OI Non-Commercials Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['oi_percentages_long'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_noncomm_short_all'],
+                                  f'% of OI Non-Commercials Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['oi_percentages_short'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_comm_long_all'],
+                                  f'% of OI Commercials Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['oi_percentages_long'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_comm_short_all'],
+                                  f'% of OI Commercials Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['oi_percentages_short'])
+                        update_yaxis(fig, row=row_index, col=1, title='% of Open Interest')
+
+                    elif report_type == 'disaggregated':
+                        # Add traces for Disaggregated report
+                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_m_money_long_all'],
+                                  f'% of OI Managed Money Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['oi_percentages_long'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_m_money_short_all'],
+                                  f'% of OI Managed Money Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['oi_percentages_short'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_prod_merc_long'],
+                                  f'% of OI Producers/Merchants Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['oi_percentages_long'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_prod_merc_short'],
+                                  f'% of OI Producers/Merchants Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['oi_percentages_short'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_swap_long_all'],
+                                  f'% of OI Swap Dealers Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['oi_percentages_long'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_swap_short_all'],
+                                  f'% of OI Swap Dealers Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['oi_percentages_short'])
+                        update_yaxis(fig, row=row_index, col=1, title='% of Open Interest')
 
             elif subplot == 'Positions Change':
-                df = PositionsChangeDataFetcher.fetch_positions_change_data(stored_market, current_year, table_suffix)
+                df = PositionsChangeDataFetcher.fetch_positions_change_data(stored_market, current_year, table_suffix,
+                                                                            report_type)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
-                    add_trace(fig, df['Day_of_Year'], df['pct_change_noncomm_long'],
-                              f'% Change Non-Commercials Long ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['positions_change_long'])
-                    add_trace(fig, df['Day_of_Year'], df['pct_change_noncomm_short'],
-                              f'% Change Non-Commercials Short ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['positions_change_short'])
-                    add_trace(fig, df['Day_of_Year'], df['pct_change_comm_long'],
-                              f'% Change Commercials Long ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['positions_change_long'])
-                    add_trace(fig, df['Day_of_Year'], df['pct_change_comm_short'],
-                              f'% Change Commercials Short ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['positions_change_short'])
-                    update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
+
+                    if report_type == 'legacy':
+
+                        add_trace(fig, df['Day_of_Year'], df['pct_change_noncomm_long'],
+                                  f'% Change Non-Commercials Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['positions_change_long'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_change_noncomm_short'],
+                                  f'% Change Non-Commercials Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['positions_change_short'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_change_comm_long'],
+                                  f'% Change Commercials Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['positions_change_long'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_change_comm_short'],
+                                  f'% Change Commercials Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['positions_change_short'])
+                        update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
+
+                    elif report_type == 'disaggregated':
+                        add_trace(fig, df['Day_of_Year'], df['pct_change_m_money_long'],
+                                  f'% Change Non-Commercials Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['positions_change_long'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_change_m_money_short'],
+                                  f'% Change Non-Commercials Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['positions_change_short'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_change_prod_merc_long'],
+                                  f'% Change Commercials Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['positions_change_long'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_change_prod_merc_short'],
+                                  f'% Change Commercials Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['positions_change_short'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_change_swap_long'],
+                                  f'% Change Commercials Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['positions_change_long'])
+                        add_trace(fig, df['Day_of_Year'], df['pct_change_swap_short'],
+                                  f'% Change Commercials Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['positions_change_short'])
+                        update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
+
 
             elif subplot == 'Net Positions':
                 df = NetPositionsDataFetcher.fetch_net_positions_data(stored_market, current_year, table_suffix)
