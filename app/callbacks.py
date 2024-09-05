@@ -104,6 +104,16 @@ def register_callbacks(app):
         return is_open
 
     @app.callback(
+        Output('disaggregated-futures-only-collapse', 'is_open'),
+        [Input('disaggregated-futures-only-toggle', 'n_clicks')],
+        [State('disaggregated-futures-only-collapse', 'is_open')]
+    )
+    def toggle_disaggregated_futures_only(n_clicks, is_open):
+        if n_clicks:
+            return not is_open
+        return is_open
+
+    @app.callback(
         Output('active-subplots', 'data'),
         [Input('open-interest-legacy-combined-checklist', 'value'),
          Input('oi-percentages-legacy-combined-checklist', 'value'),
@@ -123,6 +133,12 @@ def register_callbacks(app):
          Input('net-positions-disaggregated-combined-checklist', 'value'),
          Input('net-positions-change-disaggregated-combined-checklist', 'value'),
          Input('26w-index-disaggregated-combined-checklist', 'value'),
+         Input('open-interest-disaggregated-futures-only-checklist', 'value'),
+         Input('oi-percentages-disaggregated-futures-only-checklist', 'value'),
+         Input('positions-change-disaggregated-futures-only-checklist', 'value'),
+         Input('net-positions-disaggregated-futures-only-checklist', 'value'),
+         Input('net-positions-change-disaggregated-futures-only-checklist', 'value'),
+         Input('26w-index-disaggregated-futures-only-checklist', 'value'),
          ],
 
         prevent_initial_call=True
@@ -168,6 +184,19 @@ def register_callbacks(app):
             active_subplots.append(('Net Positions Change', '_cot_disaggregated_combined', 'disaggregated'))
         if '26W Index' in values[17]:
             active_subplots.append(('26W Index', '_cot_disaggregated_combined', 'disaggregated'))
+        # For COT Disaggregated Futures Only
+        if 'Open Interest' in values[18]:
+            active_subplots.append(('Open Interest', '_cot_disaggregated_futures_only', 'disaggregated'))
+        if 'OI Percentages' in values[19]:
+            active_subplots.append(('OI Percentages', '_cot_disaggregated_futures_only', 'disaggregated'))
+        if 'Positions Change' in values[20]:
+            active_subplots.append(('Positions Change', '_cot_disaggregated_futures_only', 'disaggregated'))
+        if 'Net Positions' in values[21]:
+            active_subplots.append(('Net Positions', '_cot_disaggregated_futures_only', 'disaggregated'))
+        if 'Net Positions Change' in values[22]:
+            active_subplots.append(('Net Positions Change', '_cot_disaggregated_futures_only', 'disaggregated'))
+        if '26W Index' in values[23]:
+            active_subplots.append(('26W Index', '_cot_disaggregated_futures_only', 'disaggregated'))
         return active_subplots
 
     @app.callback(

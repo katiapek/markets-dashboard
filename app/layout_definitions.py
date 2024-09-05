@@ -211,9 +211,51 @@ def create_layout(app):
                                         options=CHECKLIST_OPTIONS['index_26w'],
                                         value=[]
                                     ),
-                                    # Add other checklists for Disaggregated Combined...
+
                                 ],
                                 id='disaggregated-combined-collapse',
+                                is_open=False
+                            )
+                        ]),
+                        # Foldable COT Disaggregated Futures Only
+                        html.Div([
+                            html.Button('Disaggregated - Futures Only', id='disaggregated-futures-only-toggle', n_clicks=0,
+                                        style={'width': '100%', 'textAlign': 'left'}),
+                            dbc.Collapse(
+                                children=[
+                                    dcc.Checklist(
+                                        id='open-interest-disaggregated-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['open_interest'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='oi-percentages-disaggregated-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['oi_percentages'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='positions-change-disaggregated-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['positions_change'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='net-positions-disaggregated-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['net_positions'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='net-positions-change-disaggregated-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['net_positions_change'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='26w-index-disaggregated-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['index_26w'],
+                                        value=[]
+                                    ),
+
+                                ],
+                                id='disaggregated-futures-only-collapse',
                                 is_open=False
                             )
                         ]),
