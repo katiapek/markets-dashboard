@@ -196,6 +196,11 @@ def create_layout(app):
                                         options=CHECKLIST_OPTIONS['positions_change'],
                                         value=[]
                                     ),
+                                    dcc.Checklist(
+                                        id='net-positions-disaggregated-combined-checklist',
+                                        options=CHECKLIST_OPTIONS['net_positions'],
+                                        value=[]
+                                    ),
                                     # Add other checklists for Disaggregated Combined...
                                 ],
                                 id='disaggregated-combined-collapse',

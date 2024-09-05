@@ -120,6 +120,7 @@ def register_callbacks(app):
          Input('open-interest-disaggregated-combined-checklist', 'value'),
          Input('oi-percentages-disaggregated-combined-checklist', 'value'),
          Input('positions-change-disaggregated-combined-checklist', 'value'),
+         Input('net-positions-disaggregated-combined-checklist', 'value'),
          ],
 
         prevent_initial_call=True
@@ -159,6 +160,8 @@ def register_callbacks(app):
             active_subplots.append(('OI Percentages', '_cot_disaggregated_combined', 'disaggregated'))
         if 'Positions Change' in values[14]:
             active_subplots.append(('Positions Change', '_cot_disaggregated_combined', 'disaggregated'))
+        if 'Net Positions' in values[15]:
+            active_subplots.append(('Net Positions', '_cot_disaggregated_combined', 'disaggregated'))
         return active_subplots
 
     @app.callback(
@@ -293,21 +296,34 @@ def register_callbacks(app):
                                   line_color=COLORS['positions_change_short'])
                         update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
 
-
             elif subplot == 'Net Positions':
-                df = NetPositionsDataFetcher.fetch_net_positions_data(stored_market, current_year, table_suffix)
+                df = NetPositionsDataFetcher.fetch_net_positions_data(stored_market, current_year, table_suffix,
+                                                                      report_type)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
-                    add_trace(fig, df['Day_of_Year'], df['noncomm_net_positions'],
-                              f'Net Positions Non-Commercials ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['net_positions_long'])
-                    add_trace(fig, df['Day_of_Year'], df['comm_net_positions'],
-                              f'Net Positions Commercials ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['net_positions_short'])
-                    update_yaxis(fig, row=row_index, col=1, title='Net Positions')
+                    if report_type == 'legacy':
+                        add_trace(fig, df['Day_of_Year'], df['noncomm_net_positions'],
+                                  f'Net Positions Non-Commercials ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['net_positions_long'])
+                        add_trace(fig, df['Day_of_Year'], df['comm_net_positions'],
+                                  f'Net Positions Commercials ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['net_positions_short'])
+                        update_yaxis(fig, row=row_index, col=1, title='Net Positions')
+                    elif report_type == 'disaggregated':
+                        add_trace(fig, df['Day_of_Year'], df['m_money_net_positions'],
+                                  f'Net Positions Non-Commercials ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['net_positions_long'])
+                        add_trace(fig, df['Day_of_Year'], df['prod_merc_net_positions'],
+                                  f'Net Positions Commercials ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['net_positions_short'])
+                        add_trace(fig, df['Day_of_Year'], df['swap_net_positions'],
+                                  f'Net Positions Commercials ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['net_positions_short'])
+                        update_yaxis(fig, row=row_index, col=1, title='Net Positions')
 
             elif subplot == 'Net Positions Change':
-                df = PositionsChangeNetDataFetcher.fetch_positions_change_net_data(stored_market, current_year, table_suffix)
+                df = PositionsChangeNetDataFetcher.fetch_positions_change_net_data(stored_market, current_year,
+                                                                                   table_suffix)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
                     add_trace(fig, df['Day_of_Year'],

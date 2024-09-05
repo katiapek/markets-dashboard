@@ -250,8 +250,6 @@ class PositionsChangeDataFetcher(BaseDataFetcher):
                 'pct_change_prod_merc_long', 'pct_change_prod_merc_short',
                 'pct_change_swap_long', 'pct_change_swap_short']
 
-            print(f"TABLE: {table_name} COLUMNS: {columns}")
-
         else:
             raise ValueError(f"Unknown report type: {report_type}")
 
@@ -280,7 +278,7 @@ class NetPositionsDataFetcher(BaseDataFetcher):
     """
 
     @staticmethod
-    def fetch_net_positions_data(market, year, table_suffix):
+    def fetch_net_positions_data(market, year, table_suffix, report_type):
         """
         Fetch Net Positions data for a given market and year.
 
@@ -288,28 +286,56 @@ class NetPositionsDataFetcher(BaseDataFetcher):
             market (str): The market name.
             year (int): The year for which to fetch the Net Positions data.
             table_suffix (str): The table suffix indicating combined or futures-only.
-
+            report_type (str): The report type, e.g., 'legacy' or 'disaggregated'.
 
         Returns:
             pd.DataFrame: DataFrame containing the Net Positions data with additional 'Day_of_Year' column.
         """
         table_name = f"{market.lower().replace(' ', '_')}{table_suffix}_calc"
+
+        # Select columns based on the report type
+        if report_type == 'legacy':
+            columns = 'report_date_as_yyyy_mm_dd, noncomm_net_positions, comm_net_positions'
+
+            numeric_columns = ['report_date_as_yyyy_mm_dd', 'noncomm_net_positions', 'comm_net_positions']
+
+        elif report_type == 'disaggregated':
+
+            columns = ('report_date_as_yyyy_mm_dd, '
+                       'm_money_net_positions,'
+                       'prod_merc_net_positions,'
+                       'swap_net_positions')
+
+            numeric_columns = [
+                'report_date_as_yyyy_mm_dd',
+                'm_money_net_positions',
+                'prod_merc_net_positions',
+                'swap_net_positions']
+
+        else:
+            raise ValueError(f"Unknown report type: {report_type}")
+
+        print(f"TABLE: {table_name} COLUMNS: {columns}")
+
         query = f"""
-        SELECT report_date_as_yyyy_mm_dd, 
-               noncomm_net_positions,
-               comm_net_positions
+        SELECT {columns}
         FROM {table_name}
         WHERE report_date_as_yyyy_mm_dd BETWEEN ? AND ?
         """
         params = (f'{year}-01-01', f'{year}-12-31')
         df = NetPositionsDataFetcher.fetch_data(query, params)
+
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
             df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
-            df['noncomm_net_positions'] = pd.to_numeric(df['noncomm_net_positions'], errors='coerce')
-            df['comm_net_positions'] = pd.to_numeric(df['comm_net_positions'], errors='coerce')
+
+            # Convert the relevant columns to numeric, based on report type
+            for col in numeric_columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
             df.sort_values(by='Day_of_Year', inplace=True)
         return df
+
 
 class PositionsChangeNetDataFetcher(BaseDataFetcher):
     """
