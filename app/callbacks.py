@@ -121,6 +121,7 @@ def register_callbacks(app):
          Input('oi-percentages-disaggregated-combined-checklist', 'value'),
          Input('positions-change-disaggregated-combined-checklist', 'value'),
          Input('net-positions-disaggregated-combined-checklist', 'value'),
+         Input('net-positions-change-disaggregated-combined-checklist', 'value'),
          ],
 
         prevent_initial_call=True
@@ -162,6 +163,8 @@ def register_callbacks(app):
             active_subplots.append(('Positions Change', '_cot_disaggregated_combined', 'disaggregated'))
         if 'Net Positions' in values[15]:
             active_subplots.append(('Net Positions', '_cot_disaggregated_combined', 'disaggregated'))
+        if 'Net Positions Change' in values[16]:
+            active_subplots.append(('Net Positions Change', '_cot_disaggregated_combined', 'disaggregated'))
         return active_subplots
 
     @app.callback(
@@ -323,18 +326,34 @@ def register_callbacks(app):
 
             elif subplot == 'Net Positions Change':
                 df = PositionsChangeNetDataFetcher.fetch_positions_change_net_data(stored_market, current_year,
-                                                                                   table_suffix)
+                                                                                   table_suffix, report_type)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
-                    add_trace(fig, df['Day_of_Year'],
-                              df['pct_change_noncomm_net_positions'],
-                              f'% Change Net Positions Non-Commercials ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['net_positions_change_long'])
-                    add_trace(fig, df['Day_of_Year'],
-                              df['pct_change_comm_net_positions'],
-                              f'% Change Net Positions Commercials ({table_suffix})', row=row_index, col=1,
-                              line_color=COLORS['net_positions_change_short'])
-                    update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
+
+                    if report_type == 'legacy':
+                        add_trace(fig, df['Day_of_Year'],
+                                  df['pct_change_noncomm_net_positions'],
+                                  f'% Change Net Positions Non-Commercials ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['net_positions_change_long'])
+                        add_trace(fig, df['Day_of_Year'],
+                                  df['pct_change_comm_net_positions'],
+                                  f'% Change Net Positions Commercials ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['net_positions_change_short'])
+                        update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
+                    elif report_type == 'disaggregated':
+                        add_trace(fig, df['Day_of_Year'],
+                                  df['pct_change_m_money_net_positions'],
+                                  f'% Change Net Positions Non-Commercials ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['net_positions_change_long'])
+                        add_trace(fig, df['Day_of_Year'],
+                                  df['pct_change_prod_merc_net_positions'],
+                                  f'% Change Net Positions Commercials ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['net_positions_change_short'])
+                        add_trace(fig, df['Day_of_Year'],
+                                  df['pct_change_swap_net_positions'],
+                                  f'% Change Net Positions Commercials ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['net_positions_change_short'])
+                        update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
 
             elif subplot == '26W Index':
                 df = Index26WDataFetcher.fetch_26w_index_data(stored_market, current_year, table_suffix)
