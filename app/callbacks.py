@@ -122,6 +122,7 @@ def register_callbacks(app):
          Input('positions-change-disaggregated-combined-checklist', 'value'),
          Input('net-positions-disaggregated-combined-checklist', 'value'),
          Input('net-positions-change-disaggregated-combined-checklist', 'value'),
+         Input('26w-index-disaggregated-combined-checklist', 'value'),
          ],
 
         prevent_initial_call=True
@@ -165,6 +166,8 @@ def register_callbacks(app):
             active_subplots.append(('Net Positions', '_cot_disaggregated_combined', 'disaggregated'))
         if 'Net Positions Change' in values[16]:
             active_subplots.append(('Net Positions Change', '_cot_disaggregated_combined', 'disaggregated'))
+        if '26W Index' in values[17]:
+            active_subplots.append(('26W Index', '_cot_disaggregated_combined', 'disaggregated'))
         return active_subplots
 
     @app.callback(
@@ -356,15 +359,29 @@ def register_callbacks(app):
                         update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
 
             elif subplot == '26W Index':
-                df = Index26WDataFetcher.fetch_26w_index_data(stored_market, current_year, table_suffix)
+                df = Index26WDataFetcher.fetch_26w_index_data(stored_market, current_year, table_suffix, report_type)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
-                    add_trace(fig, df['Day_of_Year'], df['noncomm_26w_index'],
-                              f'Non-Commercials 26W Index ({table_suffix})', row=row_index, col=1, line_color=COLORS['index_26w_noncomm'])
-                    add_trace(fig, df['Day_of_Year'], df['comm_26w_index'],
-                              f'Commercials 26W Index ({table_suffix})', row=row_index, col=1, line_color=COLORS['index_26w_comm'])
-                    add_shape(fig, df['Day_of_Year'].min(), df['Day_of_Year'].max(), 50, 50, row=row_index, col=1)
-                    update_yaxis(fig, row=row_index, col=1, title='26-Week Index')
+
+                    if report_type == 'legacy':
+                        add_trace(fig, df['Day_of_Year'], df['noncomm_26w_index'],
+                                  f'Non-Commercials 26W Index ({table_suffix})', row=row_index, col=1, line_color=COLORS['index_26w_noncomm'])
+                        add_trace(fig, df['Day_of_Year'], df['comm_26w_index'],
+                                  f'Commercials 26W Index ({table_suffix})', row=row_index, col=1, line_color=COLORS['index_26w_comm'])
+                        add_shape(fig, df['Day_of_Year'].min(), df['Day_of_Year'].max(), 50, 50, row=row_index, col=1)
+                        update_yaxis(fig, row=row_index, col=1, title='26-Week Index')
+                    elif report_type == 'disaggregated':
+                        add_trace(fig, df['Day_of_Year'], df['m_money_26w_index'],
+                                  f'Non-Commercials 26W Index ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['index_26w_noncomm'])
+                        add_trace(fig, df['Day_of_Year'], df['prod_merc_26w_index'],
+                                  f'Commercials 26W Index ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['index_26w_comm'])
+                        add_trace(fig, df['Day_of_Year'], df['swap_26w_index'],
+                                  f'Commercials 26W Index ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['index_26w_comm'])
+                        add_shape(fig, df['Day_of_Year'].min(), df['Day_of_Year'].max(), 50, 50, row=row_index, col=1)
+                        update_yaxis(fig, row=row_index, col=1, title='26-Week Index')
 
             row_index += 1
 

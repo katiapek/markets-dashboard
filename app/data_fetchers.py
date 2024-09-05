@@ -376,7 +376,7 @@ class PositionsChangeNetDataFetcher(BaseDataFetcher):
         else:
             raise ValueError(f"Unknown report type: {report_type}")
 
-        print(f"TABLE: {table_name} COLUMNS: {columns}")
+
         query = f"""
         SELECT {columns}
         FROM {table_name}
@@ -402,7 +402,7 @@ class Index26WDataFetcher(BaseDataFetcher):
     """
 
     @staticmethod
-    def fetch_26w_index_data(market, year, table_suffix):
+    def fetch_26w_index_data(market, year, table_suffix, report_type):
         """
         Fetch 26-Week Index data for a given market and year.
 
@@ -410,26 +410,49 @@ class Index26WDataFetcher(BaseDataFetcher):
             market (str): The market name.
             year (int): The year for which to fetch the 26-Week Index data.
             table_suffix (str): The table suffix indicating combined or futures-only.
+            report_type (str): The report type, e.g., 'legacy' or 'disaggregated'.
 
 
         Returns:
             pd.DataFrame: DataFrame containing the 26-Week Index data with additional 'Day_of_Year' column.
         """
         table_name = f"{market.lower().replace(' ', '_')}{table_suffix}_calc"
+
+        # Select columns based on the report type
+        if report_type == 'legacy':
+            columns = 'report_date_as_yyyy_mm_dd, noncomm_26w_index, comm_26w_index'
+
+            numeric_columns = ['report_date_as_yyyy_mm_dd', 'noncomm_26w_index', 'comm_26w_index']
+
+        elif report_type == 'disaggregated':
+            columns = ('report_date_as_yyyy_mm_dd, '
+                       'm_money_26w_index,'
+                       'prod_merc_26w_index,'
+                       'swap_26w_index')
+            numeric_columns = [
+                'report_date_as_yyyy_mm_dd',
+                'm_money_26w_index',
+                'prod_merc_26w_index',
+                'swap_26w_index']
+        else:
+            raise ValueError(f"Unknown report type: {report_type}")
+        print(f"TABLE: {table_name} COLUMNS: {columns}")
         query = f"""
-        SELECT report_date_as_yyyy_mm_dd, 
-               noncomm_26w_index,
-               comm_26w_index
+        SELECT {columns}
         FROM {table_name}
         WHERE report_date_as_yyyy_mm_dd BETWEEN ? AND ?
         """
         params = (f'{year}-01-01', f'{year}-12-31')
         df = Index26WDataFetcher.fetch_data(query, params)
+
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
             df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
-            df['noncomm_26w_index'] = pd.to_numeric(df['noncomm_26w_index'], errors='coerce')
-            df['comm_26w_index'] = pd.to_numeric(df['comm_26w_index'], errors='coerce')
+
+            # Convert the relevant columns to numeric, based on report type
+            for col in numeric_columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
             df.sort_values(by='Day_of_Year', inplace=True)
         return df
 
