@@ -67,7 +67,7 @@ def create_layout(app):
     app.layout = html.Div(style=LAYOUT_STYLES, children=[
         html.Div(
             children=[
-                dcc.Graph(id='combined-chart'),
+                dcc.Graph(id='combined-chart', config={'scrollZoom': True, 'doubleClick': 'autosize', 'displayModeBar': False}),
             ],
             style=GRAPH_STYLES
         ),
