@@ -130,6 +130,26 @@ def register_callbacks(app):
         return is_open
 
     @app.callback(
+        Output('tff-combined-collapse', 'is_open'),
+        [Input('tff-combined-toggle', 'n_clicks')],
+        [State('tff-combined-collapse', 'is_open')]
+    )
+    def toggle_disaggregated_combined(n_clicks, is_open):
+        if n_clicks:
+            return not is_open
+        return is_open
+
+    @app.callback(
+        Output('tff-futures-only-collapse', 'is_open'),
+        [Input('tff-futures-only-toggle', 'n_clicks')],
+        [State('tff-futures-only-collapse', 'is_open')]
+    )
+    def toggle_disaggregated_futures_only(n_clicks, is_open):
+        if n_clicks:
+            return not is_open
+        return is_open
+
+    @app.callback(
         Output('active-subplots', 'data'),
         [Input('open-interest-legacy-combined-checklist', 'value'),
          Input('oi-percentages-legacy-combined-checklist', 'value'),
@@ -155,6 +175,18 @@ def register_callbacks(app):
          Input('net-positions-disaggregated-futures-only-checklist', 'value'),
          Input('net-positions-change-disaggregated-futures-only-checklist', 'value'),
          Input('26w-index-disaggregated-futures-only-checklist', 'value'),
+         Input('open-interest-tff-combined-checklist', 'value'),
+         Input('oi-percentages-tff-combined-checklist', 'value'),
+         Input('positions-change-tff-combined-checklist', 'value'),
+         Input('net-positions-tff-combined-checklist', 'value'),
+         Input('net-positions-change-tff-combined-checklist', 'value'),
+         Input('26w-index-tff-combined-checklist', 'value'),
+         Input('open-interest-tff-futures-only-checklist', 'value'),
+         Input('oi-percentages-tff-futures-only-checklist', 'value'),
+         Input('positions-change-tff-futures-only-checklist', 'value'),
+         Input('net-positions-tff-futures-only-checklist', 'value'),
+         Input('net-positions-change-tff-futures-only-checklist', 'value'),
+         Input('26w-index-tff-futures-only-checklist', 'value'),
          ],
 
         prevent_initial_call=True
@@ -213,6 +245,33 @@ def register_callbacks(app):
             active_subplots.append(('Net Positions Change', '_cot_disaggregated_futures_only', 'disaggregated'))
         if '26W Index' in values[23]:
             active_subplots.append(('26W Index', '_cot_disaggregated_futures_only', 'disaggregated'))
+
+        # For COT TFF Combined
+        if 'Open Interest' in values[24]:
+            active_subplots.append(('Open Interest', '_cot_tff_combined', 'tff'))
+        if 'OI Percentages' in values[25]:
+            active_subplots.append(('OI Percentages', '_cot_tff_combined', 'tff'))
+        if 'Positions Change' in values[26]:
+            active_subplots.append(('Positions Change', '_cot_tff_combined', 'tff'))
+        if 'Net Positions' in values[27]:
+            active_subplots.append(('Net Positions', '_cot_tff_combined', 'tff'))
+        if 'Net Positions Change' in values[28]:
+            active_subplots.append(('Net Positions Change', '_cot_tff_combined', 'tff'))
+        if '26W Index' in values[29]:
+            active_subplots.append(('26W Index', '_cot_tff_combined', 'tff'))
+        # For COT TFF Futures Only
+        if 'Open Interest' in values[30]:
+            active_subplots.append(('Open Interest', '_cot_tff_futures_only', 'tff'))
+        if 'OI Percentages' in values[31]:
+            active_subplots.append(('OI Percentages', '_cot_tff_futures_only', 'tff'))
+        if 'Positions Change' in values[32]:
+            active_subplots.append(('Positions Change', '_cot_tff_futures_only', 'tff'))
+        if 'Net Positions' in values[33]:
+            active_subplots.append(('Net Positions', '_cot_tff_futures_only', 'tff'))
+        if 'Net Positions Change' in values[34]:
+            active_subplots.append(('Net Positions Change', '_cot_tff_futures_only', 'tff'))
+        if '26W Index' in values[35]:
+            active_subplots.append(('26W Index', '_cot_tff_futures_only', 'tff'))
         return active_subplots
 
     @app.callback(
@@ -317,6 +376,28 @@ def register_callbacks(app):
                                   line_color=COLORS['other_short'])
                         update_yaxis(fig, row=row_index, col=1, title='% of Open Interest')
 
+                    elif report_type == 'tff':
+                        # Add traces for TFF report
+                        add_trace(fig, df['Date'], df['pct_of_oi_lev_money_long'],
+                                  f'% of OI Managed Money Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['noncomm_long'])
+                        add_trace(fig, df['Date'], df['pct_of_oi_lev_money_short'],
+                                  f'% of OI Managed Money Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['noncomm_short'])
+                        add_trace(fig, df['Date'], df['pct_of_oi_asset_mgr_long'],
+                                  f'% of OI Producers/Merchants Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['comm_long'])
+                        add_trace(fig, df['Date'], df['pct_of_oi_asset_mgr_short'],
+                                  f'% of OI Producers/Merchants Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['comm_short'])
+                        add_trace(fig, df['Date'], df['pct_of_oi_dealer_long_all'],
+                                  f'% of OI Swap Dealers Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['other_long'])
+                        add_trace(fig, df['Date'], df['pct_of_oi_dealer_short_all'],
+                                  f'% of OI Swap Dealers Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['other_short'])
+                        update_yaxis(fig, row=row_index, col=1, title='% of Open Interest')
+
             elif subplot == 'Positions Change':
                 df = PositionsChangeDataFetcher.fetch_positions_change_data(stored_market, current_year, table_suffix,
                                                                             report_type)
@@ -361,6 +442,27 @@ def register_callbacks(app):
                                   line_color=COLORS['other_short'], chart_type='bar')
                         update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
 
+                    elif report_type == 'tff':
+                        add_trace(fig, df['Date'], df['pct_change_lev_money_long'],
+                                  f'% Change Managed Money Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['noncomm_long'], chart_type='bar')
+                        add_trace(fig, df['Date'], df['pct_change_lev_money_short'],
+                                  f'% Change Managed Money Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['noncomm_short'], chart_type='bar')
+                        add_trace(fig, df['Date'], df['pct_change_asset_mgr_long'],
+                                  f'% Change Producers / Merchants Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['comm_long'], chart_type='bar')
+                        add_trace(fig, df['Date'], df['pct_change_asset_mgr_short'],
+                                  f'% Change Producers / Merchants Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['comm_short'], chart_type='bar')
+                        add_trace(fig, df['Date'], df['pct_change_dealer_long'],
+                                  f'% Change Swap Dealers Long ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['other_long'], chart_type='bar')
+                        add_trace(fig, df['Date'], df['pct_change_dealer_short'],
+                                  f'% Change Swap Dealers Short ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['other_short'], chart_type='bar')
+                        update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
+
             elif subplot == 'Net Positions':
                 df = NetPositionsDataFetcher.fetch_net_positions_data(stored_market, current_year, table_suffix,
                                                                       report_type)
@@ -376,6 +478,7 @@ def register_callbacks(app):
                                   f'Net Positions Commercials ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'])
                         update_yaxis(fig, row=row_index, col=1, title='Net Positions')
+
                     elif report_type == 'disaggregated':
                         add_trace(fig, df['Date'], df['m_money_net_positions'],
                                   f'Net Positions Managed Money ({table_suffix})', row=row_index, col=1,
@@ -384,6 +487,18 @@ def register_callbacks(app):
                                   f'Net Positions Producers / Merchants ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'])
                         add_trace(fig, df['Date'], df['swap_net_positions'],
+                                  f'Net Positions Swap Dealers ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['other_long'])
+                        update_yaxis(fig, row=row_index, col=1, title='Net Positions')
+
+                    elif report_type == 'tff':
+                        add_trace(fig, df['Date'], df['lev_money_net_positions'],
+                                  f'Net Positions Managed Money ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['noncomm_long'])
+                        add_trace(fig, df['Date'], df['asset_mgr_net_positions'],
+                                  f'Net Positions Producers / Merchants ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['comm_long'])
+                        add_trace(fig, df['Date'], df['dealer_net_positions'],
                                   f'Net Positions Swap Dealers ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['other_long'])
                         update_yaxis(fig, row=row_index, col=1, title='Net Positions')
@@ -405,6 +520,7 @@ def register_callbacks(app):
                                   f'% Change Net Positions Commercials ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'], chart_type='bar')
                         update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
+
                     elif report_type == 'disaggregated':
                         add_trace(fig, df['Date'],
                                   df['pct_change_m_money_net_positions'],
@@ -416,6 +532,21 @@ def register_callbacks(app):
                                   line_color=COLORS['comm_long'], chart_type='bar')
                         add_trace(fig, df['Date'],
                                   df['pct_change_swap_net_positions'],
+                                  f'% Change Net Positions Swap Dealers ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['other_long'], chart_type='bar')
+                        update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
+
+                    elif report_type == 'tff':
+                        add_trace(fig, df['Date'],
+                                  df['pct_change_lev_money_net_positions'],
+                                  f'% Change Net Positions Managed Money ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['noncomm_long'], chart_type='bar')
+                        add_trace(fig, df['Date'],
+                                  df['pct_change_asset_mgr_net_positions'],
+                                  f'% Change Net Positions Producers / Merchants ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['comm_long'], chart_type='bar')
+                        add_trace(fig, df['Date'],
+                                  df['pct_change_dealer_net_positions'],
                                   f'% Change Net Positions Swap Dealers ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['other_long'], chart_type='bar')
                         update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
@@ -433,6 +564,7 @@ def register_callbacks(app):
                                   f'Commercials 26W Index ({table_suffix})', row=row_index, col=1, line_color=COLORS['comm_long'])
                         add_shape(fig, df['Date'].min(), df['Date'].max(), 50, 50, row=row_index, col=1)
                         update_yaxis(fig, row=row_index, col=1, title='26-Week Index')
+
                     elif report_type == 'disaggregated':
                         add_trace(fig, df['Date'], df['m_money_26w_index'],
                                   f'Managed Money 26W Index ({table_suffix})', row=row_index, col=1,
@@ -441,6 +573,19 @@ def register_callbacks(app):
                                   f'Producers / Merchants 26W Index ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'])
                         add_trace(fig, df['Date'], df['swap_26w_index'],
+                                  f'Swap Dealers 26W Index ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['other_long'])
+                        add_shape(fig, df['Date'].min(), df['Date'].max(), 50, 50, row=row_index, col=1)
+                        update_yaxis(fig, row=row_index, col=1, title='26-Week Index')
+
+                    elif report_type == 'tff':
+                        add_trace(fig, df['Date'], df['lev_money_26w_index'],
+                                  f'Managed Money 26W Index ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['noncomm_long'])
+                        add_trace(fig, df['Date'], df['asset_mgr_26w_index'],
+                                  f'Producers / Merchants 26W Index ({table_suffix})', row=row_index, col=1,
+                                  line_color=COLORS['comm_long'])
+                        add_trace(fig, df['Date'], df['dealer_26w_index'],
                                   f'Swap Dealers 26W Index ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['other_long'])
                         add_shape(fig, df['Date'].min(), df['Date'].max(), 50, 50, row=row_index, col=1)

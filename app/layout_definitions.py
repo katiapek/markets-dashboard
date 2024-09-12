@@ -259,6 +259,92 @@ def create_layout(app):
                                 is_open=False
                             )
                         ]),
+                        # Foldable COT TFF Combined
+                        html.Div([
+                            html.Button('TFF - Combined', id='tff-combined-toggle', n_clicks=0,
+                                        style={'width': '100%', 'textAlign': 'left'}),
+                            dbc.Collapse(
+                                children=[
+                                    dcc.Checklist(
+                                        id='open-interest-tff-combined-checklist',
+                                        options=CHECKLIST_OPTIONS['open_interest'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='oi-percentages-tff-combined-checklist',
+                                        options=CHECKLIST_OPTIONS['oi_percentages'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='positions-change-tff-combined-checklist',
+                                        options=CHECKLIST_OPTIONS['positions_change'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='net-positions-tff-combined-checklist',
+                                        options=CHECKLIST_OPTIONS['net_positions'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='net-positions-change-tff-combined-checklist',
+                                        options=CHECKLIST_OPTIONS['net_positions_change'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='26w-index-tff-combined-checklist',
+                                        options=CHECKLIST_OPTIONS['index_26w'],
+                                        value=[]
+                                    ),
+
+                                ],
+                                id='tff-combined-collapse',
+                                is_open=False
+                            )
+                        ]),
+                        # Foldable COT TFF Futures Only
+                        html.Div([
+                            html.Button('TFF - Futures Only', id='tff-futures-only-toggle',
+                                        n_clicks=0,
+                                        style={'width': '100%', 'textAlign': 'left'}),
+                            dbc.Collapse(
+                                children=[
+                                    dcc.Checklist(
+                                        id='open-interest-tff-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['open_interest'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='oi-percentages-tff-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['oi_percentages'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='positions-change-tff-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['positions_change'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='net-positions-tff-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['net_positions'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='net-positions-change-tff-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['net_positions_change'],
+                                        value=[]
+                                    ),
+                                    dcc.Checklist(
+                                        id='26w-index-tff-futures-only-checklist',
+                                        options=CHECKLIST_OPTIONS['index_26w'],
+                                        value=[]
+                                    ),
+
+                                ],
+                                id='tff-futures-only-collapse',
+                                is_open=False
+                            )
+                        ]),
+
 
                         html.Div([
                             html.Button('Previous Year', id='prev-year-button', n_clicks=0),

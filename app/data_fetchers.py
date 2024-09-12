@@ -142,6 +142,8 @@ class OpenInterestDataFetcher(BaseDataFetcher):
             # m_money_positions_long_all, m_money_positions_short_all,
             # prod_merc_positions_long, prod_merc_positions_short, swap_positions_long_all,
             # swap_positions_short_all
+        elif report_type == 'tff':
+            columns = 'report_date_as_yyyy_mm_dd, open_interest_all'
         else:
             raise ValueError(f"Unknown report type: {report_type}")
 
@@ -209,6 +211,21 @@ class OpenInterestPercentagesFetcher(BaseDataFetcher):
                 'pct_of_oi_prod_merc_short',
                 'pct_of_oi_swap_long_all',
                 'pct_of_oi_swap_short_all'
+            ]
+
+        elif report_type == 'tff':
+            columns = ('report_date_as_yyyy_mm_dd, '
+                       'pct_of_oi_lev_money_long, pct_of_oi_lev_money_short,'
+                       'pct_of_oi_asset_mgr_long, pct_of_oi_asset_mgr_short,'
+                       'pct_of_oi_dealer_long_all, pct_of_oi_dealer_short_all')
+
+            numeric_columns = [
+                'pct_of_oi_lev_money_long',
+                'pct_of_oi_lev_money_short',
+                'pct_of_oi_asset_mgr_long',
+                'pct_of_oi_asset_mgr_short',
+                'pct_of_oi_dealer_long_all',
+                'pct_of_oi_dealer_short_all'
             ]
 
         else:
@@ -283,6 +300,19 @@ class PositionsChangeDataFetcher(BaseDataFetcher):
                 'pct_change_prod_merc_long', 'pct_change_prod_merc_short',
                 'pct_change_swap_long', 'pct_change_swap_short']
 
+        elif report_type == 'tff':
+
+            columns = ('report_date_as_yyyy_mm_dd, '
+                       'pct_change_lev_money_long, pct_change_lev_money_short,'
+                       'pct_change_asset_mgr_long, pct_change_asset_mgr_short,'
+                       'pct_change_dealer_long, pct_change_dealer_short')
+
+            numeric_columns = [
+                'report_date_as_yyyy_mm_dd',
+                'pct_change_lev_money_long', 'pct_change_lev_money_short',
+                'pct_change_asset_mgr_long', 'pct_change_asset_mgr_short',
+                'pct_change_dealer_long', 'pct_change_dealer_short']
+
         else:
             raise ValueError(f"Unknown report type: {report_type}")
 
@@ -346,6 +376,19 @@ class NetPositionsDataFetcher(BaseDataFetcher):
                 'prod_merc_net_positions',
                 'swap_net_positions']
 
+        elif report_type == 'tff':
+
+            columns = ('report_date_as_yyyy_mm_dd, '
+                       'lev_money_net_positions,'
+                       'asset_mgr_net_positions,'
+                       'dealer_net_positions')
+
+            numeric_columns = [
+                'report_date_as_yyyy_mm_dd',
+                'lev_money_net_positions',
+                'asset_mgr_net_positions',
+                'dealer_net_positions']
+
         else:
             raise ValueError(f"Unknown report type: {report_type}")
 
@@ -408,6 +451,18 @@ class PositionsChangeNetDataFetcher(BaseDataFetcher):
                 'pct_change_m_money_net_positions',
                 'pct_change_prod_merc_net_positions',
                 'pct_change_swap_net_positions']
+
+        elif report_type == 'tff':
+            columns = ('report_date_as_yyyy_mm_dd, '
+                       'pct_change_lev_money_net_positions,'
+                       'pct_change_asset_mgr_net_positions,'
+                       'pct_change_dealer_net_positions')
+            numeric_columns = [
+                'report_date_as_yyyy_mm_dd',
+                'pct_change_lev_money_net_positions',
+                'pct_change_asset_mgr_net_positions',
+                'pct_change_dealer_net_positions']
+
         else:
             raise ValueError(f"Unknown report type: {report_type}")
 
@@ -470,6 +525,18 @@ class Index26WDataFetcher(BaseDataFetcher):
                 'm_money_26w_index',
                 'prod_merc_26w_index',
                 'swap_26w_index']
+
+        elif report_type == 'tff':
+            columns = ('report_date_as_yyyy_mm_dd, '
+                       'lev_money_26w_index,'
+                       'asset_mgr_26w_index,'
+                       'dealer_26w_index')
+            numeric_columns = [
+                'report_date_as_yyyy_mm_dd',
+                'lev_money_26w_index',
+                'asset_mgr_26w_index',
+                'dealer_26w_index']
+
         else:
             raise ValueError(f"Unknown report type: {report_type}")
         print(f"TABLE: {table_name} COLUMNS: {columns}")
