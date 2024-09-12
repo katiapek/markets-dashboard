@@ -238,22 +238,25 @@ def register_callbacks(app):
 
         fig = sp.make_subplots(rows=num_rows, cols=1, shared_xaxes=True, vertical_spacing=0.0, specs=specs, row_heights=row_heights)
 
-        # Add Seasonality chart
-        for years in selected_years:
-            df = SeasonalDataFetcher.fetch_seasonal_data(format_market_name(stored_market), years)
-            if not df.empty:
-                df = df.apply(pd.to_numeric, errors='coerce')
-                add_trace(fig, df['Day_of_Year'], df['Indexed_Cumulative_Percent_Change'], f'{years} Years', row=1,
-                          col=1, opacity=0.6)
-
         # Add OHLC chart
         if 'OHLC' in ohlc_visibility:
             ohlc_df = OHLCDataFetcher.fetch_ohlc_data(stored_market, current_year)
             if not ohlc_df.empty:
-                ohlc_df = ohlc_df.apply(pd.to_numeric, errors='coerce')
-                add_candlestick_trace(fig, ohlc_df['Day_of_Year'], ohlc_df['Open'], ohlc_df['High'], ohlc_df['Low'],
-                                      ohlc_df['Close'], f'OHLC {current_year}', row=1, col=1, secondary_y=True)
-                # update_yaxis(fig, row=1, col=1, title='OHLC Prices', )
+                # Use the correctly formatted 'Date' column for the x-axis
+                add_candlestick_trace(fig, ohlc_df['Date'], ohlc_df['Open'], ohlc_df['High'], ohlc_df['Low'],
+                                      ohlc_df['Close'], f'OHLC {current_year}', row=1, col=1, secondary_y=False)
+
+
+        # Add Seasonality chart
+        for years in selected_years:
+            df = SeasonalDataFetcher.fetch_seasonal_data(format_market_name(stored_market), years, current_year)
+            if not df.empty:
+                # Convert Day_of_Year to a Date
+                # df['Date'] = pd.to_datetime(df['Day_of_Year'], format='%j', errors='coerce').dt.strftime(
+                #    f'{current_year}-%j')
+                # df['Date'] = pd.to_datetime(df['Date'])  # Ensure 'Date' is in datetime format
+                add_trace(fig, df['Date'], df['Indexed_Cumulative_Percent_Change'], f'{years} Years', row=1,
+                          col=1, opacity=0.6, secondary_y=True)
 
         row_index = 2
         for subplot, table_suffix, report_type in active_subplots:
@@ -262,12 +265,13 @@ def register_callbacks(app):
                                                                       report_type)
 
                 if not df.empty:
-                    # print(f"Drawing from {table_suffix} table and {report_type} report")
-                    df = df.apply(pd.to_numeric, errors='coerce')
-                    add_trace(fig, df['Day_of_Year'], df['open_interest_all'], f'Open Interest ({table_suffix})',
-                              row=row_index, col=1,
-                              line_color=COLORS['open_interest'])
-                    update_yaxis(fig, row=row_index, col=1, title='Open Interest')
+                    if not df.empty:
+
+                        df = df.apply(pd.to_numeric, errors='coerce')
+                        df['Date'] = pd.to_datetime(df['Date'])  # Convert to datetime format if needed
+                        add_trace(fig, df['Date'], df['open_interest_all'], f'Open Interest ({table_suffix})',
+                                  row=row_index, col=1, line_color=COLORS['open_interest'])
+                        update_yaxis(fig, row=row_index, col=1, title='Open Interest')
 
             elif subplot == 'OI Percentages':
                 df = OpenInterestPercentagesFetcher.fetch_open_interest_percentages(
@@ -277,38 +281,38 @@ def register_callbacks(app):
                 if not df.empty:
                     if report_type == 'legacy':
                         # Add traces for Legacy report
-                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_noncomm_long_all'],
+                        add_trace(fig, df['Date'], df['pct_of_oi_noncomm_long_all'],
                                   f'% of OI Non-Commercials Long ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_long'])
-                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_noncomm_short_all'],
+                        add_trace(fig, df['Date'], df['pct_of_oi_noncomm_short_all'],
                                   f'% of OI Non-Commercials Short ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_short'])
-                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_comm_long_all'],
+                        add_trace(fig, df['Date'], df['pct_of_oi_comm_long_all'],
                                   f'% of OI Commercials Long ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'])
-                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_comm_short_all'],
+                        add_trace(fig, df['Date'], df['pct_of_oi_comm_short_all'],
                                   f'% of OI Commercials Short ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_short'])
                         update_yaxis(fig, row=row_index, col=1, title='% of Open Interest')
 
                     elif report_type == 'disaggregated':
                         # Add traces for Disaggregated report
-                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_m_money_long_all'],
+                        add_trace(fig, df['Date'], df['pct_of_oi_m_money_long_all'],
                                   f'% of OI Managed Money Long ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_long'])
-                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_m_money_short_all'],
+                        add_trace(fig, df['Date'], df['pct_of_oi_m_money_short_all'],
                                   f'% of OI Managed Money Short ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_short'])
-                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_prod_merc_long'],
+                        add_trace(fig, df['Date'], df['pct_of_oi_prod_merc_long'],
                                   f'% of OI Producers/Merchants Long ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'])
-                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_prod_merc_short'],
+                        add_trace(fig, df['Date'], df['pct_of_oi_prod_merc_short'],
                                   f'% of OI Producers/Merchants Short ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_short'])
-                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_swap_long_all'],
+                        add_trace(fig, df['Date'], df['pct_of_oi_swap_long_all'],
                                   f'% of OI Swap Dealers Long ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['other_long'])
-                        add_trace(fig, df['Day_of_Year'], df['pct_of_oi_swap_short_all'],
+                        add_trace(fig, df['Date'], df['pct_of_oi_swap_short_all'],
                                   f'% of OI Swap Dealers Short ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['other_short'])
                         update_yaxis(fig, row=row_index, col=1, title='% of Open Interest')
@@ -318,40 +322,41 @@ def register_callbacks(app):
                                                                             report_type)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
+                    df['Date'] = pd.to_datetime(df['Date'])
 
                     if report_type == 'legacy':
 
-                        add_trace(fig, df['Day_of_Year'], df['pct_change_noncomm_long'],
+                        add_trace(fig, df['Date'], df['pct_change_noncomm_long'],
                                   f'% Change Non-Commercials Long ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_long'], chart_type='bar')
-                        add_trace(fig, df['Day_of_Year'], df['pct_change_noncomm_short'],
+                        add_trace(fig, df['Date'], df['pct_change_noncomm_short'],
                                   f'% Change Non-Commercials Short ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_short'], chart_type='bar')
-                        add_trace(fig, df['Day_of_Year'], df['pct_change_comm_long'],
+                        add_trace(fig, df['Date'], df['pct_change_comm_long'],
                                   f'% Change Commercials Long ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'], chart_type='bar')
-                        add_trace(fig, df['Day_of_Year'], df['pct_change_comm_short'],
+                        add_trace(fig, df['Date'], df['pct_change_comm_short'],
                                   f'% Change Commercials Short ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_short'], chart_type='bar')
                         update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
 
                     elif report_type == 'disaggregated':
-                        add_trace(fig, df['Day_of_Year'], df['pct_change_m_money_long'],
+                        add_trace(fig, df['Date'], df['pct_change_m_money_long'],
                                   f'% Change Managed Money Long ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_long'], chart_type='bar')
-                        add_trace(fig, df['Day_of_Year'], df['pct_change_m_money_short'],
+                        add_trace(fig, df['Date'], df['pct_change_m_money_short'],
                                   f'% Change Managed Money Short ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_short'], chart_type='bar')
-                        add_trace(fig, df['Day_of_Year'], df['pct_change_prod_merc_long'],
+                        add_trace(fig, df['Date'], df['pct_change_prod_merc_long'],
                                   f'% Change Producers / Merchants Long ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'], chart_type='bar')
-                        add_trace(fig, df['Day_of_Year'], df['pct_change_prod_merc_short'],
+                        add_trace(fig, df['Date'], df['pct_change_prod_merc_short'],
                                   f'% Change Producers / Merchants Short ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_short'], chart_type='bar')
-                        add_trace(fig, df['Day_of_Year'], df['pct_change_swap_long'],
+                        add_trace(fig, df['Date'], df['pct_change_swap_long'],
                                   f'% Change Swap Dealers Long ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['other_long'], chart_type='bar')
-                        add_trace(fig, df['Day_of_Year'], df['pct_change_swap_short'],
+                        add_trace(fig, df['Date'], df['pct_change_swap_short'],
                                   f'% Change Swap Dealers Short ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['other_short'], chart_type='bar')
                         update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
@@ -361,22 +366,24 @@ def register_callbacks(app):
                                                                       report_type)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
+                    df['Date'] = pd.to_datetime(df['Date'])
+
                     if report_type == 'legacy':
-                        add_trace(fig, df['Day_of_Year'], df['noncomm_net_positions'],
+                        add_trace(fig, df['Date'], df['noncomm_net_positions'],
                                   f'Net Positions Non-Commercials ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_long'])
-                        add_trace(fig, df['Day_of_Year'], df['comm_net_positions'],
+                        add_trace(fig, df['Date'], df['comm_net_positions'],
                                   f'Net Positions Commercials ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'])
                         update_yaxis(fig, row=row_index, col=1, title='Net Positions')
                     elif report_type == 'disaggregated':
-                        add_trace(fig, df['Day_of_Year'], df['m_money_net_positions'],
+                        add_trace(fig, df['Date'], df['m_money_net_positions'],
                                   f'Net Positions Managed Money ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_long'])
-                        add_trace(fig, df['Day_of_Year'], df['prod_merc_net_positions'],
+                        add_trace(fig, df['Date'], df['prod_merc_net_positions'],
                                   f'Net Positions Producers / Merchants ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'])
-                        add_trace(fig, df['Day_of_Year'], df['swap_net_positions'],
+                        add_trace(fig, df['Date'], df['swap_net_positions'],
                                   f'Net Positions Swap Dealers ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['other_long'])
                         update_yaxis(fig, row=row_index, col=1, title='Net Positions')
@@ -386,27 +393,28 @@ def register_callbacks(app):
                                                                                    table_suffix, report_type)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
+                    df['Date'] = pd.to_datetime(df['Date'])
 
                     if report_type == 'legacy':
-                        add_trace(fig, df['Day_of_Year'],
+                        add_trace(fig, df['Date'],
                                   df['pct_change_noncomm_net_positions'],
                                   f'% Change Net Positions Non-Commercials ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_long'], chart_type='bar')
-                        add_trace(fig, df['Day_of_Year'],
+                        add_trace(fig, df['Date'],
                                   df['pct_change_comm_net_positions'],
                                   f'% Change Net Positions Commercials ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'], chart_type='bar')
                         update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
                     elif report_type == 'disaggregated':
-                        add_trace(fig, df['Day_of_Year'],
+                        add_trace(fig, df['Date'],
                                   df['pct_change_m_money_net_positions'],
                                   f'% Change Net Positions Managed Money ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_long'], chart_type='bar')
-                        add_trace(fig, df['Day_of_Year'],
+                        add_trace(fig, df['Date'],
                                   df['pct_change_prod_merc_net_positions'],
                                   f'% Change Net Positions Producers / Merchants ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'], chart_type='bar')
-                        add_trace(fig, df['Day_of_Year'],
+                        add_trace(fig, df['Date'],
                                   df['pct_change_swap_net_positions'],
                                   f'% Change Net Positions Swap Dealers ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['other_long'], chart_type='bar')
@@ -416,31 +424,32 @@ def register_callbacks(app):
                 df = Index26WDataFetcher.fetch_26w_index_data(stored_market, current_year, table_suffix, report_type)
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
+                    df['Date'] = pd.to_datetime(df['Date'])
 
                     if report_type == 'legacy':
-                        add_trace(fig, df['Day_of_Year'], df['noncomm_26w_index'],
+                        add_trace(fig, df['Date'], df['noncomm_26w_index'],
                                   f'Non-Commercials 26W Index ({table_suffix})', row=row_index, col=1, line_color=COLORS['noncomm_long'])
-                        add_trace(fig, df['Day_of_Year'], df['comm_26w_index'],
+                        add_trace(fig, df['Date'], df['comm_26w_index'],
                                   f'Commercials 26W Index ({table_suffix})', row=row_index, col=1, line_color=COLORS['comm_long'])
-                        add_shape(fig, df['Day_of_Year'].min(), df['Day_of_Year'].max(), 50, 50, row=row_index, col=1)
+                        add_shape(fig, df['Date'].min(), df['Date'].max(), 50, 50, row=row_index, col=1)
                         update_yaxis(fig, row=row_index, col=1, title='26-Week Index')
                     elif report_type == 'disaggregated':
-                        add_trace(fig, df['Day_of_Year'], df['m_money_26w_index'],
+                        add_trace(fig, df['Date'], df['m_money_26w_index'],
                                   f'Managed Money 26W Index ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['noncomm_long'])
-                        add_trace(fig, df['Day_of_Year'], df['prod_merc_26w_index'],
+                        add_trace(fig, df['Date'], df['prod_merc_26w_index'],
                                   f'Producers / Merchants 26W Index ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['comm_long'])
-                        add_trace(fig, df['Day_of_Year'], df['swap_26w_index'],
+                        add_trace(fig, df['Date'], df['swap_26w_index'],
                                   f'Swap Dealers 26W Index ({table_suffix})', row=row_index, col=1,
                                   line_color=COLORS['other_long'])
-                        add_shape(fig, df['Day_of_Year'].min(), df['Day_of_Year'].max(), 50, 50, row=row_index, col=1)
+                        add_shape(fig, df['Date'].min(), df['Date'].max(), 50, 50, row=row_index, col=1)
                         update_yaxis(fig, row=row_index, col=1, title='26-Week Index')
 
             row_index += 1
 
         # Hide the range slider for x-axis
-        fig.update_xaxes(rangeslider=dict(visible=False), row=1, col=1)
+        fig.update_xaxes(rangeslider=dict(visible=False), type='date', row=1, col=1)
 
         fig.update_layout(
             height=total_height,
@@ -456,7 +465,7 @@ def register_callbacks(app):
             hoversubplots="axis",
             hovermode="x",
             dragmode="pan",
-            #xaxis=dict(),  # type="category"
+            # xaxis=dict(type="category"),
         )
         fig.update_traces(hoverinfo="x+y") # If added xaxis="x1" it gives nice vertical line accross all subplots but not working for Week 26 Index
 

@@ -2,6 +2,10 @@ import os
 import sqlite3
 import pandas as pd
 from scripts.market_mapping import market_name_map
+from datetime import timedelta
+from dateutil import parser
+
+
 
 # Set the database path
 db_path = os.getenv('DATABASE_PATH', '/Users/kamil/PycharmProjects/MarketsDashboard/app/data/markets_data.db')
@@ -33,26 +37,48 @@ class BaseDataFetcher:
             conn.close()
         return df
 
+
 class SeasonalDataFetcher(BaseDataFetcher):
     """
     Data fetcher for seasonal data.
     """
 
     @staticmethod
-    def fetch_seasonal_data(market, years):
+    def fetch_seasonal_data(market, years, current_year):
         """
         Fetch seasonal data for a given market and number of years.
 
         Args:
             market (str): The market name.
             years (int): Number of years for the seasonal data.
+            current_year (int): The year for which to align the Day_of_Year to Date.
 
         Returns:
-            pd.DataFrame: DataFrame containing the seasonal data.
+            pd.DataFrame: DataFrame containing the seasonal data with an additional 'Date' column.
         """
         table_name = f"{format_market_name(market)}_seasonality_{years}_years"
         query = f"SELECT * FROM {table_name} ORDER BY Day_of_Year ASC"
-        return SeasonalDataFetcher.fetch_data(query)
+        df = SeasonalDataFetcher.fetch_data(query)
+
+        if not df.empty:
+            # Ensure Day_of_Year is treated as an integer
+            df['Day_of_Year'] = df['Day_of_Year'].astype(int)
+
+            # Creating base date string for January 1st of the current year
+            base_date = parser.parse(f"{current_year}-01-01")
+
+            # Convert Day_of_Year to actual dates within the current year
+            df['Date'] = df['Day_of_Year'].apply(lambda x: (base_date + timedelta(days=x - 1)).strftime("%Y-%m-%d"))
+
+            # Convert 'Date' column to datetime format explicitly
+            df['Date'] = pd.to_datetime(df['Date'], format="%Y-%m-%d")
+            print(df[['Day_of_Year', 'Date']].head())
+
+            # Sort by the new Date column
+            df.sort_values(by='Date', inplace=True)
+
+        return df
+
 
 class OHLCDataFetcher(BaseDataFetcher):
     """
@@ -74,12 +100,16 @@ class OHLCDataFetcher(BaseDataFetcher):
         table_name = format_market_name(market)
         print(f"Fetching OHLC from {table_name}")
         query = f"SELECT * FROM {table_name} WHERE Date BETWEEN ? AND ?"
-        params = (f'{year}-01-01', f'{year}-12-31')
+        params = (f'{year}-01-01 00:00:00', f'{year}-12-31 23:59:59')
         df = OHLCDataFetcher.fetch_data(query, params)
+
         if not df.empty:
-            df['Date'] = pd.to_datetime(df['Date'])
+            # Parse the 'Date' column with the appropriate format
+            df['Date'] = pd.to_datetime(df['Date'], format="%Y-%m-%d %H:%M:%S")
             df['Day_of_Year'] = df['Date'].dt.dayofyear
+
         return df
+
 
 
 class OpenInterestDataFetcher(BaseDataFetcher):
@@ -123,9 +153,11 @@ class OpenInterestDataFetcher(BaseDataFetcher):
         params = (f'{year}-01-01', f'{year}-12-31')
         df = OpenInterestDataFetcher.fetch_data(query, params)
         if not df.empty:
-            df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
-            df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
-            df.sort_values(by='Day_of_Year', inplace=True)
+            df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'], format="%Y-%m-%d %H:%M:%S")
+            # df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
+            # df['Date'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'], format="%Y-%m-%d %H:%M:%S")
+            df['Date'] = df['report_date_as_yyyy_mm_dd']
+            df.sort_values(by='Date', inplace=True)
         return df
 
 class OpenInterestPercentagesFetcher(BaseDataFetcher):
@@ -192,13 +224,14 @@ class OpenInterestPercentagesFetcher(BaseDataFetcher):
 
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
-            df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
+            # df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
 
             # Convert the relevant columns to numeric, based on report type
             for col in numeric_columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
 
-            df.sort_values(by='Day_of_Year', inplace=True)
+            df['Date'] = df['report_date_as_yyyy_mm_dd']
+            df.sort_values(by='Date', inplace=True)
 
         return df
 
@@ -263,13 +296,14 @@ class PositionsChangeDataFetcher(BaseDataFetcher):
 
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
-            df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
+            # df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
 
             # Convert the relevant columns to numeric, based on report type
             for col in numeric_columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
 
-            df.sort_values(by='Day_of_Year', inplace=True)
+            df['Date'] = df['report_date_as_yyyy_mm_dd']
+            df.sort_values(by='Date', inplace=True)
         return df
 
 class NetPositionsDataFetcher(BaseDataFetcher):
@@ -325,13 +359,14 @@ class NetPositionsDataFetcher(BaseDataFetcher):
 
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
-            df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
+            # df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
 
             # Convert the relevant columns to numeric, based on report type
             for col in numeric_columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
 
-            df.sort_values(by='Day_of_Year', inplace=True)
+            df['Date'] = df['report_date_as_yyyy_mm_dd']
+            df.sort_values(by='Date', inplace=True)
         return df
 
 
@@ -387,13 +422,14 @@ class PositionsChangeNetDataFetcher(BaseDataFetcher):
 
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
-            df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
+            # df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
 
             # Convert the relevant columns to numeric, based on report type
             for col in numeric_columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
 
-            df.sort_values(by='Day_of_Year', inplace=True)
+            df['Date'] = df['report_date_as_yyyy_mm_dd']
+            df.sort_values(by='Date', inplace=True)
         return df
 
 class Index26WDataFetcher(BaseDataFetcher):
@@ -447,13 +483,14 @@ class Index26WDataFetcher(BaseDataFetcher):
 
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
-            df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
+            # df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
 
             # Convert the relevant columns to numeric, based on report type
             for col in numeric_columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
 
-            df.sort_values(by='Day_of_Year', inplace=True)
+            df['Date'] = df['report_date_as_yyyy_mm_dd']
+            df.sort_values(by='Date', inplace=True)
         return df
 
 def format_market_name(market_name):
