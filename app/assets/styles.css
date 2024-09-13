@@ -1,12 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 body, html {
     height: 100%;
     margin: 0;
+    font-family: 'Courier New', monospace; /* Apply the pixelated font */
+    background-color: #1e1e1e;
 }
 
 #combined-chart {
     height: 100vh;
     border: 1vh;
-
+    background-color: #1e1e1e; /* Dark background for the chart */
 }
 
 #right-panel {
@@ -14,12 +18,16 @@ body, html {
     transition: width 0.3s ease;
     overflow: hidden;
     position: relative;
+    background-color: #1e1e1e; /* Dark background for the panel */
+    color: #FFFFFF; /* Light text color for contrast */
+    border-left: 1px solid #333333; /* Subtle border to separate from the chart */
 }
 
 #right-panel.collapsed {
     width: 50px; /* Width of the collapsed panel */
     transition: width 0.3s ease; /* Ensure transition is applied when collapsing */
     overflow: hidden; /* Hide overflow content */
+    background-color: #1e1e1e;
 }
 
 #right-panel.collapsed #toggle-button {
@@ -34,5 +42,96 @@ body, html {
     position: absolute;
     top: 10px;
     right: 10px;
+    width: 40px;
     z-index: 1;
+    background-color: #333333; /* Dark button background */
+    color: #FFFFFF; /* Light button text */
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace; /* Apply the font to the button */
 }
+
+#toggle-button:hover {
+    background-color: #555555; /* Slightly lighter on hover */
+}
+
+html.A {
+    color: #4CAF50; /* Highlighted color for market links */
+    text-decoration: none;
+    font-size: 14px;
+}
+
+html.A:hover {
+    text-decoration: underline; /* Underline on hover */
+}
+
+button {
+    background-color: #333333; /* Dark button background */
+    color: #FFFFFF; /* Light button text */
+    border: 1px solid #444444; /* Subtle border */
+    padding: 5px 10px;
+    margin-bottom: 5px;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #555555; /* Slightly lighter on hover */
+}
+
+dcc.Checklist, dcc.Graph {
+    background-color: #1e1e1e; /* Consistent dark background */
+    color: #FFFFFF; /* Light text color */
+}
+
+.collapsed-header {
+    background-color: #2e2e2e;
+    border-bottom: 1px solid #333;
+    color: #FFF;
+    padding: 10px;
+    cursor: pointer;
+    text-align: center;
+}
+
+/* Ensure the dropdown has a dark background on page load */
+.dropdown-menu-1 {
+    background-color: #1e1e1e !important; /* Dark background color */
+    color: #00FF00; /* Bright green text color */
+    border: 1px solid #333; /* Border for terminal-like appearance */
+    font-family: 'Courier New', monospace; /* Vintage computer font */
+    font-size: 14px; /* Font size */
+    padding: 5px; /* Padding inside the dropdown */
+    width: 100%; /* Full width */
+}
+
+.dropdown-menu-1 .Select-value-label {
+    color: #FFFFFF !important; /* Text color for the selected value */
+}
+
+.Select-control {
+    background-color: #1e1e1e !important; /* Force dark background */
+    border-color: #333 !important; /* Border color for the dropdown */
+}
+
+/* Styling for dropdown options */
+.Select-menu-outer,
+.Select-menu-option {
+    background-color: #1e1e1e !important; /* Dropdown options background */
+    color: #00FF00; /* Dropdown options text color */
+}
+
+/* Styling for the selected or focused dropdown option */
+.Select-menu-option--is-selected,
+.Select-menu-option--is-focused {
+    background-color: #333 !important; /* Highlight color for selected/focused option */
+    color: #FFFFFF !important; /* Text color for selected/focused option */
+}
+
+.Select-arrow-zone {
+    color: #00FF00; /* Color for dropdown arrow */
+}
+
+

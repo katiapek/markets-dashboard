@@ -64,12 +64,20 @@ def create_layout(app):
     market_links = [html.A(name, id={'type': 'market-link', 'index': ticker}, href='#', style={'margin-right': '10px'}) for
                     name, ticker in market_tickers.items()]
 
-    app.layout = html.Div(style=LAYOUT_STYLES, children=[
+    app.layout = html.Div(style={'display': 'flex'}, children=[
         html.Div(
             children=[
-                dcc.Graph(id='combined-chart', config={'scrollZoom': True, 'doubleClick': 'autosize', 'displayModeBar': False}),
+                dcc.Graph(
+                    id='combined-chart',
+                    config={
+                        'scrollZoom': True,
+                        'doubleClick': 'autosize',
+                        'displayModeBar': False
+                    },
+                    style={'backgroundColor': '#1e1e1e'}  # Set background color for the graph container
+                ),
             ],
-            style=GRAPH_STYLES
+            style={'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
         ),
         html.Div(
             id='right-panel',
@@ -78,20 +86,33 @@ def create_layout(app):
                 html.Div(
                     className='content',
                     children=[
+                        # Replace the list of market links with a dropdown menu
                         html.Div(
-                            children=[html.Div(market_link, style=BUTTON_STYLES) for market_link in
-                                      market_links],
-                            style={'display': 'flex', 'flexDirection': 'column', 'margin-bottom': '10px'}
+                            children=[
+                                dcc.Dropdown(
+                                    id='market-dropdown',
+                                    options=[
+                                        {'label': name, 'value': ticker} for name, ticker in market_tickers.items()
+                                    ],
+                                    value=DEFAULT_MARKET,  # Set the default value
+                                    clearable=False,  # Optional: prevent clearing
+                                    className='dropdown-menu-1',
+                                    style={'width': '100%', 'margin-bottom': '10px'}
+                                )
+                            ],
+                            style={'margin-bottom': '10px'}
                         ),
                         dcc.Checklist(
                             id='years-checklist',
                             options=CHECKLIST_OPTIONS['years'],
-                            value=DEFAULT_YEARS
+                            value=DEFAULT_YEARS,
+                            style={'color': '#FFF'}
                         ),
                         dcc.Checklist(
                             id='ohlc-checklist',
                             options=CHECKLIST_OPTIONS['ohlc'],
-                            value=['OHLC']
+                            value=['OHLC'],
+                            style={'color': '#FFF'}
                         ),
                         # Foldable "Legacy - Combined" section
                         html.Div([
@@ -349,7 +370,7 @@ def create_layout(app):
                         html.Div([
                             html.Button('Previous Year', id='prev-year-button', n_clicks=0),
                             html.Button('Next Year', id='next-year-button', n_clicks=0)
-                        ]),
+                        ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px'}),
                         dcc.Store(id='current-year', data=2024),
                         dcc.Store(id='stored-market', data=DEFAULT_MARKET),
                         dcc.Store(id='active-subplots', data=[]),  # Track active subplots dynamically

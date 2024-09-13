@@ -598,7 +598,7 @@ def register_callbacks(app):
 
         fig.update_layout(
             height=total_height,
-            title=f'{stored_market} Data Overview {current_year}',
+            title=f'{stored_market} - Year {current_year}',
             legend=dict(
                 orientation="h",
                 yanchor="top",
@@ -606,12 +606,41 @@ def register_callbacks(app):
                 xanchor="center",
                 x=0.5
             ),
-            plot_bgcolor="white",
+            plot_bgcolor="#1e1e1e",
+            paper_bgcolor='#1e1e1e',
+            font=dict(
+                family="'Courier New', monospace",  # Set the font for the graph
+                size=10,  # Adjust size as needed
+                color='white'),
             hoversubplots="axis",
             hovermode="x",
             dragmode="pan",
-            # xaxis=dict(type="category"),
+            yaxis=dict(
+                showgrid=False,  # Hide x-axis grid lines
+                zeroline=False),
+            yaxis2=dict(
+                showgrid=False,  # Hide x-axis grid lines
+                zeroline=False, )  # Hide x-axis zero line if it exists
+            # Hide x-axis zero line if it exists
         )
+
+        # Dynamically update axes settings for each subplot
+        for i in range(1, num_rows + 1):  # Assuming num_rows is the total number of rows in your subplot
+            fig.update_xaxes(
+                showgrid=False,  # Hide x-axis grid lines
+                zeroline=False,  # Hide x-axis zero line
+                #showline=False,  # Hide x-axis line
+                #mirror=False,  # Avoid axis line mirroring
+                row=i, col=1
+            )
+            fig.update_yaxes(
+                showgrid=False,  # Hide y-axis grid lines
+                zeroline=False,  # Hide y-axis zero line
+                #showline=False,  # Hide y-axis line
+                #mirror=False,  # Avoid axis line mirroring
+                row=i, col=1
+            )
+
         fig.update_traces(hoverinfo="x+y") # If added xaxis="x1" it gives nice vertical line accross all subplots but not working for Week 26 Index
 
         return fig
@@ -628,16 +657,10 @@ def register_callbacks(app):
 
     @app.callback(
         Output('stored-market', 'data'),
-        [Input({'type': 'market-link', 'index': dash.dependencies.ALL}, 'n_clicks')]
+        [Input('market-dropdown', 'value')]
     )
-    def update_stored_market(n_clicks):
-        if ctx.triggered:
-            triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-            if 'market-link' in triggered_id:
-                triggered_ticker = eval(triggered_id).get('index')
-                return next((name for name, ticker in market_tickers.items() if ticker == triggered_ticker),
-                            DEFAULT_MARKET)
-        return DEFAULT_MARKET
+    def update_stored_market(selected_market):
+        return next((name for name, ticker in market_tickers.items() if ticker == selected_market), DEFAULT_MARKET)
 
     @app.callback(
         Output('current-year', 'data'),
