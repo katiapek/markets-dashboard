@@ -72,7 +72,8 @@ def create_layout(app):
                     html.Button('Next Market', id='next-market-button', n_clicks=0, className='above-chart-button'),
                     html.Button('Prev. Year', id='prev-year-button', n_clicks=0, className='above-chart-button'),
                     html.Button('Next Year', id='next-year-button', n_clicks=0, className='above-chart-button')
-                ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px'}),
+                ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px', 'gap': '10px'}),
+
                 dcc.Graph(
                     id='combined-chart',
                     config={
@@ -99,14 +100,14 @@ def create_layout(app):
                             children=[
                                 dcc.Dropdown(
                                     id='market-dropdown',
-                                    options=[
-                                        {'label': name, 'value': ticker} for name, ticker in market_tickers.items()
-                                    ],
+                                    options=[{'label': name, 'value': ticker} for name, ticker in
+                                             market_tickers.items()],
                                     value=DEFAULT_MARKET,  # Set the default value
                                     placeholder=DEFAULT_MARKET,
                                     clearable=False,  # Optional: prevent clearing
                                     className='dropdown-menu-1',
-                                    style={'width': '100%', 'margin-bottom': '10px'},
+                                    style={'width': '100%', 'margin-bottom': '10px', 'backgroundColor': '#2b2b2b',
+                                           'color': 'white', 'border': 'none'},
                                     searchable=False
                                 ),
                                 html.Div([
@@ -390,6 +391,7 @@ def create_layout(app):
                             # html.Button('Next Year', id='next-year-button', n_clicks=0)
                         ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px'}),
                         dcc.Store(id='current-year', data=2024),
+                        dcc.Store(id='stored-market', data=DEFAULT_MARKET),
                         dcc.Store(id='stored-market', data=DEFAULT_MARKET),
                         dcc.Store(id='active-subplots', data=[]),  # Track active subplots dynamically
                     ]

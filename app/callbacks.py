@@ -705,7 +705,8 @@ def register_callbacks(app):
 
     # Combined callback for market updates
     @app.callback(
-        Output('stored-market', 'data'),
+        [Output('stored-market', 'data'),
+         Output('market-dropdown', 'value')],  # Add this Output to update the dropdown's value
         [Input('market-dropdown', 'value'),
          Input('prev-market-button', 'n_clicks'),
          Input('next-market-button', 'n_clicks')],
@@ -717,7 +718,9 @@ def register_callbacks(app):
 
         # Handle dropdown selection
         if 'market-dropdown' in triggered_input:
-            return next((name for name, ticker in market_tickers.items() if ticker == selected_market), DEFAULT_MARKET)
+            new_market = next((name for name, ticker in market_tickers.items() if ticker == selected_market),
+                              DEFAULT_MARKET)
+            return new_market, selected_market  # Return both the updated stored-market and the dropdown value
 
         # Handle Previous and Next Market button clicks
         elif 'prev-market-button' in triggered_input or 'next-market-button' in triggered_input:
@@ -731,11 +734,13 @@ def register_callbacks(app):
                 # Move to the next market
                 new_index = (current_index + 1) % len(markets)
             else:
-                return current_market  # Return current market if no button is clicked
+                return current_market, current_market  # Return current market if no button is clicked
 
             # Get the new market based on the calculated index
             new_market = get_market_by_index(new_index, market_tickers)
-            return new_market
+            ticker = market_tickers[new_market]  # Get the corresponding ticker for the dropdown
+
+            return new_market, ticker  # Update both the stored-market and dropdown value
 
         # Default return if nothing is triggered
-        return current_market
+        return current_market, selected_market
