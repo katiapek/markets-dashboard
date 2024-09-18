@@ -48,7 +48,7 @@ def add_trace(fig, x, y, name, row, col, mode='lines', line_color=None, secondar
         chart_type: Type of chart ('line' or 'bar').
     """
     if chart_type == 'line':
-        trace = go.Scatter(x=x, y=y, mode=mode, name=name, line=dict(color=line_color), showlegend=False, opacity=opacity)
+        trace = go.Scatter(x=x, y=y, mode=mode, name=name, line=dict(color=line_color), showlegend=False, opacity=opacity, connectgaps=True)
     elif chart_type == 'bar':
         trace = go.Bar(x=x, y=y, name=name, marker=dict(color=line_color), showlegend=False, opacity=opacity)
 
@@ -76,6 +76,16 @@ def add_shape(fig, x0, x1, y0, y1, row, col, color='gray', dash='dash'):
 def register_callbacks(app):
 
     # Callback to toggle the foldable menu for "Legacy - Combined"
+    @app.callback(
+        Output('ohlc-cycles-collapse', 'is_open'),
+        [Input('ohlc-cycles-toggle', 'n_clicks')],
+        [State('ohlc-cycles-collapse', 'is_open')]
+    )
+    def toggle_ohlc_cycles(n_clicks, is_open):
+        if n_clicks:
+            return not is_open
+        return is_open
+
     @app.callback(
         Output('legacy-combined-collapse', 'is_open'),
         [Input('legacy-combined-toggle', 'n_clicks')],
@@ -288,7 +298,7 @@ def register_callbacks(app):
          Input('ohlc-checklist', 'value'),
          Input('stored-market', 'data'),
          Input('current-year', 'data')],
-        prevent_initial_call=False  # Ensure the callback runs initially
+        prevent_initial_call=False
     )
     def update_graph(active_subplots, selected_years, ohlc_visibility, stored_market, current_year):
         num_rows = 1 + len(active_subplots)
@@ -296,13 +306,13 @@ def register_callbacks(app):
 
         # Calculate row heights dynamically
         initial_height = 800  # initial total height when only the OHLC/Seasonality chart is shown
-        # additional_height_per_subplot = 100  # additional height for each subplot
-        total_height = initial_height # + additional_height_per_subplot * len(active_subplots)
+        total_height = initial_height
 
         # Allocate more height to the first row initially
         row_heights = [0.6] + [0.4 / len(active_subplots) for _ in range(len(active_subplots))]
 
-        fig = sp.make_subplots(rows=num_rows, cols=1, shared_xaxes=True, vertical_spacing=0.0, specs=specs, row_heights=row_heights)
+        fig = sp.make_subplots(rows=num_rows, cols=1, shared_xaxes=True, vertical_spacing=0.0, specs=specs,
+                               row_heights=row_heights)
 
         # Add OHLC chart
         if 'OHLC' in ohlc_visibility:
@@ -312,15 +322,19 @@ def register_callbacks(app):
                 add_candlestick_trace(fig, ohlc_df['Date'], ohlc_df['Open'], ohlc_df['High'], ohlc_df['Low'],
                                       ohlc_df['Close'], f'OHLC {current_year}', row=1, col=1, secondary_y=False)
 
+                # Build a complete timeline and identify missing dates for OHLC chart
+                dt_all = pd.date_range(start=ohlc_df['Date'].min(), end=ohlc_df['Date'].max())
+                dt_obs = ohlc_df['Date'].dt.strftime("%Y-%m-%d").tolist()
+                dt_breaks = [d for d in dt_all.strftime("%Y-%m-%d").tolist() if d not in dt_obs]
+
+                # Apply rangebreaks only for the OHLC chart
+                fig.update_xaxes(rangebreaks=[dict(values=dt_breaks)], row=1, col=1)
 
         # Add Seasonality chart
         for years in selected_years:
             df = SeasonalDataFetcher.fetch_seasonal_data(format_market_name(stored_market), years, current_year)
             if not df.empty:
-                # Convert Day_of_Year to a Date
-                # df['Date'] = pd.to_datetime(df['Day_of_Year'], format='%j', errors='coerce').dt.strftime(
-                #    f'{current_year}-%j')
-                # df['Date'] = pd.to_datetime(df['Date'])  # Ensure 'Date' is in datetime format
+                # Connect the lines even if there are missing dates
                 add_trace(fig, df['Date'], df['Indexed_Cumulative_Percent_Change'], f'{years} Years', row=1,
                           col=1, opacity=0.6, secondary_y=True)
 
@@ -616,6 +630,30 @@ def register_callbacks(app):
             plot_bgcolor="#1e1e1e",
             paper_bgcolor='#1e1e1e',
             font=dict(
+                family="'Press Start 2P', monospace",
+                size=10,
+                color='white'
+            ),
+            hoversubplots="axis",
+            hovermode="x",
+            dragmode="pan"
+        )
+
+
+        """""
+        fig.update_layout(
+            height=total_height,
+            title=f'{stored_market} - Year {current_year}',
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.15,
+                xanchor="center",
+                x=0.5
+            ),
+            plot_bgcolor="#1e1e1e",
+            paper_bgcolor='#1e1e1e',
+            font=dict(
                 family="'Press Start 2P', monospace",  # Set the font for the graph
                 size=10,  # Adjust size as needed
                 color='white'),
@@ -630,6 +668,7 @@ def register_callbacks(app):
                 zeroline=False, )  # Hide x-axis zero line if it exists
             # Hide x-axis zero line if it exists
         )
+        """""
 
         # Dynamically update axes settings for each subplot
         for i in range(1, num_rows + 1):  # Assuming num_rows is the total number of rows in your subplot

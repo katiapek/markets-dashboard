@@ -78,10 +78,12 @@ button:hover {
     background-color: #555555; /* Slightly lighter on hover */
 }
 
-dcc.Checklist, dcc.Graph {
+dcc.Graph, dcc.Checklist  {
     background-color: #1e1e1e; /* Consistent dark background */
     color: #FFFFFF; /* Light text color */
 }
+
+
 
 .collapsed-header {
     background-color: #2e2e2e;
@@ -95,7 +97,7 @@ dcc.Checklist, dcc.Graph {
 /* Ensure the dropdown has a dark background on page load */
 .dropdown-menu-1 {
     background-color: #1e1e1e !important; /* Dark background color */
-    color: #00FF00; /* Bright green text color */
+    color: #00FF00 !important; /* Bright green text color */
     border: 1px solid #333; /* Border for terminal-like appearance */
     font-family: 'Courier New', monospace; /* Vintage computer font */
     font-size: 14px; /* Font size */
@@ -103,32 +105,43 @@ dcc.Checklist, dcc.Graph {
     width: 100%; /* Full width */
 }
 
-.dropdown-menu-1 .Select-value-label {
-    color: #FFFFFF !important; /* Text color for the selected value */
-}
-
-.Select-control {
+/* Control background color and text inside the dropdown input */
+.dropdown-menu-1 .Select-control {
     background-color: #1e1e1e !important; /* Force dark background */
+    color: #00FF00 !important; /* Text color for the selected value */
     border-color: #333 !important; /* Border color for the dropdown */
 }
 
-/* Styling for dropdown options */py
-.Select-menu-outer,
-.Select-menu-option {
-    background-color: #1e1e1e !important; /* Dropdown options background */
-    color: #00FF00; /* Dropdown options text color */
+/* Ensure that the selected value is visible */
+.dropdown-menu-1 .Select-value-label {
+    color: #00FF00 !important; /* Bright green text color for the selected value */
+}
+
+/* Ensure the dropdown options have a dark background when open */
+.dropdown-menu-1 .Select-menu-outer {
+    background-color: #1e1e1e !important; /* Background color for options */
+    border: 1px solid #333; /* Add border for terminal-like appearance */
+}
+
+/* Style each option in the dropdown */
+.dropdown-menu-1 .Select-menu-option {
+    background-color: #1e1e1e !important; /* Ensure dark background for options */
+    color: #00FF00 !important; /* Bright green text color */
 }
 
 /* Styling for the selected or focused dropdown option */
-.Select-menu-option--is-selected,
-.Select-menu-option--is-focused {
-    background-color: #333 !important; /* Highlight color for selected/focused option */
-    color: #FFFFFF !important; /* Text color for selected/focused option */
+.dropdown-menu-1 .Select-menu-option--is-selected,
+.dropdown-menu-1 .Select-menu-option--is-focused {
+    background-color: #333 !important; /* Highlight selected/focused option */
+    color: #FFFFFF !important; /* Light text for selected/focused option */
 }
 
-.Select-arrow-zone {
-    color: #00FF00; /* Color for dropdown arrow */
+/* Ensure the arrow zone matches the style */
+.dropdown-menu-1 .Select-arrow-zone {
+    color: #00FF00 !important; /* Color for dropdown arrow */
 }
+
+
 
 
 .above-chart-button {

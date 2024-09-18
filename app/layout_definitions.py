@@ -40,6 +40,7 @@ BUTTON_STYLES = {'margin-bottom': '3px'}
 CHECKLIST_STYLES = {'margin-bottom': '10px'}
 LAYOUT_STYLES = {'display': 'flex'}
 GRAPH_STYLES = {'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
+INPUT_STYLE = {"margin-right": "10px"}
 
 def format_market_name(market_name):
     """
@@ -121,18 +122,33 @@ def create_layout(app):
                             ],
                             style={'margin-bottom': '10px'}
                         ),
-                        dcc.Checklist(
-                            id='years-checklist',
-                            options=CHECKLIST_OPTIONS['years'],
-                            value=DEFAULT_YEARS,
-                            style={'color': '#FFF'}
-                        ),
-                        dcc.Checklist(
-                            id='ohlc-checklist',
-                            options=CHECKLIST_OPTIONS['ohlc'],
-                            value=['OHLC'],
-                            style={'color': '#FFF'}
-                        ),
+                        html.Div([
+                            html.Button('OHLC & Cycles', id='ohlc-cycles-toggle', n_clicks=0,
+                                        style={'width': '100%', 'textAlign': 'left'}),
+                            dbc.Collapse(
+                                children=[
+                                    dcc.Checklist(
+                                        id='ohlc-checklist',
+                                        options=CHECKLIST_OPTIONS['ohlc'],
+                                        value=['OHLC'],
+                                        style={'color': '#FFF'},
+                                        inputStyle=INPUT_STYLE
+                                    ),
+
+                                    dcc.Checklist(
+                                        id='years-checklist',
+                                        options=CHECKLIST_OPTIONS['years'],
+                                        value=DEFAULT_YEARS,
+                                        style={'color': '#FFF'},
+                                        inputStyle=INPUT_STYLE
+                                    ),
+
+                                ],
+                                id='ohlc-cycles-collapse',  # Correct ID for collapsible content
+                                is_open=True  # Initial state is collapsed
+                            )
+                        ]),
+
                         # Foldable "Legacy - Combined" section
                         html.Div([
                             html.Button('Legacy - Combined', id='legacy-combined-toggle', n_clicks=0,
@@ -142,32 +158,38 @@ def create_layout(app):
                                     dcc.Checklist(
                                         id='open-interest-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['open_interest'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='oi-percentages-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['oi_percentages'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='positions-change-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-change-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='26w-index-legacy-combined-checklist',
                                         options=CHECKLIST_OPTIONS['index_26w'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                 ],
                                 id='legacy-combined-collapse',  # Correct ID for collapsible content
@@ -183,32 +205,38 @@ def create_layout(app):
                                     dcc.Checklist(
                                         id='open-interest-legacy-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['open_interest'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='oi-percentages-legacy-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['oi_percentages'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='positions-change-legacy-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-legacy-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-change-legacy-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='26w-index-legacy-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['index_26w'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                 ],
                                 id='legacy-futures-only-collapse',  # Correct ID for collapsible content
@@ -224,32 +252,38 @@ def create_layout(app):
                                     dcc.Checklist(
                                         id='open-interest-disaggregated-combined-checklist',
                                         options=CHECKLIST_OPTIONS['open_interest'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='oi-percentages-disaggregated-combined-checklist',
                                         options=CHECKLIST_OPTIONS['oi_percentages'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='positions-change-disaggregated-combined-checklist',
                                         options=CHECKLIST_OPTIONS['positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-disaggregated-combined-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-change-disaggregated-combined-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='26w-index-disaggregated-combined-checklist',
                                         options=CHECKLIST_OPTIONS['index_26w'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
 
                                 ],
@@ -266,32 +300,38 @@ def create_layout(app):
                                     dcc.Checklist(
                                         id='open-interest-disaggregated-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['open_interest'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='oi-percentages-disaggregated-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['oi_percentages'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='positions-change-disaggregated-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-disaggregated-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-change-disaggregated-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='26w-index-disaggregated-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['index_26w'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
 
                                 ],
@@ -308,32 +348,38 @@ def create_layout(app):
                                     dcc.Checklist(
                                         id='open-interest-tff-combined-checklist',
                                         options=CHECKLIST_OPTIONS['open_interest'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='oi-percentages-tff-combined-checklist',
                                         options=CHECKLIST_OPTIONS['oi_percentages'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='positions-change-tff-combined-checklist',
                                         options=CHECKLIST_OPTIONS['positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-tff-combined-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-change-tff-combined-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='26w-index-tff-combined-checklist',
                                         options=CHECKLIST_OPTIONS['index_26w'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
 
                                 ],
@@ -351,32 +397,38 @@ def create_layout(app):
                                     dcc.Checklist(
                                         id='open-interest-tff-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['open_interest'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='oi-percentages-tff-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['oi_percentages'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='positions-change-tff-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-tff-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='net-positions-change-tff-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['net_positions_change'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
                                     dcc.Checklist(
                                         id='26w-index-tff-futures-only-checklist',
                                         options=CHECKLIST_OPTIONS['index_26w'],
-                                        value=[]
+                                        value=[],
+                                        inputStyle=INPUT_STYLE
                                     ),
 
                                 ],
