@@ -57,8 +57,15 @@ def add_trace(fig, x, y, name, row, col, mode='lines', line_color=None, secondar
 
 def add_candlestick_trace(fig, x, open, high, low, close, name, row, col, secondary_y=False):
     trace = go.Candlestick(x=x, open=open, high=high, low=low, close=close, name=name,
-                           yaxis='y2', hoverinfo='text', showlegend=False, increasing_line_color="green", decreasing_line_color="black")
+                           yaxis='y2', hoverinfo='text', showlegend=False, increasing_line_color="white", decreasing_line_color="white",
+                           increasing_fillcolor="white", decreasing_fillcolor="black")
     fig.add_trace(trace, row=row, col=col, secondary_y=secondary_y)
+    # Ensure the y-axis is fixed
+    fig.update_yaxes(
+        fixedrange=True,  # Disable y-axis zoom
+        row=row,
+        col=col
+    )
 
 def update_yaxis(fig, row, col, title, y_min=None, y_max=None, secondary_y=False):
     fig.update_yaxes(title_text=title, row=row, col=col, range=[y_min, y_max], secondary_y=secondary_y)
@@ -609,7 +616,7 @@ def register_callbacks(app):
             plot_bgcolor="#1e1e1e",
             paper_bgcolor='#1e1e1e',
             font=dict(
-                family="'Courier New', monospace",  # Set the font for the graph
+                family="'Press Start 2P', monospace",  # Set the font for the graph
                 size=10,  # Adjust size as needed
                 color='white'),
             hoversubplots="axis",
@@ -617,7 +624,7 @@ def register_callbacks(app):
             dragmode="pan",
             yaxis=dict(
                 showgrid=False,  # Hide x-axis grid lines
-                zeroline=False),
+                zeroline=False,),
             yaxis2=dict(
                 showgrid=False,  # Hide x-axis grid lines
                 zeroline=False, )  # Hide x-axis zero line if it exists
@@ -655,13 +662,14 @@ def register_callbacks(app):
             return ''
         return 'collapsed' if n_clicks % 2 == 1 else ''
 
+    """""
     @app.callback(
         Output('stored-market', 'data'),
         [Input('market-dropdown', 'value')]
     )
     def update_stored_market(selected_market):
         return next((name for name, ticker in market_tickers.items() if ticker == selected_market), DEFAULT_MARKET)
-
+    """""
     @app.callback(
         Output('current-year', 'data'),
         [Input('prev-year-button', 'n_clicks'),
@@ -676,3 +684,58 @@ def register_callbacks(app):
             elif 'next-year-button' in button_id:
                 return min(2024, current_year + 1)
         return current_year
+
+    # Function to get the market name based on its index
+    # Function to get the market name based on its index
+    def get_market_by_index(index, market_tickers):
+        """
+        Retrieve the market name by its index in the sorted list.
+
+        Args:
+            index (int): The index of the market.
+            market_tickers (dict): The dictionary of market tickers.
+
+        Returns:
+            str: The market name corresponding to the given index.
+        """
+        markets = sorted(market_tickers.keys())
+        if 0 <= index < len(markets):
+            return markets[index]
+        return DEFAULT_MARKET  # Default market if index is out of bounds
+
+    # Combined callback for market updates
+    @app.callback(
+        Output('stored-market', 'data'),
+        [Input('market-dropdown', 'value'),
+         Input('prev-market-button', 'n_clicks'),
+         Input('next-market-button', 'n_clicks')],
+        [State('stored-market', 'data')]
+    )
+    def update_stored_market(selected_market, n_clicks_prev, n_clicks_next, current_market):
+        # Determine which input triggered the callback
+        triggered_input = ctx.triggered[0]['prop_id'].split('.')[0]
+
+        # Handle dropdown selection
+        if 'market-dropdown' in triggered_input:
+            return next((name for name, ticker in market_tickers.items() if ticker == selected_market), DEFAULT_MARKET)
+
+        # Handle Previous and Next Market button clicks
+        elif 'prev-market-button' in triggered_input or 'next-market-button' in triggered_input:
+            markets = sorted(market_tickers.keys())
+            current_index = markets.index(current_market) if current_market in markets else 0
+
+            if 'prev-market-button' in triggered_input:
+                # Move to the previous market
+                new_index = (current_index - 1) % len(markets)
+            elif 'next-market-button' in triggered_input:
+                # Move to the next market
+                new_index = (current_index + 1) % len(markets)
+            else:
+                return current_market  # Return current market if no button is clicked
+
+            # Get the new market based on the calculated index
+            new_market = get_market_by_index(new_index, market_tickers)
+            return new_market
+
+        # Default return if nothing is triggered
+        return current_market

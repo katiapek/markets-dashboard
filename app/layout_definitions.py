@@ -67,12 +67,19 @@ def create_layout(app):
     app.layout = html.Div(style={'display': 'flex'}, children=[
         html.Div(
             children=[
+                html.Div([
+                    html.Button('Prev. Market', id='prev-market-button', n_clicks=0, className='above-chart-button'),
+                    html.Button('Next Market', id='next-market-button', n_clicks=0, className='above-chart-button'),
+                    html.Button('Prev. Year', id='prev-year-button', n_clicks=0, className='above-chart-button'),
+                    html.Button('Next Year', id='next-year-button', n_clicks=0, className='above-chart-button')
+                ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px'}),
                 dcc.Graph(
                     id='combined-chart',
                     config={
                         'scrollZoom': True,
                         'doubleClick': 'autosize',
-                        'displayModeBar': False
+                        'displayModeBar': False,
+
                     },
                     style={'backgroundColor': '#1e1e1e'}  # Set background color for the graph container
                 ),
@@ -83,10 +90,11 @@ def create_layout(app):
             id='right-panel',
             children=[
                 html.Button('<>', id='toggle-button', n_clicks=0),
+
                 html.Div(
                     className='content',
                     children=[
-                        # Replace the list of market links with a dropdown menu
+
                         html.Div(
                             children=[
                                 dcc.Dropdown(
@@ -95,10 +103,20 @@ def create_layout(app):
                                         {'label': name, 'value': ticker} for name, ticker in market_tickers.items()
                                     ],
                                     value=DEFAULT_MARKET,  # Set the default value
+                                    placeholder=DEFAULT_MARKET,
                                     clearable=False,  # Optional: prevent clearing
                                     className='dropdown-menu-1',
-                                    style={'width': '100%', 'margin-bottom': '10px'}
-                                )
+                                    style={'width': '100%', 'margin-bottom': '10px'},
+                                    searchable=False
+                                ),
+                                html.Div([
+                                    html.Button('Prev. Market', id='prev-market-button', n_clicks=0),
+                                    html.Button('Next Market', id='next-market-button', n_clicks=0),
+                                ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px'}),
+                                html.Div([
+                                    html.Button('Prev. Year', id='prev-year-button', n_clicks=0),
+                                    html.Button('Next Year', id='next-year-button', n_clicks=0)
+                                ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px'}),
                             ],
                             style={'margin-bottom': '10px'}
                         ),
@@ -368,8 +386,8 @@ def create_layout(app):
 
 
                         html.Div([
-                            html.Button('Previous Year', id='prev-year-button', n_clicks=0),
-                            html.Button('Next Year', id='next-year-button', n_clicks=0)
+                            # html.Button('Previous Year', id='prev-year-button', n_clicks=0),
+                            # html.Button('Next Year', id='next-year-button', n_clicks=0)
                         ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px'}),
                         dcc.Store(id='current-year', data=2024),
                         dcc.Store(id='stored-market', data=DEFAULT_MARKET),

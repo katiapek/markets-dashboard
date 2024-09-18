@@ -134,4 +134,7 @@ dcc.Checklist, dcc.Graph {
     color: #00FF00; /* Color for dropdown arrow */
 }
 
-
+.above-chart-button {
+    font-family: 'Press Start 2P', monospace; /* Vintage computer font */
+    font-size: 14px; /* Font size */
+}
