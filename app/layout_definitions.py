@@ -2,7 +2,7 @@ import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc  # Correct import
 from scripts.config import market_tickers
-from data_fetchers import SeasonalDataFetcher
+# from data_fetchers import SeasonalDataFetcher
 
 # Define constants for repeated strings, styles, and default values
 DEFAULT_MARKET = 'Australian Dollar'

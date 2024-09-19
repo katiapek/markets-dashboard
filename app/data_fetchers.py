@@ -1,14 +1,14 @@
 import os
 import sqlite3
 import pandas as pd
-from scripts.market_mapping import market_name_map
+from scripts.config import db_path_str
 from datetime import timedelta
 from dateutil import parser
 
 
 
 # Set the database path
-db_path = os.getenv('DATABASE_PATH', '/Users/kamil/PycharmProjects/MarketsDashboard/app/data/markets_data.db')
+db_path = os.getenv('DATABASE_PATH', db_path_str)
 
 class BaseDataFetcher:
     """
@@ -56,7 +56,7 @@ class SeasonalDataFetcher(BaseDataFetcher):
         Returns:
             pd.DataFrame: DataFrame containing the seasonal data with an additional 'Date' column.
         """
-        table_name = f"{format_market_name(market)}_seasonality_{years}_years"
+        table_name = f"{market.lower().replace(' ', '_')}_ohlc_seasonality_{years}_years" # f"{format_market_name(market)}_seasonality_{years}_years"
         query = f"SELECT * FROM {table_name} ORDER BY Day_of_Year ASC"
         df = SeasonalDataFetcher.fetch_data(query)
 
@@ -97,7 +97,7 @@ class OHLCDataFetcher(BaseDataFetcher):
         Returns:
             pd.DataFrame: DataFrame containing the OHLC data with additional 'Day_of_Year' column.
         """
-        table_name = format_market_name(market)
+        table_name = f"{market.lower().replace(' ', '_')}_ohlc"  # format_market_name(market)
         print(f"Fetching OHLC from {table_name}")
         query = f"SELECT * FROM {table_name} WHERE Date BETWEEN ? AND ?"
         params = (f'{year}-01-01 00:00:00', f'{year}-12-31 23:59:59')
@@ -560,14 +560,9 @@ class Index26WDataFetcher(BaseDataFetcher):
             df.sort_values(by='Date', inplace=True)
         return df
 
+
+"""""
 def format_market_name(market_name):
-    """
-    Format the market name for use in SQL queries.
-
-    Args:
-        market_name (str): The market name.
-
-    Returns:
-        str: Formatted market name suitable for SQL table names.
-    """
+    
     return market_name_map.get(market_name, market_name.lower().replace(' ', '_') + '_ohlc')
+"""""

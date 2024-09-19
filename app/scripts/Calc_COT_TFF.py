@@ -1,10 +1,12 @@
 import pandas as pd
 import sqlite3
 import os
+from config import market_tickers, db_path_str
 
 # Path to the database
-db_path = os.getenv('DATABASE_PATH', '/Users/kamil/PycharmProjects/MarketsDashboard/app/data/markets_data.db')
+db_path = os.getenv('DATABASE_PATH', db_path_str)
 
+"""""
 # List of markets
 market_tickers = {
     'Australian Dollar': 'AUDUSD=X',
@@ -23,7 +25,7 @@ market_tickers = {
     'Swiss Franc': 'USDCHF=X',
     'Wheat': 'ZW=F'
 }
-
+"""""
 
 def calculate_and_store_cot_data(market_name, data_type):
     print(f"Processing data for {market_name}...")

@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 import sqlite3
 from pathlib import Path
+from config import market_codes
 
 def fetch_all_data(base_url, headers=None, limit=1000):
     """
@@ -71,6 +72,7 @@ def main():
     # Load the data into a DataFrame
     df = load_data_to_dataframe(all_data)
 
+    """""
     # Market codes for filtering
     market_codes = {
         'Australian Dollar': '232741',
@@ -89,6 +91,7 @@ def main():
         'Swiss Franc': '092741',
         'Wheat': '001602'
     }
+    """""
 
     # Connect to the SQLite database
     db_path = Path(__file__).parent.parent / 'data/markets_data.db'
