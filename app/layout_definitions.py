@@ -5,7 +5,7 @@ from scripts.config import market_tickers
 # from data_fetchers import SeasonalDataFetcher
 
 # Define constants for repeated strings, styles, and default values
-DEFAULT_MARKET = 'Australian Dollar'
+DEFAULT_MARKET = 'SP 500'
 DEFAULT_YEARS = [15, 35]
 
 CHECKLIST_OPTIONS = {
@@ -79,12 +79,13 @@ def create_layout(app):
                     id='combined-chart',
                     config={
                         'scrollZoom': True,
-                        'doubleClick': 'autosize',
+                        'doubleClick': 'reset',
                         'displayModeBar': False,
 
                     },
                     style={'backgroundColor': '#1e1e1e'}  # Set background color for the graph container
                 ),
+
             ],
             style={'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
         ),
