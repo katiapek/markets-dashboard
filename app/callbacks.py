@@ -1,6 +1,8 @@
 # callbacks.py
-from dash import Input, Output, State, ctx
-import dash
+from dash import Input, Output, State, ctx, html, dcc
+# import dash
+import numpy as np
+from datetime import timedelta
 import plotly.graph_objs as go
 import plotly.subplots as sp
 import pandas as pd  # Import pandas for data manipulation
@@ -806,4 +808,329 @@ def register_callbacks(app):
 
         # Default return if nothing is triggered
         return current_market, selected_market
+
+    # Callback for Opportunity Analysis section
+
+    def find_nearest_date(data, target_date, max_delta=3):
+        """
+        Find the nearest available date within a range of ±max_delta days from the target date.
+
+        Args:
+            data (pd.DataFrame): The OHLC data with a 'Date' column.
+            target_date (str): The target date in "YYYY-MM-DD" format.
+            max_delta (int): The maximum number of days to search before or after the target date.
+
+        Returns:
+            pd.Series or None: The row with the nearest date found, or None if no data is found within the range.
+        """
+        target_date = pd.to_datetime(target_date)
+
+        # Search within the given range (±max_delta days)
+        for delta in range(max_delta + 1):
+            # Try going backward and forward from the target date
+            for sign in [-1, 1]:
+                search_date = target_date + timedelta(days=sign * delta)
+                nearest_data = data[data['Date'] == search_date]
+
+                if not nearest_data.empty:
+                    return nearest_data.iloc[0]  # Return the first matching row
+
+        return None  # No matching data found within the range
+
+    def perform_analysis(market, start_month, start_day, end_month, end_day, direction, ohlc_data):
+        # Ensure 'Date' is a datetime-like object
+        ohlc_data['Date'] = pd.to_datetime(ohlc_data['Date'], errors='coerce')
+
+        # Initialize list to store analysis results for each year
+        analysis_results = []
+
+        # Get unique years from the OHLC data
+        unique_years = ohlc_data['Date'].dt.year.unique()
+
+        for year in unique_years:
+            yearly_data = ohlc_data[ohlc_data['Date'].dt.year == year]
+
+            # Get start and end dates for this year
+            start_date_str = f"{year}-{start_month:02d}-{start_day:02d}"
+            end_date_str = f"{year + (1 if end_month < start_month else 0)}-{end_month:02d}-{end_day:02d}"
+
+            # Find the nearest available data for start and end dates within ±3 days
+            start_data = find_nearest_date(yearly_data, start_date_str)
+            end_data = find_nearest_date(yearly_data, end_date_str)
+
+            if start_data is None or end_data is None:
+                # Skip the year if no data is available within ±3 days of the start or end date
+                continue
+
+            # Get Open price at start and Close price at end
+            open_price = start_data['Open']
+            close_price = end_data['Close']
+
+            # Calculate points and percentage change based on direction (Long or Short)
+            if direction == 'Long':
+                points_change = close_price - open_price
+                percentage_change = (points_change / open_price) * 100
+            else:
+                points_change = open_price - close_price
+                percentage_change = (points_change / open_price) * 100
+
+            # Calculate max drawdown and max gain
+            max_drawdown = calculate_max_drawdown(yearly_data, open_price, close_price, direction)
+            max_gain = calculate_max_gain(yearly_data, open_price, close_price, direction)
+
+            # Store yearly result with the year included
+            analysis_results.append({
+                'Year': year,
+                'Max Drawdown (Points)': max_drawdown['points'],
+                'Max Drawdown (%)': max_drawdown['percentage'],
+                'Max Gain (Points)': max_gain['points'],
+                'Max Gain (%)': max_gain['percentage'],
+                'Closing Points': points_change,
+                'Closing Percentage': percentage_change
+            })
+
+        # Calculate summary statistics
+        summary_15y = calculate_summary_statistics(analysis_results[-15:])
+        summary_30y = calculate_summary_statistics(analysis_results[-30:])
+
+        return {
+            'yearly_results': analysis_results,
+            '15_year_summary': summary_15y,
+            '30_year_summary': summary_30y
+        }
+
+    def calculate_max_drawdown(df, open_price, close_price, direction):
+        """
+        Calculate the maximum drawdown in points and percentage.
+        """
+        if direction == 'Long':
+            min_price = df['Low'].min()
+            drawdown_points = open_price - min_price
+        else:
+            max_price = df['High'].max()
+            drawdown_points = max_price - open_price
+
+        drawdown_percentage = (drawdown_points / open_price) * 100
+        return {'points': drawdown_points, 'percentage': drawdown_percentage}
+
+    def calculate_max_gain(df, open_price, close_price, direction):
+        """
+        Calculate the maximum gain in points and percentage.
+        """
+        if direction == 'Long':
+            max_price = df['High'].max()
+            gain_points = max_price - open_price
+        else:
+            min_price = df['Low'].min()
+            gain_points = open_price - min_price
+
+        gain_percentage = (gain_points / open_price) * 100
+        return {'points': gain_points, 'percentage': gain_percentage}
+
+    def calculate_summary_statistics(analysis_results):
+        total_years = len(analysis_results)
+        if total_years == 0:
+            return {
+                'win_rate': 0,
+                'total_points_gained': 0,
+                'total_percent_gained': 0,
+                'optimal_stop_loss': 0,
+                'optimal_exit': 0
+            }
+
+        # Filter wins and losses
+        wins = [result for result in analysis_results if result['Closing Points'] > 0]
+        losses = [result for result in analysis_results if result['Closing Points'] <= 0]
+
+        # Calculate win rate
+        win_rate = (len(wins) / total_years) * 100
+
+        # Calculate total points and percent gained
+        total_points_gained = sum(result['Closing Points'] for result in wins)
+        total_percent_gained = sum(result['Closing Percentage'] for result in wins)
+
+        # Calculate optimal stop loss and exit
+        max_drawdowns = [result['Max Drawdown (Points)'] for result in analysis_results]
+        max_profits = [result['Max Gain (Points)'] for result in analysis_results]
+
+        optimal_stop_loss = round(sum(max_drawdowns) / total_years, 4)
+        optimal_exit = round(sum(max_profits) / total_years,4)
+
+        return {
+            'win_rate': win_rate,
+            'total_points_gained': total_points_gained,
+            'total_percent_gained': total_percent_gained,
+            'optimal_stop_loss': optimal_stop_loss,
+            'optimal_exit': optimal_exit
+        }
+
+    def create_distribution_chart(yearly_data):
+        """
+        Create a distribution chart for the returns over a given range of years.
+
+        Args:
+            yearly_data (list[dict]): List of dictionaries containing yearly analysis data.
+
+        Returns:
+            go.Figure: A Plotly figure representing the distribution of returns.
+        """
+        # Extract the percentage changes from the yearly data
+        returns = [res['Closing Percentage'] for res in yearly_data]  # Assuming 'Closing Percentage' is the correct key
+
+        # Determine the bin edges for the histogram based on the range of returns
+        num_bins = 6  # You wanted 6 intervals
+        hist, bin_edges = np.histogram(returns, bins=num_bins)
+
+        # Create a histogram to show the distribution of returns
+        fig = go.Figure()
+
+        fig.add_trace(go.Histogram(
+            x=returns,
+            nbinsx=num_bins,
+            marker_color='blue',
+            opacity=0.75
+        ))
+
+        # Set the layout with custom font and dark theme
+        fig.update_layout(
+            # title='Distribution of Returns',
+            xaxis_title='Return (%)',
+            yaxis_title='Frequency',
+            plot_bgcolor='#1e1e1e',
+            paper_bgcolor='#1e1e1e',
+            font=dict(
+                family="'Press Start 2P', monospace",
+                size=10,
+                color='white'
+            ),
+            xaxis=dict(
+                tickmode='array',
+                tickvals=[(bin_edges[i] + bin_edges[i + 1]) / 2 for i in range(len(bin_edges) - 1)],
+                # Tick at bin center
+                ticktext=[f"{bin_edges[i]:.1f}% to {bin_edges[i + 1]:.1f}%" for i in range(len(bin_edges) - 1)],
+                # Custom labels
+                title_font=dict(
+                    family="'Press Start 2P', monospace",
+                    size=10,
+                    color='white'
+                ),
+                showgrid=False
+            ),
+            yaxis=dict(
+                title_font=dict(
+                    family="'Press Start 2P', monospace",
+                    size=10,
+                    color='white'
+                ),
+                showgrid=False
+            )
+        )
+
+        return fig
+
+    @app.callback(
+        [Output('yearly-analysis-table', 'data'),
+         Output('15-year-summary', 'children'),
+         Output('30-year-summary', 'children'),
+         Output('distribution-chart-15', 'figure'),
+         Output('distribution-chart-30', 'figure')],
+        [Input('perform-analysis-button', 'n_clicks')],
+        [State('start-month', 'value'),
+         State('start-day', 'value'),
+         State('end-month', 'value'),
+         State('end-day', 'value'),
+         State('direction-dropdown', 'value'),
+         State('years-checklist', 'value'),
+         State('stored-market', 'data')],
+        prevent_initial_call=True
+    )
+    def perform_analysis_and_update_layout(n_clicks, start_month, start_day, end_month, end_day, direction, years_range,
+                                           stored_market):
+        if start_month is None or start_day is None or end_month is None or end_day is None:
+            return [], "Please provide valid start and end dates.", "", {}, {}
+
+        # Initialize an empty DataFrame to store all OHLC data
+        ohlc_data_all_years = pd.DataFrame()
+
+        # Get the current year
+        current_year = 2024  # Or dynamically fetch current year
+
+        # Fetch OHLC data for the given range of years
+        for year_offset in years_range:
+            year = current_year - year_offset
+            start_date = f'{year}-{start_month:02d}-{start_day:02d}'
+            end_date = f'{current_year}-{end_month:02d}-{end_day:02d}'
+
+            print(f"Fetching OHLC data for {stored_market} from {start_date} to {end_date}")
+
+            # Fetch OHLC data for the market within the specified range
+            ohlc_data_year = OHLCDataFetcher.fetch_ohlc_data_by_range(stored_market, start_date, end_date)
+
+            if not ohlc_data_year.empty:
+                ohlc_data_all_years = pd.concat([ohlc_data_all_years, ohlc_data_year], ignore_index=True)
+
+        # Check if any data has been fetched
+        if ohlc_data_all_years.empty:
+            print(f"No OHLC data found for {stored_market} in the selected date range.")
+            return [], "No data available for 15-Year Summary", "No data available for 30-Year Summary", {}, {}
+
+        print(f"Fetched OHLC data: {ohlc_data_all_years.head()}")
+
+        # Perform analysis
+        analysis_results = perform_analysis(stored_market, start_month, start_day, end_month, end_day, direction,
+                                            ohlc_data_all_years)
+
+        # Prepare data for the yearly analysis table
+        yearly_data = analysis_results['yearly_results']
+
+        # Ensure the yearly_data is in the correct format for Dash DataTable
+        if yearly_data:
+            # Sort by Year in descending order
+            yearly_data_sorted = sorted(yearly_data, key=lambda x: x['Year'], reverse=True)
+
+            # Prepare table data with rounded percentages
+            table_data = [
+                {
+                    'Year': row['Year'],
+                    'Max Drawdown (Points)': round(row['Max Drawdown (Points)'], 4),
+                    'Max Drawdown (%)': round(row['Max Drawdown (%)'], 1),  # Round to 1 decimal
+                    'Max Gain (Points)': round(row['Max Gain (Points)'],4),
+                    'Max Gain (%)': round(row['Max Gain (%)'], 1),  # Round to 1 decimal
+                    'Closing Points': round(row['Closing Points'], 4),
+                    'Closing Percentage': round(row['Closing Percentage'], 1)  # Round to 1 decimal
+                }
+                for row in yearly_data_sorted
+            ]
+        else:
+            table_data = []  # Return empty if no results are found
+
+        # Prepare summaries
+        summary_15 = analysis_results['15_year_summary']
+        summary_30 = analysis_results['30_year_summary']
+
+        # Create distribution charts
+        distribution_chart_15 = create_distribution_chart(yearly_data[-15:])
+        distribution_chart_30 = create_distribution_chart(yearly_data[-30:])
+
+        # Return the results, ensuring the correct structure
+        return (
+            table_data,  # Data for the yearly analysis table
+            f"15-Year Summary: Win Rate: {summary_15['win_rate']:.1f}%, Points Gained: {summary_15['total_points_gained']}, Optimal S/L: {summary_15['optimal_stop_loss']}",
+            f"30-Year Summary: Win Rate: {summary_30['win_rate']:.1f}%, Points Gained: {summary_30['total_points_gained']}, Optimal S/L: {summary_30['optimal_stop_loss']}",
+            distribution_chart_15,
+            distribution_chart_30
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
 

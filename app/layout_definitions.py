@@ -40,7 +40,7 @@ BUTTON_STYLES = {'margin-bottom': '3px'}
 CHECKLIST_STYLES = {'margin-bottom': '10px'}
 LAYOUT_STYLES = {'display': 'flex'}
 GRAPH_STYLES = {'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
-INPUT_STYLE = {"margin-right": "10px"}
+INPUT_STYLE = {"margin-right": "10px", "width":"80px"}
 
 def format_market_name(market_name):
     """
@@ -53,6 +53,122 @@ def format_market_name(market_name):
         str: The formatted market name.
     """
     return market_name.upper().replace(' ', '_')
+
+
+def create_analysis_section():
+    """
+    Creates the section where users input analysis details and view results with a dark theme.
+    Returns:
+        html.Div: The layout containing input fields and result placeholders.
+    """
+    return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white', 'fontFamily': "'Press Start 2P', monospace",
+                           'fontSize': '10px'},
+                    children=[
+        # Inputs for the analysis
+        html.Div(children=[
+            html.Div(children=[
+                html.Label("Start Month", style={'margin-bottom': '5px'}),
+                dcc.Dropdown(id='start-month',
+                             options=[{'label': f'{i}', 'value': i} for i in range(1, 13)],
+                             value=1,
+                             style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
+                             clearable=False,
+                             className='dropdown-menu-1'),  # Disable the clearable option
+            ], style={'width': '120px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
+
+            html.Div(children=[
+                html.Label("Start Day", style={'margin-bottom': '5px'}),
+                dcc.Dropdown(id='start-day',
+                             options=[{'label': f'{i}', 'value': i} for i in range(1, 32)],
+                             value=1,
+                             style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
+                             clearable=False,
+                             className='dropdown-menu-1'),  # Disable the clearable option
+            ], style={'width': '120px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
+
+            html.Div(children=[
+                html.Label("End Month", style={'margin-bottom': '5px'}),
+                dcc.Dropdown(id='end-month',
+                             options=[{'label': f'{i}', 'value': i} for i in range(1, 13)],
+                             value=12,
+                             style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
+                             clearable=False,
+                             className='dropdown-menu-1'),  # Disable the clearable option
+            ], style={'width': '120px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
+
+            html.Div(children=[
+                html.Label("End Day", style={'margin-bottom': '5px'}),
+                dcc.Dropdown(id='end-day',
+                             options=[{'label': f'{i}', 'value': i} for i in range(1, 32)],
+                             value=31,
+                             style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
+                             clearable=False,
+                             className='dropdown-menu-1'),  # Disable the clearable option
+            ], style={'width': '120px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
+
+            html.Div(children=[
+                html.Label("Direction", style={'margin-bottom': '5px'}),
+                dcc.Dropdown(id='direction-dropdown',
+                             options=[
+                                 {'label': 'Long', 'value': 'Long'},
+                                 {'label': 'Short', 'value': 'Short'}
+                             ],
+                             value='Long',
+                             style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
+                             clearable=False,
+                             className='dropdown-menu-1'),  # Disable the clearable option
+            ], style={'width': '150px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
+
+            html.Div(children=[
+                html.Button("Perform Analysis", id='perform-analysis-button', style={
+                    'height': '40px', 'margin-top': '18px', 'background-color': '#333', 'color': 'white',
+                    'border': '1px solid white'}),
+            ], style={'display': 'flex', 'align-items': 'center'})
+        ], style={'display': 'flex', 'gap': '15px', 'align-items': 'center'}),
+
+        # Table for Year-by-Year Results
+        html.Div(children=[
+            html.Label("Yearly Analysis", style={'margin-bottom': '5px'}),
+            dash.dash_table.DataTable(id='yearly-analysis-table',
+                                      columns=[
+                                          {'name': 'Year', 'id': 'Year'},
+                                          {'name': 'Max Drawdown (Points)', 'id': 'Max Drawdown (Points)'},
+                                          {'name': 'Max Drawdown (%)', 'id': 'Max Drawdown (%)'},
+                                          {'name': 'Max Gain (Points)', 'id': 'Max Gain (Points)'},
+                                          {'name': 'Max Gain (%)', 'id': 'Max Gain (%)'},
+                                          {'name': 'Closing Points', 'id': 'Closing Points'},
+                                          {'name': 'Closing Percentage', 'id': 'Closing Percentage'},
+                                      ],
+                                      data=[],
+                                      style_header={'backgroundColor': '#333', 'color': 'white', 'border': '1px solid white',
+                                                    'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
+                                      style_cell={'backgroundColor': '#1e1e1e', 'color': 'white', 'border': '1px solid #444',
+                                                  'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
+                                      style_table={'overflowX': 'scroll'}
+                                      )
+        ], style={'padding-top': '15px'}),
+
+        # Summary Statistics for 15 and 30 years
+        html.Div(id='15-year-summary', children="15-Year Summary: ",
+                 style={'margin-top': '20px', 'font-size': '14px', 'background-color': '#333', 'padding': '10px',
+                        'border-radius': '5px', 'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'}, ),
+        html.Div(id='30-year-summary', children="30-Year Summary: ",
+                 style={'margin-top': '20px', 'font-size': '14px', 'background-color': '#333', 'padding': '10px',
+                        'border-radius': '5px', 'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'}),
+
+        # Distribution Charts
+        html.Div(children=[
+            html.Label("Distribution of Returns (15 Years)", style={'margin-bottom': '5px'}),
+            dcc.Graph(id='distribution-chart-15', config={'displayModeBar': False},
+                      style={'background-color': '#1e1e1e', 'padding': '10px'}),
+
+            html.Label("Distribution of Returns (30 Years)", style={'margin-bottom': '5px'}),
+            dcc.Graph(id='distribution-chart-30', config={'displayModeBar': False},
+                      style={'background-color': '#1e1e1e', 'padding': '10px'})
+        ], style={'padding-top': '15px'}),
+    ])
+
+
 
 def create_layout(app):
     """
@@ -86,9 +202,25 @@ def create_layout(app):
                     style={'backgroundColor': '#1e1e1e'}  # Set background color for the graph container
                 ),
 
+                # Opportunity analysis section below the main chart
+                html.Div(
+                    children=[
+                        create_analysis_section(),
+                        dcc.Loading(
+                            id='loading-opportunity',
+                            children=[html.Div(id='opportunity-output')],
+                            type='default'
+                        )
+                    ],
+                    style={'margin-top': '20px'}
+                ),
+
             ],
             style={'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
         ),
+
+
+
         html.Div(
             id='right-panel',
             children=[
@@ -449,6 +581,8 @@ def create_layout(app):
                         dcc.Store(id='active-subplots', data=[]),  # Track active subplots dynamically
                     ]
                 ),
+
             ],
-        )
+        ),
+
     ])

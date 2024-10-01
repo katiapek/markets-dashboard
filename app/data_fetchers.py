@@ -1,3 +1,5 @@
+# data_fetchers.py
+
 import os
 import sqlite3
 import pandas as pd
@@ -87,20 +89,43 @@ class OHLCDataFetcher(BaseDataFetcher):
 
     @staticmethod
     def fetch_ohlc_data(market, year):
+        table_name = f"{market.lower().replace(' ', '_')}_ohlc"
+        print(f"Fetching OHLC from table: {table_name} for year: {year}")
+
+        query = f"SELECT * FROM {table_name} WHERE Date BETWEEN ? AND ?"
+        params = (f'{year}-01-01 00:00:00', f'{year}-12-31 23:59:59')
+        print(f"Running query: {query} with params: {params}")
+
+        df = OHLCDataFetcher.fetch_data(query, params)
+
+        if df.empty:
+            print(f"No data found for {market} in {year}")
+        else:
+            df['Date'] = pd.to_datetime(df['Date'], format="%Y-%m-%d %H:%M:%S")
+            df['Day_of_Year'] = df['Date'].dt.dayofyear
+            print(f"Fetched data for {year}: {df.head()}")
+
+        return df
+
+    @staticmethod
+    def fetch_ohlc_data_by_range(market, start_date, end_date):
         """
-        Fetch OHLC data for a given market and year.
+        Fetch OHLC data for a given market within a date range.
 
         Args:
             market (str): The market name.
-            year (int): The year for which to fetch the OHLC data.
+            start_date (str): The start date in the format 'YYYY-MM-DD'.
+            end_date (str): The end date in the format 'YYYY-MM-DD'.
 
         Returns:
-            pd.DataFrame: DataFrame containing the OHLC data with additional 'Day_of_Year' column.
+            pd.DataFrame: DataFrame containing the OHLC data.
         """
-        table_name = f"{market.lower().replace(' ', '_')}_ohlc"  # format_market_name(market)
-        print(f"Fetching OHLC from {table_name}")
+        table_name = f"{market.lower().replace(' ', '_')}_ohlc"
+        print(f"Fetching OHLC from table: {table_name} for date range: {start_date} to {end_date}")
+
         query = f"SELECT * FROM {table_name} WHERE Date BETWEEN ? AND ?"
-        params = (f'{year}-01-01 00:00:00', f'{year}-12-31 23:59:59')
+        params = (f'{start_date} 00:00:00', f'{end_date} 23:59:59')
+
         df = OHLCDataFetcher.fetch_data(query, params)
 
         if not df.empty:
@@ -109,7 +134,6 @@ class OHLCDataFetcher(BaseDataFetcher):
             df['Day_of_Year'] = df['Date'].dt.dayofyear
 
         return df
-
 
 
 class OpenInterestDataFetcher(BaseDataFetcher):
