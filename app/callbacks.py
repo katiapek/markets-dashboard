@@ -838,6 +838,9 @@ def register_callbacks(app):
         return None  # No matching data found within the range
 
     def perform_analysis(market, start_month, start_day, end_month, end_day, direction, ohlc_data):
+        """
+        Perform analysis on OHLC data for a given market, start/end date range, and direction (Long/Short).
+        """
         # Ensure 'Date' is a datetime-like object
         ohlc_data['Date'] = pd.to_datetime(ohlc_data['Date'], errors='coerce')
 
@@ -862,9 +865,24 @@ def register_callbacks(app):
                 # Skip the year if no data is available within ±3 days of the start or end date
                 continue
 
-            # Get Open price at start and Close price at end
-            open_price = start_data['Open']
-            close_price = end_data['Close']
+            # Use the 'Date' directly without accessing .values[0] (since 'Date' is a Timestamp)
+            start_date = start_data['Date']
+            end_date = end_data['Date']
+
+            # Filter the data for this year to be within the specified date range
+            filtered_yearly_data = yearly_data[(yearly_data['Date'] >= start_date) & (yearly_data['Date'] <= end_date)]
+
+            if filtered_yearly_data.empty:
+                # Skip the year if no data is available in the date range
+                continue
+
+            # Convert 'Open' and 'Close' prices to numeric to avoid errors
+            open_price = pd.to_numeric(start_data['Open'], errors='coerce')
+            close_price = pd.to_numeric(end_data['Close'], errors='coerce')
+
+            if pd.isnull(open_price) or pd.isnull(close_price):
+                # Skip the year if conversion failed and any value is NaN
+                continue
 
             # Calculate points and percentage change based on direction (Long or Short)
             if direction == 'Long':
@@ -874,24 +892,27 @@ def register_callbacks(app):
                 points_change = open_price - close_price
                 percentage_change = (points_change / open_price) * 100
 
-            # Calculate max drawdown and max gain
-            max_drawdown = calculate_max_drawdown(yearly_data, open_price, close_price, direction)
-            max_gain = calculate_max_gain(yearly_data, open_price, close_price, direction)
+            # Calculate max drawdown and max gain for the filtered data range
+            max_drawdown = calculate_max_drawdown(filtered_yearly_data, open_price, close_price, direction)
+            max_gain = calculate_max_gain(filtered_yearly_data, open_price, close_price, direction)
 
             # Store yearly result with the year included
             analysis_results.append({
                 'Year': year,
-                'Max Drawdown (Points)': max_drawdown['points'],
-                'Max Drawdown (%)': max_drawdown['percentage'],
-                'Max Gain (Points)': max_gain['points'],
-                'Max Gain (%)': max_gain['percentage'],
-                'Closing Points': points_change,
-                'Closing Percentage': percentage_change
+                'Max Drawdown (Points)': round(max_drawdown['points'], 4),
+                'Max Drawdown (%)': round(max_drawdown['percentage'], 1),
+                'Max Gain (Points)': round(max_gain['points'], 4),
+                'Max Gain (%)': round(max_gain['percentage'], 1),
+                'Closing Points': round(points_change, 4),
+                'Closing Percentage': round(percentage_change, 1)
             })
 
-        # Calculate summary statistics
-        summary_15y = calculate_summary_statistics(analysis_results[-15:])
-        summary_30y = calculate_summary_statistics(analysis_results[-30:])
+        # Sort results by year in descending order
+        analysis_results = sorted(analysis_results, key=lambda x: x['Year'], reverse=True)
+
+        # Calculate summary statistics for the most recent 15 and 30 years
+        summary_15y = calculate_summary_statistics(analysis_results[:15])  # First 15 items after sorting
+        summary_30y = calculate_summary_statistics(analysis_results[:30])  # First 30 items after sorting
 
         return {
             'yearly_results': analysis_results,
@@ -904,11 +925,16 @@ def register_callbacks(app):
         Calculate the maximum drawdown in points and percentage.
         """
         if direction == 'Long':
-            min_price = df['Low'].min()
+            # Convert 'Low' column to numeric and find the minimum price
+            min_price = pd.to_numeric(df['Low'], errors='coerce').min()
             drawdown_points = open_price - min_price
         else:
-            max_price = df['High'].max()
+            # Convert 'High' column to numeric and find the maximum price
+            max_price = pd.to_numeric(df['High'], errors='coerce').max()
             drawdown_points = max_price - open_price
+
+        # Ensure open_price is numeric
+        open_price = pd.to_numeric(open_price, errors='coerce')
 
         drawdown_percentage = (drawdown_points / open_price) * 100
         return {'points': drawdown_points, 'percentage': drawdown_percentage}
@@ -918,14 +944,103 @@ def register_callbacks(app):
         Calculate the maximum gain in points and percentage.
         """
         if direction == 'Long':
-            max_price = df['High'].max()
+            # Convert 'High' column to numeric and find the maximum price
+            max_price = pd.to_numeric(df['High'], errors='coerce').max()
             gain_points = max_price - open_price
         else:
-            min_price = df['Low'].min()
+            # Convert 'Low' column to numeric and find the minimum price
+            min_price = pd.to_numeric(df['Low'], errors='coerce').min()
             gain_points = open_price - min_price
+
+        # Ensure open_price is numeric
+        open_price = pd.to_numeric(open_price, errors='coerce')
 
         gain_percentage = (gain_points / open_price) * 100
         return {'points': gain_points, 'percentage': gain_percentage}
+
+    def calculate_optimal_exit_and_stop_loss(analysis_results):
+        """
+        Calculate the optimal stop loss and exit based on historical max drawdowns and gains.
+        Args:
+            analysis_results (list): List of yearly analysis results with max drawdown and max gain values.
+        Returns:
+            dict: A dictionary containing the optimal stop loss, optimal exit, win rate, and points gained.
+        """
+        total_years = len(analysis_results)
+        if total_years == 0:
+            return {
+                'optimal_stop_loss': 0,
+                'optimal_exit': 0,
+                'win_rate': 0,
+                'points_gained': 0
+            }
+
+        # Determine the maximum observed drawdown and gain across all years
+        max_observed_drawdown = max(result['Max Drawdown (%)'] for result in analysis_results)
+        max_observed_gain = max(result['Max Gain (%)'] for result in analysis_results)
+
+        # Stop loss and exit thresholds to test (1% through max observed drawdown/gain)
+        stop_loss_thresholds = [i for i in range(1, int(max_observed_drawdown) + 1)]
+        exit_thresholds = [i for i in range(1, int(max_observed_gain) + 1)]
+
+        # Store results for each stop loss and exit combination
+        best_combination = {
+            'stop_loss': None,
+            'exit': None,
+            'win_rate': 0,
+            'points_gained': float('-inf')
+        }
+
+        # Iterate over stop loss thresholds
+        for stop_loss in stop_loss_thresholds:
+            # Iterate over exit thresholds
+            for exit_level in exit_thresholds:
+                wins = 0
+                total_points = 0
+
+                # Simulate each year with the given stop loss and exit combination
+                for result in analysis_results:
+                    max_drawdown = result['Max Drawdown (%)']
+                    max_drawdown_points = result['Max Drawdown (Points)']
+                    max_gain = result['Max Gain (%)']
+                    max_gain_points = result['Max Gain (Points)']
+                    closing_points = result['Closing Points']
+
+                    # Apply stop loss (percentage-based)
+                    if max_drawdown >= stop_loss:
+                        # Loss proportional to the stop loss in points
+                        total_points += (-stop_loss / max_drawdown) * max_drawdown_points
+                    elif max_gain >= exit_level:
+                        # Gain proportional to the exit level in points
+                        total_points += (exit_level / max_gain) * max_gain_points
+                        wins += 1  # Count this as a win because the exit level was hit
+                    elif closing_points > 0:
+                        # Positive closing points mean a win
+                        total_points += closing_points
+                        wins += 1  # Count this as a win because closing points are positive
+                    else:
+                        # Negative closing points, take the loss
+                        total_points += closing_points
+
+                # Calculate win rate for this stop loss and exit level
+                win_rate = (wins / total_years) * 100
+
+                # If this combination yields better points, update the best combination
+                if total_points > best_combination['points_gained']:
+                    best_combination = {
+                        'stop_loss': stop_loss,
+                        'exit': exit_level,
+                        'win_rate': win_rate,
+                        'points_gained': total_points
+                    }
+
+        # Return the best combination of stop loss and exit
+        return {
+            'optimal_stop_loss': best_combination['stop_loss'],
+            'optimal_exit': best_combination['exit'],
+            'win_rate': best_combination['win_rate'],
+            'points_gained': round(best_combination['points_gained'],4)
+        }
 
     def calculate_summary_statistics(analysis_results):
         total_years = len(analysis_results)
@@ -935,8 +1050,14 @@ def register_callbacks(app):
                 'total_points_gained': 0,
                 'total_percent_gained': 0,
                 'optimal_stop_loss': 0,
-                'optimal_exit': 0
+                'optimal_exit': 0,
+                'optimal_win_rate' : 0,
+                'optimal_points_gained': 0,
             }
+
+        # CHECK
+        print(f"Analysis Results: {analysis_results}")
+
 
         # Filter wins and losses
         wins = [result for result in analysis_results if result['Closing Points'] > 0]
@@ -953,20 +1074,24 @@ def register_callbacks(app):
         max_drawdowns = [result['Max Drawdown (Points)'] for result in analysis_results]
         max_profits = [result['Max Gain (Points)'] for result in analysis_results]
 
-        optimal_stop_loss = round(sum(max_drawdowns) / total_years, 4)
-        optimal_exit = round(sum(max_profits) / total_years,4)
+        # optimal_stop_loss = round(sum(max_drawdowns) / total_years, 4)
+        # optimal_exit = round(sum(max_profits) / total_years,4)
+
+        optimal_calculations = calculate_optimal_exit_and_stop_loss(analysis_results)
 
         return {
             'win_rate': win_rate,
-            'total_points_gained': total_points_gained,
+            'total_points_gained': round(total_points_gained,4),
             'total_percent_gained': total_percent_gained,
-            'optimal_stop_loss': optimal_stop_loss,
-            'optimal_exit': optimal_exit
+            'optimal_stop_loss': optimal_calculations['optimal_stop_loss'],
+            'optimal_exit': optimal_calculations['optimal_exit'],
+            'optimal_win_rate': optimal_calculations['win_rate'],
+            'optimal_points_gained': optimal_calculations['points_gained']
         }
 
     def create_distribution_chart(yearly_data):
         """
-        Create a distribution chart for the returns over a given range of years.
+        Create a distribution chart for the returns over a given range of years using Plotly's default binning.
 
         Args:
             yearly_data (list[dict]): List of dictionaries containing yearly analysis data.
@@ -975,55 +1100,26 @@ def register_callbacks(app):
             go.Figure: A Plotly figure representing the distribution of returns.
         """
         # Extract the percentage changes from the yearly data
-        returns = [res['Closing Percentage'] for res in yearly_data]  # Assuming 'Closing Percentage' is the correct key
-
-        # Determine the bin edges for the histogram based on the range of returns
-        num_bins = 6  # You wanted 6 intervals
-        hist, bin_edges = np.histogram(returns, bins=num_bins)
+        returns = [res['Closing Percentage'] for res in yearly_data]
 
         # Create a histogram to show the distribution of returns
         fig = go.Figure()
 
         fig.add_trace(go.Histogram(
             x=returns,
-            nbinsx=num_bins,
-            marker_color='blue',
+            # nbinsx=20, # Let Plotly decide on the best binning based on the data, but we can specify the number of bins.
+            marker_color='#4CAF50',
             opacity=0.75
         ))
 
-        # Set the layout with custom font and dark theme
         fig.update_layout(
             # title='Distribution of Returns',
             xaxis_title='Return (%)',
             yaxis_title='Frequency',
             plot_bgcolor='#1e1e1e',
             paper_bgcolor='#1e1e1e',
-            font=dict(
-                family="'Press Start 2P', monospace",
-                size=10,
-                color='white'
-            ),
-            xaxis=dict(
-                tickmode='array',
-                tickvals=[(bin_edges[i] + bin_edges[i + 1]) / 2 for i in range(len(bin_edges) - 1)],
-                # Tick at bin center
-                ticktext=[f"{bin_edges[i]:.1f}% to {bin_edges[i + 1]:.1f}%" for i in range(len(bin_edges) - 1)],
-                # Custom labels
-                title_font=dict(
-                    family="'Press Start 2P', monospace",
-                    size=10,
-                    color='white'
-                ),
-                showgrid=False
-            ),
-            yaxis=dict(
-                title_font=dict(
-                    family="'Press Start 2P', monospace",
-                    size=10,
-                    color='white'
-                ),
-                showgrid=False
-            )
+            font=dict(color='white', family="'Press Start 2P', monospace"),
+            bargap=0.1  # Adjusts the gap between bars for better visibility
         )
 
         return fig
@@ -1083,43 +1179,27 @@ def register_callbacks(app):
         # Prepare data for the yearly analysis table
         yearly_data = analysis_results['yearly_results']
 
-        # Ensure the yearly_data is in the correct format for Dash DataTable
-        if yearly_data:
-            # Sort by Year in descending order
-            yearly_data_sorted = sorted(yearly_data, key=lambda x: x['Year'], reverse=True)
-
-            # Prepare table data with rounded percentages
-            table_data = [
-                {
-                    'Year': row['Year'],
-                    'Max Drawdown (Points)': round(row['Max Drawdown (Points)'], 4),
-                    'Max Drawdown (%)': round(row['Max Drawdown (%)'], 1),  # Round to 1 decimal
-                    'Max Gain (Points)': round(row['Max Gain (Points)'],4),
-                    'Max Gain (%)': round(row['Max Gain (%)'], 1),  # Round to 1 decimal
-                    'Closing Points': round(row['Closing Points'], 4),
-                    'Closing Percentage': round(row['Closing Percentage'], 1)  # Round to 1 decimal
-                }
-                for row in yearly_data_sorted
-            ]
-        else:
-            table_data = []  # Return empty if no results are found
-
         # Prepare summaries
         summary_15 = analysis_results['15_year_summary']
         summary_30 = analysis_results['30_year_summary']
 
-        # Create distribution charts
+        # Create distribution charts using Plotly's default binning
         distribution_chart_15 = create_distribution_chart(yearly_data[-15:])
         distribution_chart_30 = create_distribution_chart(yearly_data[-30:])
 
-        # Return the results, ensuring the correct structure
+        # Return the results
         return (
-            table_data,  # Data for the yearly analysis table
-            f"15-Year Summary: Win Rate: {summary_15['win_rate']:.1f}%, Points Gained: {summary_15['total_points_gained']}, Optimal S/L: {summary_15['optimal_stop_loss']}",
-            f"30-Year Summary: Win Rate: {summary_30['win_rate']:.1f}%, Points Gained: {summary_30['total_points_gained']}, Optimal S/L: {summary_30['optimal_stop_loss']}",
+            yearly_data,  # Data for the yearly analysis table
+            f"15-Year Summary: Win Rate: {summary_15['win_rate']:.2f}%, Points Gained: {summary_15['total_points_gained']}, "
+            f"Optimal S/L: {summary_15['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_15['optimal_exit']:.2f}%, "
+            f"Optimal Win Rate: {summary_15['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_15['optimal_points_gained']}",
+            f"30-Year Summary: Win Rate: {summary_30['win_rate']:.2f}%, Points Gained: {summary_30['total_points_gained']}, "
+            f"Optimal S/L: {summary_30['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_30['optimal_exit']:.2f}%, "
+            f"Optimal Win Rate: {summary_30['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_30['optimal_points_gained']}",
             distribution_chart_15,
             distribution_chart_30
         )
+
 
 
 
