@@ -1,3 +1,4 @@
+# layout_definitions.py
 import dash
 from dash import dcc, html
 import dash_bootstrap_components as dbc  # Correct import
@@ -117,7 +118,7 @@ def create_analysis_section():
                              style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
                              clearable=False,
                              className='dropdown-menu-1'),  # Disable the clearable option
-            ], style={'width': '150px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
+            ], style={'width': '200px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
 
             html.Div(children=[
                 html.Button("Perform Analysis", id='perform-analysis-button', style={
@@ -156,18 +157,47 @@ def create_analysis_section():
                  style={'margin-top': '20px', 'font-size': '14px', 'background-color': '#333', 'padding': '10px',
                         'border-radius': '5px', 'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'}),
 
-        # Distribution Charts
-        html.Div(children=[
-            html.Label("Distribution of Returns (15 Years)", style={'margin-bottom': '5px'}),
-            dcc.Graph(id='distribution-chart-15', config={'displayModeBar': False},
-                      style={'background-color': '#1e1e1e', 'padding': '10px'}),
+        # Container for the distribution charts in a row
+        html.Div([
+            # Regular distribution chart for 15 years
+            html.Div([
+                dcc.Graph(id='distribution-chart-15', config={'displayModeBar': False}),
+            ], style={'width': '50%', 'display': 'inline-block'}),
 
-            html.Label("Distribution of Returns (30 Years)", style={'margin-bottom': '5px'}),
-            dcc.Graph(id='distribution-chart-30', config={'displayModeBar': False},
-                      style={'background-color': '#1e1e1e', 'padding': '10px'})
-        ], style={'padding-top': '15px'}),
+            # Optimal distribution chart for 15 years
+            html.Div([
+                dcc.Graph(id='distribution-chart-optimal-15', config={'displayModeBar': False}),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+        ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center'}),
+
+        # Same structure for the 30 years below
+        html.Div([
+            html.Div([
+                dcc.Graph(id='distribution-chart-30', config={'displayModeBar': False}),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='distribution-chart-optimal-30', config={'displayModeBar': False}),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+        ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center'}),
+
+
+        html.Div([
+            # 15-year cumulative returns and metrics
+            html.Div([
+                dcc.Graph(id='cumulative-return-chart-15'),
+                html.Div(id='risk-metrics-summary-15'),
+                html.Div(id='risk-metrics-summary-15-stoploss'),
+            ], style={'display': 'inline-block', 'width': '48%'}),
+
+            # 30-year cumulative returns and metrics
+            html.Div([
+                dcc.Graph(id='cumulative-return-chart-30'),
+                html.Div(id='risk-metrics-summary-30'),
+                html.Div(id='risk-metrics-summary-30-stoploss'),
+            ], style={'display': 'inline-block', 'width': '48%'}),
+        ])
     ])
-
 
 
 def create_layout(app):

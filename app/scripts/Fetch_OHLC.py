@@ -17,6 +17,22 @@ def clean_numerical_values(df, columns):
     return df_cleaned
 
 
+def calculate_percentage_changes(df):
+    """
+    Calculate percentage changes for Close-Close, Open-Close, Open-High, Open-Low, Close-High, Close-Low.
+    """
+    df['Close_Close_Pct_Change'] = df['Close'].pct_change() * 100
+    df['Open_Close_Pct_Change'] = ((df['Close'] - df['Open']) / df['Open']) * 100
+    df['Open_High_Pct_Change'] = ((df['High'] - df['Open']) / df['Open']) * 100
+    df['Open_Low_Pct_Change'] = ((df['Low'] - df['Open']) / df['Open']) * 100
+    df['Close_High_Pct_Change'] = ((df['High'] - df['Close']) / df['Close']) * 100
+    df['Close_Low_Pct_Change'] = ((df['Low'] - df['Close']) / df['Close']) * 100
+
+    # Round the percentage change columns to 2 decimal places
+    df = df.round(2)
+
+    return df
+
 
 def fetch_ohlc_for_2024(ticker, market_name, conn):
     # Define the start date for 2024 and end date as yesterday
@@ -41,6 +57,9 @@ def fetch_ohlc_for_2024(ticker, market_name, conn):
 
     # Clean numerical values to remove commas
     data = clean_numerical_values(data, ['Close', 'Open', 'High', 'Low'])
+
+    # Calculate percentage changes
+    data = calculate_percentage_changes(data)
 
     # Replace existing data if Date already exists
     table_name = market_name.lower().replace(' ', '_') + '_ohlc'
@@ -88,8 +107,11 @@ def compute_and_store_seasonality(market_name, conn):
         # Calculate day of the year
         df['Day_of_Year'] = df['Date'].dt.dayofyear
 
-        # Calculate percentage change
+        # Calculate percentage change for seasonality
         df['Pct_Change'] = df['Close'].pct_change() * 100
+
+        # Round the seasonal percentage change to 2 decimal places
+        df['Pct_Change'] = df['Pct_Change'].round(2)
 
         # Group by day of the year and calculate average percentage change
         avg_pct_change = df.groupby('Day_of_Year')['Pct_Change'].mean()

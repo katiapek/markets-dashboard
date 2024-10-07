@@ -18,6 +18,8 @@ from data_fetchers import (
     Index26WDataFetcher
 )
 from scripts.config import market_tickers
+import matplotlib.pyplot as plt
+# from scipy.stats import norm
 
 # Constants for trace colors and default values
 DEFAULT_MARKET = 'SP 500'
@@ -87,6 +89,373 @@ def update_yaxis(fig, row, col, title, y_min=None, y_max=None, secondary_y=False
 
 def add_shape(fig, x0, x1, y0, y1, row, col, color='gray', dash='dash'):
     fig.add_shape(type='line', x0=x0, x1=x1, y0=y0, y1=y1, line=dict(color=color, dash=dash), row=row, col=col)
+
+def compare_portfolios(start_month, start_day, end_month, end_day, direction, ohlc_data, number_of_years_to_combine):
+    """
+    Function to compare no stop-loss vs stop-loss and optimal exit portfolios over a 15 or 30 year period.
+    Parameters:
+        - start_month: int, start month for the trade window
+        - start_day: int, start day for the trade window
+        - end_month: int, end month for the trade window
+        - end_day: int, end day for the trade window
+        - direction: str, 'Long' or 'Short'
+        - ohlc_data: pd.DataFrame, historical OHLC data
+        - number_of_years_to_combine: int, number of years (15 or 30)
+    Returns:
+        - two line charts comparing daily gain/loss % with and without stop-loss/optimal exit
+        - risk metrics for comparison
+    """
+    combined_no_stop_loss = pd.DataFrame()
+    combined_with_stop_loss = pd.DataFrame()
+
+    # Get unique years
+    unique_years = sorted(ohlc_data['Date'].dt.year.unique())[-number_of_years_to_combine:]
+
+    for year in unique_years:
+        # Slice OHLC data for the year
+        yearly_data = ohlc_data[ohlc_data['Date'].dt.year == year]
+        start_data = find_nearest_date(yearly_data, f"{year}-{start_month:02d}-{start_day:02d}")
+        end_data = find_nearest_date(yearly_data, f"{year}-{end_month:02d}-{end_day:02d}")
+
+        if start_data is None or end_data is None:
+            continue
+
+        # Get the sliced data for this year between start and end dates
+        sliced_year_data = yearly_data[
+            (yearly_data['Date'] >= start_data['Date']) & (yearly_data['Date'] <= end_data['Date'])]
+
+        # Append sliced data to combined data for no stop loss
+        combined_no_stop_loss = pd.concat([combined_no_stop_loss, sliced_year_data], ignore_index=True)
+
+        # Simulate stop loss and optimal exit for this slice
+        points_change, percentage_change = simulate_optimal_trades(sliced_year_data, direction)
+
+        # Combine with stop-loss data
+        sliced_year_data['Gain/Loss (%)'] = percentage_change
+        combined_with_stop_loss = pd.concat([combined_with_stop_loss, sliced_year_data], ignore_index=True)
+
+    # Sort by Date to create a continuous portfolio
+    combined_no_stop_loss.sort_values(by='Date', inplace=True)
+    combined_with_stop_loss.sort_values(by='Date', inplace=True)
+
+    # Calculate daily returns for both portfolios
+    combined_no_stop_loss['Daily Return (%)'] = combined_no_stop_loss['Close'].pct_change() * 100
+    combined_with_stop_loss['Daily Return (%)'] = combined_with_stop_loss['Gain/Loss (%)']
+
+    # Calculate cumulative returns
+    combined_no_stop_loss['Cumulative Return'] = (1 + combined_no_stop_loss['Daily Return (%)'] / 100).cumprod() - 1
+    combined_with_stop_loss['Cumulative Return'] = (1 + combined_with_stop_loss['Daily Return (%)'] / 100).cumprod() - 1
+
+    # Calculate Sharpe ratio
+    sharpe_no_stop_loss = calculate_sharpe_ratio(combined_no_stop_loss['Daily Return (%)'])
+    sharpe_with_stop_loss = calculate_sharpe_ratio(combined_with_stop_loss['Daily Return (%)'])
+
+    # Plotting the results
+    plt.figure(figsize=(12, 6))
+
+    plt.subplot(1, 2, 1)
+    plt.plot(combined_no_stop_loss['Date'], combined_no_stop_loss['Cumulative Return'], label="No Stop Loss",
+             color='blue')
+    plt.plot(combined_with_stop_loss['Date'], combined_with_stop_loss['Cumulative Return'], label="With Stop Loss",
+             color='green')
+    plt.title(f"Cumulative Returns over {number_of_years_to_combine} years")
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.plot(combined_no_stop_loss['Date'], combined_no_stop_loss['Daily Return (%)'], label="No Stop Loss",
+             color='blue')
+    plt.plot(combined_with_stop_loss['Date'], combined_with_stop_loss['Daily Return (%)'], label="With Stop Loss",
+             color='green')
+    plt.title(f"Daily Returns over {number_of_years_to_combine} years")
+    plt.legend()
+
+    plt.show()
+
+    # Return risk metrics
+    return {
+        "Sharpe Ratio (No Stop Loss)": sharpe_no_stop_loss,
+        "Sharpe Ratio (With Stop Loss)": sharpe_with_stop_loss
+    }
+
+
+def calculate_sharpe_ratio(daily_returns):
+    """
+    Function to calculate Sharpe ratio.
+    Parameters:
+        - daily_returns: pd.Series, daily return percentages
+    Returns:
+        - sharpe_ratio: float, calculated Sharpe ratio
+    """
+    mean_return = daily_returns.mean()
+    std_dev = daily_returns.std()
+    sharpe_ratio = mean_return / std_dev * np.sqrt(252)  # Assuming 252 trading days per year
+    return sharpe_ratio
+
+def calculate_sortino_ratio(daily_returns, risk_free_rate=0):
+    """
+    Function to calculate Sortino ratio.
+    Parameters:
+        - daily_returns: pd.Series, daily return percentages
+        - risk_free_rate: float, assumed risk-free rate (default is 0)
+    Returns:
+        - sortino_ratio: float, calculated Sortino ratio
+    """
+    negative_returns = daily_returns[daily_returns < risk_free_rate]
+    mean_return = daily_returns.mean()
+    downside_std_dev = negative_returns.std()
+    sortino_ratio = (mean_return - risk_free_rate) / downside_std_dev * np.sqrt(252)  # Annualize using 252 trading days
+    return sortino_ratio
+
+def calculate_maximum_drawdown(cumulative_returns):
+    """
+    Function to calculate Maximum Drawdown.
+    Parameters:
+        - cumulative_returns: pd.Series, cumulative returns over time
+    Returns:
+        - max_drawdown: float, calculated Maximum Drawdown in percentage
+    """
+    cumulative_max = cumulative_returns.cummax()
+
+    drawdown = (cumulative_returns - cumulative_max) / cumulative_max
+
+    max_drawdown = drawdown.min() * 100  # Convert to percentage
+    return max_drawdown
+
+
+def calculate_calmar_ratio(daily_returns, max_drawdown):
+    # Calculate the Calmar ratio using annualized returns and max drawdown
+    annualized_return = daily_returns.mean() * 252  # Assuming 252 trading days per year
+    calmar_ratio = annualized_return / abs(max_drawdown)
+    return calmar_ratio
+
+def calculate_volatility(daily_returns):
+    """
+    Function to calculate Volatility.
+    Parameters:
+        - daily_returns: pd.Series, daily return percentages
+    Returns:
+        - volatility: float, calculated volatility in percentage
+    """
+    volatility = daily_returns.std() * np.sqrt(252) * 100  # Annualized volatility in percentage
+    return volatility
+
+
+def find_nearest_date(data, target_date, max_delta=3):
+    """
+    Find the nearest available date within a range of ±max_delta days from the target date.
+
+    Args:
+        data (pd.DataFrame): The OHLC data with a 'Date' column.
+        target_date (str): The target date in "YYYY-MM-DD" format.
+        max_delta (int): The maximum number of days to search before or after the target date.
+
+    Returns:
+        pd.Series or None: The row with the nearest date found, or None if no data is found within the range.
+    """
+    target_date = pd.to_datetime(target_date)
+
+    # Search within the given range (±max_delta days)
+    for delta in range(max_delta + 1):
+        # Try going backward and forward from the target date
+        for sign in [-1, 1]:
+            search_date = target_date + timedelta(days=sign * delta)
+            nearest_data = data[data['Date'] == search_date]
+
+            if not nearest_data.empty:
+                return nearest_data.iloc[0]  # Return the first matching row
+
+    return None  # No matching data found within the range
+
+
+def simulate_optimal_trades(yearly_data, ohlc_data, start_month, start_day, end_month, end_day, optimal_results):
+    optimal_trades_results = []
+    for result in yearly_data:
+        start_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == result['Year']],
+                                       f"{result['Year']}-{start_month:02d}-{start_day:02d}")
+        end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == result['Year']],
+                                     f"{result['Year']}-{end_month:02d}-{end_day:02d}")
+
+        if start_data is None or end_data is None:
+            continue
+
+        open_price = pd.to_numeric(start_data['Open'], errors='coerce')
+        close_price = pd.to_numeric(end_data['Close'], errors='coerce')
+
+        max_drawdown = result['Max Drawdown (%)']
+        max_gain = result['Max Gain (%)']
+
+        if max_drawdown >= optimal_results['optimal_stop_loss']:
+            percentage_change = -optimal_results['optimal_stop_loss']
+            max_drawdown = percentage_change
+        elif max_gain >= optimal_results['optimal_exit']:
+            percentage_change = optimal_results['optimal_exit']
+            max_gain = percentage_change
+        else:
+            percentage_change = 100 * (close_price - open_price)/open_price
+
+        points_change = open_price * percentage_change
+
+        optimal_trades_results.append({
+            'Year': result['Year'],
+            'Max Drawdown (Points)': max_drawdown * open_price,
+            'Max Drawdown (%)': max_drawdown,
+            'Max Gain (Points)': max_gain * open_price,
+            'Max Gain (%)': max_gain,
+            'Closing Points': round(points_change, 4),
+            'Closing Percentage': round(percentage_change, 1)
+        })
+
+    return optimal_trades_results
+
+
+def create_cumulative_return_charts(start_month, start_day, end_month, end_day, direction, ohlc_data, num_years,
+                                    optimal_results):
+    """
+    Function to create cumulative return charts for both scenarios (with and without stop-loss/optimal exit)
+    over the specified number of years.
+
+    Parameters:
+        - start_month, start_day, end_month, end_day: Start and end month/day for the period of interest.
+        - direction: 'Long' or 'Short' indicating the trade direction.
+        - ohlc_data: pd.DataFrame, historical OHLC data.
+        - num_years: int, number of years to include (15 or 30).
+        - optimal_results: dict, containing optimal stop-loss and exit levels.
+
+    Returns:
+        - fig_15y, fig_30y: Plotly Figure objects for 15-year and 30-year cumulative return charts.
+    """
+    # Slicing and preparing the data for each year
+    combined_data = pd.DataFrame()
+
+    current_year = pd.Timestamp.now().year
+    for year_offset in range(num_years):
+        year = current_year - year_offset
+
+        # Slicing data for each year
+        start_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
+                                       f"{year}-{start_month:02d}-{start_day:02d}")
+        end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
+                                     f"{year}-{end_month:02d}-{end_day:02d}")
+
+        if start_data is None or end_data is None:
+            continue
+
+        yearly_data = ohlc_data[(ohlc_data['Date'] >= start_data['Date']) & (ohlc_data['Date'] <= end_data['Date'])]
+        combined_data = pd.concat([combined_data, yearly_data])
+
+    # Sorting by date for cumulative returns
+    combined_data.sort_values('Date', inplace=True)
+
+    # Calculating daily returns for both scenarios
+    combined_data['No_Stop_Returns'] = combined_data['Close'].pct_change().fillna(0)
+    # Calculate stop-loss/exit returns year by year
+    combined_data['Stop_Loss_Returns'] = pd.Series(dtype=float)
+
+    for year in combined_data['Date'].dt.year.unique():
+        yearly_data = combined_data[combined_data['Date'].dt.year == year]
+
+        # Apply stop-loss/exit calculation for the yearly data slice
+        stop_loss_returns = calculate_stop_loss_return(yearly_data, optimal_results, direction)
+
+        # Store the results in the combined data
+        combined_data.loc[yearly_data.index, 'Stop_Loss_Returns'] = stop_loss_returns
+
+    # Calculate cumulative returns
+    combined_data['Cumulative_No_Stop'] = (1 + combined_data['No_Stop_Returns']).cumprod() - 1
+    combined_data['Cumulative_Stop_Loss'] = (1 + combined_data['Stop_Loss_Returns']).cumprod() - 1
+
+    # displaying the DataFrame
+    combined_data.to_csv(f'combined_data.csv', index=False)
+
+    # Plotting
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(x=combined_data['Date'], y=combined_data['Cumulative_No_Stop'], mode='lines', name='No Stop-Loss'))
+    fig.add_trace(go.Scatter(x=combined_data['Date'], y=combined_data['Cumulative_Stop_Loss'], mode='lines',
+                             name='With Stop-Loss/Optimal Exit'))
+
+    # Update layout
+    fig.update_layout(
+        title=f'Cumulative Returns Over {num_years} Years',
+        xaxis_title='Date',
+        yaxis_title='Cumulative Return (%)',
+        template='plotly_dark',
+    )
+
+    return fig, combined_data['No_Stop_Returns'], combined_data['Stop_Loss_Returns']
+
+
+def calculate_stop_loss_return(yearly_data, optimal_results, direction):
+    """
+    Function to calculate daily returns with stop-loss and optimal exit for a single year slice.
+    Parameters:
+        - yearly_data: pd.DataFrame, OHLC data for a single year.
+        - optimal_results: dict, optimal stop-loss and exit values.
+        - direction: 'Long' or 'Short', indicating the trade direction.
+    Returns:
+        - pd.Series: Daily returns with stop-loss/exit applied.
+    """
+    # Initialize cumulative return tracker
+    cumulative_return = 0
+    stop_loss_hit = False
+
+    # Iterate over the yearly data and calculate returns
+    stop_loss_returns = []
+
+    for index, row in yearly_data.iterrows():
+        if stop_loss_hit:
+            # After hitting stop loss or exit, no further returns should be applied
+            stop_loss_returns.append(0)
+        else:
+            # Calculate the daily return
+            if direction == 'Long':
+                daily_return = row['Close'] / row['Open'] - 1
+            else:
+                daily_return = 1 - row['Close'] / row['Open']
+
+            cumulative_return += daily_return
+
+            # Check if stop-loss or exit is triggered
+            if cumulative_return <= -optimal_results['optimal_stop_loss'] / 100:
+                stop_loss_returns.append(-optimal_results['optimal_stop_loss'] / 100)  # Stop-loss triggered
+                stop_loss_hit = True
+            elif cumulative_return >= optimal_results['optimal_exit'] / 100:
+                stop_loss_returns.append(optimal_results['optimal_exit'] / 100)  # Exit triggered
+                stop_loss_hit = True
+            else:
+                stop_loss_returns.append(daily_return)  # Normal return
+
+    return pd.Series(stop_loss_returns, index=yearly_data.index)
+
+
+
+def calculate_risk_metrics(daily_returns):
+    # Calculate various risk metrics
+    sharpe_ratio = calculate_sharpe_ratio(daily_returns)
+    sortino_ratio = calculate_sortino_ratio(daily_returns)
+    max_drawdown = calculate_maximum_drawdown(daily_returns)  # Ensure max drawdown is calculated here
+
+    # Pass both daily_returns and max_drawdown to the Calmar ratio calculation
+    calmar_ratio = calculate_calmar_ratio(daily_returns, max_drawdown)
+    volatility = calculate_volatility(daily_returns)
+
+    return {
+        'Sharpe Ratio': sharpe_ratio,
+        'Sortino Ratio': sortino_ratio,
+        'Max Drawdown': max_drawdown,
+        'Calmar Ratio': calmar_ratio,
+        'Volatility': volatility
+    }
+
+def format_risk_metrics(risk_metrics):
+    return f"""
+    Sharpe Ratio: {risk_metrics['Sharpe Ratio']:.2f}\n
+    Sortino Ratio: {risk_metrics['Sortino Ratio']:.2f}\n
+    Max Drawdown: {risk_metrics['Max Drawdown']:.2f}\n
+    Calmar Ratio: {risk_metrics['Calmar Ratio']:.4f}\n
+    Volatility: {risk_metrics['Volatility']:.2f}
+    """
+
 
 def register_callbacks(app):
 
@@ -811,32 +1180,6 @@ def register_callbacks(app):
 
     # Callback for Opportunity Analysis section
 
-    def find_nearest_date(data, target_date, max_delta=3):
-        """
-        Find the nearest available date within a range of ±max_delta days from the target date.
-
-        Args:
-            data (pd.DataFrame): The OHLC data with a 'Date' column.
-            target_date (str): The target date in "YYYY-MM-DD" format.
-            max_delta (int): The maximum number of days to search before or after the target date.
-
-        Returns:
-            pd.Series or None: The row with the nearest date found, or None if no data is found within the range.
-        """
-        target_date = pd.to_datetime(target_date)
-
-        # Search within the given range (±max_delta days)
-        for delta in range(max_delta + 1):
-            # Try going backward and forward from the target date
-            for sign in [-1, 1]:
-                search_date = target_date + timedelta(days=sign * delta)
-                nearest_data = data[data['Date'] == search_date]
-
-                if not nearest_data.empty:
-                    return nearest_data.iloc[0]  # Return the first matching row
-
-        return None  # No matching data found within the range
-
     def perform_analysis(market, start_month, start_day, end_month, end_day, direction, ohlc_data):
         """
         Perform analysis on OHLC data for a given market, start/end date range, and direction (Long/Short).
@@ -914,8 +1257,55 @@ def register_callbacks(app):
         summary_15y = calculate_summary_statistics(analysis_results[:15])  # First 15 items after sorting
         summary_30y = calculate_summary_statistics(analysis_results[:30])  # First 30 items after sorting
 
+        # Now, calculate optimal stop-loss and exit based on historical data
+        optimal_results = calculate_optimal_exit_and_stop_loss(analysis_results)
+
+        # Simulate trades with optimal S/L and exit
+        optimal_trades_results = []
+        for result in analysis_results:
+            # Get the 'Open' and 'Close' prices from the original data
+            start_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == result['Year']],
+                                           f"{result['Year']}-{start_month:02d}-{start_day:02d}")
+            end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == result['Year']],
+                                         f"{result['Year']}-{end_month:02d}-{end_day:02d}")
+
+            if start_data is None or end_data is None:
+                continue
+
+            open_price = pd.to_numeric(start_data['Open'], errors='coerce')
+            close_price = pd.to_numeric(end_data['Close'], errors='coerce')
+
+            # Apply stop loss and exit strategy based on optimal calculations
+            max_drawdown = result['Max Drawdown (%)']
+            max_gain = result['Max Gain (%)']
+
+            if max_drawdown >= optimal_results['optimal_stop_loss']:
+                # If the stop loss is hit
+                points_change = -optimal_results['optimal_stop_loss'] * open_price / 100
+            elif max_gain >= optimal_results['optimal_exit']:
+                # If the exit is hit
+                points_change = optimal_results['optimal_exit'] * open_price / 100
+            else:
+                # If neither is hit, use the normal closing points
+                points_change = close_price - open_price
+
+            percentage_change = (points_change / open_price) * 100
+
+            # Append the results in the same structure
+            optimal_trades_results.append({
+                'Year': result['Year'],
+                'Max Drawdown (Points)': result['Max Drawdown (Points)'],
+                'Max Drawdown (%)': result['Max Drawdown (%)'],
+                'Max Gain (Points)': result['Max Gain (Points)'],
+                'Max Gain (%)': result['Max Gain (%)'],
+                'Closing Points': round(points_change, 4),
+                'Closing Percentage': round(percentage_change, 1)
+            })
+
+        # Return optimal trades results along with the other data
         return {
             'yearly_results': analysis_results,
+            'optimal_trades_results': optimal_trades_results,  # Add this for the optimal trade strategy
             '15_year_summary': summary_15y,
             '30_year_summary': summary_30y
         }
@@ -1055,9 +1445,6 @@ def register_callbacks(app):
                 'optimal_points_gained': 0,
             }
 
-        # CHECK
-        print(f"Analysis Results: {analysis_results}")
-
 
         # Filter wins and losses
         wins = [result for result in analysis_results if result['Closing Points'] > 0]
@@ -1124,12 +1511,42 @@ def register_callbacks(app):
 
         return fig
 
+    def create_optimal_distribution_chart(optimal_trades_results):
+        # Use the same approach as the existing distribution chart
+        fig = go.Figure()
+
+        fig.add_trace(go.Histogram(
+            x=optimal_trades_results,
+            marker_color='#FF5733',  # Use a different color for this chart
+            opacity=0.75
+        ))
+
+        fig.update_layout(
+            xaxis_title='Return (%)',
+            yaxis_title='Frequency',
+            plot_bgcolor='#1e1e1e',
+            paper_bgcolor='#1e1e1e',
+            font=dict(color='white', family="'Press Start 2P', monospace"),
+            bargap=0.1
+        )
+
+        return fig
+
     @app.callback(
         [Output('yearly-analysis-table', 'data'),
          Output('15-year-summary', 'children'),
          Output('30-year-summary', 'children'),
          Output('distribution-chart-15', 'figure'),
-         Output('distribution-chart-30', 'figure')],
+         Output('distribution-chart-optimal-15', 'figure'),
+         Output('distribution-chart-30', 'figure'),
+         Output('distribution-chart-optimal-30', 'figure'),
+         Output('cumulative-return-chart-15', 'figure'),
+         Output('cumulative-return-chart-30', 'figure'),
+         Output('risk-metrics-summary-15', 'children'),
+         Output('risk-metrics-summary-30', 'children'),
+         Output('risk-metrics-summary-15-stoploss', 'children'),
+         Output('risk-metrics-summary-30-stoploss', 'children')
+         ],
         [Input('perform-analysis-button', 'n_clicks')],
         [State('start-month', 'value'),
          State('start-day', 'value'),
@@ -1172,45 +1589,88 @@ def register_callbacks(app):
 
         print(f"Fetched OHLC data: {ohlc_data_all_years.head()}")
 
-        # Perform analysis
+        # Perform analysis on the fetched OHLC data (Unoptimized results)
         analysis_results = perform_analysis(stored_market, start_month, start_day, end_month, end_day, direction,
                                             ohlc_data_all_years)
 
-        # Prepare data for the yearly analysis table
+        # Prepare data for the yearly analysis table (Unoptimized)
         yearly_data = analysis_results['yearly_results']
 
-        # Prepare summaries
-        summary_15 = analysis_results['15_year_summary']
-        summary_30 = analysis_results['30_year_summary']
+        # Calculate optimal stop-loss and exit for 15 and 30 years
+        optimal_results_15y = calculate_optimal_exit_and_stop_loss(yearly_data[:15])
 
-        # Create distribution charts using Plotly's default binning
-        distribution_chart_15 = create_distribution_chart(yearly_data[-15:])
-        distribution_chart_30 = create_distribution_chart(yearly_data[-30:])
+        optimal_results_30y = calculate_optimal_exit_and_stop_loss(yearly_data[:30])
 
-        # Return the results
+        # Simulate trades with optimal S/L and exit for 15 years (Optimized)
+        optimal_trades_results_15y = simulate_optimal_trades(yearly_data[:15], ohlc_data_all_years, start_month,
+                                                             start_day, end_month, end_day, optimal_results_15y)
+
+        # Simulate trades with optimal S/L and exit for 30 years (Optimized)
+        optimal_trades_results_30y = simulate_optimal_trades(yearly_data[:30], ohlc_data_all_years, start_month,
+                                                             start_day, end_month, end_day, optimal_results_30y)
+
+        # Prepare summaries for 15 years and 30 years
+        summary_15 = calculate_summary_statistics(yearly_data[:15])
+        summary_30 = calculate_summary_statistics(yearly_data[:30])
+
+        # Calculate optimal stop-loss and exit for 15 and 30 years
+        optimal_results_15y = calculate_optimal_exit_and_stop_loss(yearly_data[:15])
+        optimal_results_30y = calculate_optimal_exit_and_stop_loss(yearly_data[:30])
+
+        # Simulate trades with optimal S/L and exit for 15 and 30 years
+        optimal_trades_results_15y = simulate_optimal_trades(yearly_data[:15], ohlc_data_all_years, start_month,
+                                                             start_day, end_month, end_day, optimal_results_15y)
+        optimal_trades_results_30y = simulate_optimal_trades(yearly_data[:30], ohlc_data_all_years, start_month,
+                                                             start_day, end_month, end_day, optimal_results_30y)
+
+        # Distribution Charts for 15 and 30 years
+        distribution_chart_15 = create_distribution_chart(yearly_data[:15])
+        optimal_distribution_chart_15 = create_distribution_chart(optimal_trades_results_15y)
+        distribution_chart_30 = create_distribution_chart(yearly_data[:30])
+        optimal_distribution_chart_30 = create_distribution_chart(optimal_trades_results_30y)
+
+        # Cumulative return charts for 15 and 30 years
+        fig_15y, daily_returns_15, daily_returns_15_stoploss = create_cumulative_return_charts(start_month, start_day, end_month, end_day,
+                                                                    direction, ohlc_data_all_years, 15,
+                                                                    optimal_results_15y)
+        fig_30y, daily_returns_30, daily_returns_30_stoploss = create_cumulative_return_charts(start_month, start_day, end_month, end_day,
+                                                                    direction, ohlc_data_all_years, 30,
+                                                                    optimal_results_30y)
+        # Calculate risk metrics
+        risk_metrics_15 = calculate_risk_metrics(daily_returns_15)
+        risk_metrics_30 = calculate_risk_metrics(daily_returns_30)
+
+        stop_loss_metrics_15 = calculate_risk_metrics(daily_returns_15_stoploss)
+        stop_loss_metrics_30 = calculate_risk_metrics(daily_returns_30_stoploss)
+
+        # Format the risk metrics as strings
+        risk_metrics_summary_15 = format_risk_metrics(risk_metrics_15)
+        risk_metrics_summary_30 = format_risk_metrics(risk_metrics_30)
+
+        stop_loss_metrics_summary_15 = format_risk_metrics(stop_loss_metrics_15)
+        stop_loss_metrics_summary_30 = format_risk_metrics(stop_loss_metrics_30)
+
+
+
+
+        # Return both unoptimized and optimized results, summaries, and charts
         return (
-            yearly_data,  # Data for the yearly analysis table
+            yearly_data,  # Unoptimized data for the yearly analysis table
             f"15-Year Summary: Win Rate: {summary_15['win_rate']:.2f}%, Points Gained: {summary_15['total_points_gained']}, "
             f"Optimal S/L: {summary_15['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_15['optimal_exit']:.2f}%, "
             f"Optimal Win Rate: {summary_15['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_15['optimal_points_gained']}",
             f"30-Year Summary: Win Rate: {summary_30['win_rate']:.2f}%, Points Gained: {summary_30['total_points_gained']}, "
             f"Optimal S/L: {summary_30['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_30['optimal_exit']:.2f}%, "
             f"Optimal Win Rate: {summary_30['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_30['optimal_points_gained']}",
-            distribution_chart_15,
-            distribution_chart_30
+            distribution_chart_15,  # Unoptimized distribution chart for 15 years
+            optimal_distribution_chart_15,  # Optimized distribution chart for 15 years
+            distribution_chart_30,  # Unoptimized distribution chart for 30 years
+            optimal_distribution_chart_30,  # Optimized distribution chart for 30 years
+            fig_15y,
+            fig_30y,
+            risk_metrics_summary_15,
+            risk_metrics_summary_30,
+            stop_loss_metrics_summary_15,
+            stop_loss_metrics_summary_30
         )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
