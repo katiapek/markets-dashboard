@@ -121,6 +121,13 @@ def create_analysis_section():
             ], style={'width': '200px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
 
             html.Div(children=[
+                dcc.Interval(
+                    id='interval-auto-load',
+                    interval=1 * 1000,  # 1 second delay
+                    n_intervals=0,  # Starts immediately on page load
+                    max_intervals=1  # Only fires once
+                ),
+
                 html.Button("Perform Analysis", id='perform-analysis-button', style={
                     'height': '40px', 'margin-top': '18px', 'background-color': '#333', 'color': 'white',
                     'border': '1px solid white'}),
