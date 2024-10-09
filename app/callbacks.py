@@ -1709,22 +1709,18 @@ def register_callbacks(app):
          Output('risk-metrics-summary-30-stoploss', 'children')],
         [Input('perform-analysis-button', 'n_clicks'),
          Input('interval-auto-load', 'n_intervals')],
-        [State('start-month', 'value'),
-         State('start-day', 'value'),
-         State('end-month', 'value'),
-         State('end-day', 'value'),
+        [State('date-picker-range', 'start_date'),
+         State('date-picker-range', 'end_date'),
          State('direction-dropdown', 'value'),
          State('years-checklist', 'value'),
          State('stored-market', 'data')],
         prevent_initial_call=True
     )
-    def perform_analysis_and_update_layout(n_clicks, n_intervals, start_month, start_day, end_month, end_day, direction, years_range, stored_market):
+    def perform_analysis_and_update_layout(n_clicks, n_intervals, start_date,  end_date, direction, years_range, stored_market):
 
-        # Set default values for start and end dates if no input is provided
-        start_month = start_month if start_month is not None else 1
-        start_day = start_day if start_day is not None else 1
-        end_month = end_month if end_month is not None else 12
-        end_day = end_day if end_day is not None else 31
+        # Convert the start and end dates to month and day values for processing
+        start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day
+        end_month, end_day = pd.to_datetime(end_date).month, pd.to_datetime(end_date).day
 
         # Ensure that the callback is only triggered when either the button is clicked or the interval fires
         if n_clicks is None and n_intervals == 0:

@@ -67,45 +67,23 @@ def create_analysis_section():
                     children=[
         # Inputs for the analysis
         html.Div(children=[
+            # Date range picker for selecting start and end dates
             html.Div(children=[
-                html.Label("Start Month", style={'margin-bottom': '5px'}),
-                dcc.Dropdown(id='start-month',
-                             options=[{'label': f'{i}', 'value': i} for i in range(1, 13)],
-                             value=1,
-                             style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
-                             clearable=False,
-                             className='dropdown-menu-1'),  # Disable the clearable option
-            ], style={'width': '120px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
-
-            html.Div(children=[
-                html.Label("Start Day", style={'margin-bottom': '5px'}),
-                dcc.Dropdown(id='start-day',
-                             options=[{'label': f'{i}', 'value': i} for i in range(1, 32)],
-                             value=1,
-                             style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
-                             clearable=False,
-                             className='dropdown-menu-1'),  # Disable the clearable option
-            ], style={'width': '120px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
-
-            html.Div(children=[
-                html.Label("End Month", style={'margin-bottom': '5px'}),
-                dcc.Dropdown(id='end-month',
-                             options=[{'label': f'{i}', 'value': i} for i in range(1, 13)],
-                             value=12,
-                             style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
-                             clearable=False,
-                             className='dropdown-menu-1'),  # Disable the clearable option
-            ], style={'width': '120px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
-
-            html.Div(children=[
-                html.Label("End Day", style={'margin-bottom': '5px'}),
-                dcc.Dropdown(id='end-day',
-                             options=[{'label': f'{i}', 'value': i} for i in range(1, 32)],
-                             value=31,
-                             style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
-                             clearable=False,
-                             className='dropdown-menu-1'),  # Disable the clearable option
-            ], style={'width': '120px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
+                html.Label("Select Date Range", style={'margin-bottom': '5px'}),
+                dcc.DatePickerRange(
+                    id='date-picker-range',
+                    start_date_placeholder_text="Start Period",
+                    end_date_placeholder_text="End Period",
+                    display_format='MMM-DD',
+                    month_format='MMMM',
+                    min_date_allowed='2024-01-01',
+                    max_date_allowed='2025-12-31',
+                    start_date='2024-01-01',  # Default to None or a specific start date
+                    end_date='2024-12-31',  # Default to None or a specific end date
+                    clearable=False,
+                    # day_size=20
+                )
+            ], style={'width': '400px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
 
             html.Div(children=[
                 html.Label("Direction", style={'margin-bottom': '5px'}),
