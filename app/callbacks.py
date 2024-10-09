@@ -702,17 +702,21 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date):
     ohlc_data['Date'] = pd.to_datetime(ohlc_data['Date'])
     ohlc_data.drop_duplicates(subset=['Date'], inplace=True)  # Remove any duplicate rows based on the 'Date'
 
-    # Filter data based on the date range from the Date-Picker
-    filtered_data = ohlc_data[(ohlc_data['Date'] >= pd.to_datetime(start_date)) &
-                              (ohlc_data['Date'] <= pd.to_datetime(end_date))]
+    # Convert the start and end dates into day-month format for filtering each year
+    start_month_day = pd.to_datetime(start_date).strftime('%m-%d')
+    end_month_day = pd.to_datetime(end_date).strftime('%m-%d')
 
     # Get list of unique years within the filtered range
-    years = filtered_data['Date'].dt.year.unique()
+    years = ohlc_data['Date'].dt.year.unique()
     stats_list = []
 
     # Process each year separately
     for year in sorted(years):
-        df_year = filtered_data[filtered_data['Date'].dt.year == year].copy()
+        # Filter for the current year, then slice data by the start and end dates within that year
+        df_year = ohlc_data[(ohlc_data['Date'].dt.year == year) &
+                            (ohlc_data['Date'].dt.strftime('%m-%d') >= start_month_day) &
+                            (ohlc_data['Date'].dt.strftime('%m-%d') <= end_month_day)].copy()
+
         if len(df_year) > 1:  # Need at least two days to compute previous day's data
             stats = compute_day_trading_stats(df_year)
             stats_list.append(stats)
@@ -753,7 +757,6 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date):
     stats_df = pd.concat([stats_df, pd.DataFrame([total_row])], ignore_index=True)
 
     return stats_df
-
 
 
 def register_callbacks(app):
