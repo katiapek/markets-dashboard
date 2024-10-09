@@ -77,7 +77,7 @@ def create_analysis_section():
                     display_format='MMM-DD',
                     month_format='MMMM',
                     min_date_allowed='2024-01-01',
-                    max_date_allowed='2025-12-31',
+                    max_date_allowed='2024-12-31',
                     start_date='2024-01-01',  # Default to None or a specific start date
                     end_date='2024-12-31',  # Default to None or a specific end date
                     clearable=False,
@@ -184,6 +184,54 @@ def create_analysis_section():
         ])
     ])
 
+def create_day_trading_stats_section():
+    """
+    Creates the Day Trading Stats section of the app.
+    Returns:
+        html.Div: The layout containing the day trading stats table.
+    """
+    return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
+                           'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
+                    children=[
+        html.H3("Day Trading Stats", style={'textAlign': 'center'}),
+        dash.dash_table.DataTable(
+            id='day-trading-stats-table',
+            columns=[
+                {'name': 'Year', 'id': 'Year'},
+                {'name': 'Total Days', 'id': 'Total Days'},
+                {'name': 'D UP', 'id': 'D UP'},
+                {'name': 'D UP %', 'id': 'D UP %'},
+                {'name': 'D DN', 'id': 'D DN'},
+                {'name': 'D DN %', 'id': 'D DN %'},
+                {'name': 'PD-H', 'id': 'PD-H'},
+                {'name': 'PD-H %', 'id': 'PD-H %'},
+                {'name': 'PD-L', 'id': 'PD-L'},
+                {'name': 'PD-L %', 'id': 'PD-L %'},
+                {'name': 'PD-HL', 'id': 'PD-HL'},
+                {'name': 'PD-HL %', 'id': 'PD-HL %'},
+                {'name': 'PD-nHL', 'id': 'PD-nHL'},
+                {'name': 'PD-nHL %', 'id': 'PD-nHL %'},
+            ],
+            data=[],
+            style_header={
+                'backgroundColor': '#333',
+                'color': 'white',
+                'border': '1px solid white',
+                'fontFamily': "'Press Start 2P', monospace",
+                'fontSize': '10px'
+            },
+            style_cell={
+                'backgroundColor': '#1e1e1e',
+                'color': 'white',
+                'border': '1px solid #444',
+                'fontFamily': "'Press Start 2P', monospace",
+                'fontSize': '10px',
+                'textAlign': 'center'
+            },
+            style_table={'overflowX': 'scroll'}
+        )
+    ])
+
 
 def create_layout(app):
     """
@@ -224,6 +272,19 @@ def create_layout(app):
                         dcc.Loading(
                             id='loading-opportunity',
                             children=[html.Div(id='opportunity-output')],
+                            type='default'
+                        )
+                    ],
+                    style={'margin-top': '20px'}
+                ),
+
+                # Day Trading Starts below the analysis section
+                html.Div(
+                    children=[
+                        create_day_trading_stats_section(),
+                        dcc.Loading(
+                            id='day-trading-stats',
+                            children=[html.Div(id='day-trading-stats-output')],
                             type='default'
                         )
                     ],

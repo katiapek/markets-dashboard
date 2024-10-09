@@ -1,5 +1,6 @@
 # callbacks.py
 from dash import Input, Output, State, ctx, html, dcc
+# from dash.dash_table.Format import Format, FormatTemplate
 import dash
 import numpy as np
 from datetime import timedelta
@@ -617,6 +618,143 @@ def update_risk_metrics_summary(risk_metrics, color):
                f"Calmar Ratio: {risk_metrics['Calmar Ratio']:.4f}, "
                f"Volatility: {risk_metrics['Volatility']:.2f}%", style={'color': color})
     ])
+
+
+def compute_day_trading_stats(df):
+    """
+    Computes day trading statistics for a given DataFrame of OHLC data.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing 'Date', 'Open', 'High', 'Low', 'Close' columns.
+
+    Returns:
+        dict: Dictionary containing the computed metrics.
+    """
+    # Ensure the data is sorted by date
+    df = df.sort_values('Date').reset_index(drop=True)
+
+    # Calculate daily changes
+    df['Close_Change'] = df['Close'] - df['Open']
+
+    # D UP: Days where Close > Open
+    d_up = (df['Close_Change'] > 0).sum()
+
+    # D DN: Days where Close < Open
+    d_dn = (df['Close_Change'] < 0).sum()
+
+    # Previous day's High and Low
+    df['Prev_High'] = df['High'].shift(1)
+    df['Prev_Low'] = df['Low'].shift(1)
+
+    # PD-H: High >= Previous High but Low is not below or at Previous Low
+    pd_h = ((df['High'] >= df['Prev_High']) & (df['Low'] > df['Prev_Low'])).sum()
+
+    # PD-L: Low <= Previous Low but High is not above or at Previous High
+    pd_l = ((df['Low'] <= df['Prev_Low']) & (df['High'] < df['Prev_High'])).sum()
+
+    # PD-HL: Outside days (High > Prev High and Low < Prev Low)
+    pd_hl = ((df['High'] > df['Prev_High']) & (df['Low'] < df['Prev_Low'])).sum()
+
+    # PD-nHL: Inside days (High < Prev High and Low > Prev Low)
+    pd_nhl = ((df['High'] < df['Prev_High']) & (df['Low'] > df['Prev_Low'])).sum()
+
+    # Total number of trading days (excluding the first day because of shift)
+    total_days = len(df) - 1  # The first day has NaN in Prev_High and Prev_Low
+
+    # Handle division by zero
+    if total_days == 0:
+        total_days = 1
+
+    # Calculate percentages
+    stats = {
+        'Year': df['Date'].dt.year.iloc[0],
+        'Total Days': total_days,
+        'D UP': d_up,
+        'D UP %': round((d_up / total_days) * 100, 2),
+        'D DN': d_dn,
+        'D DN %': round((d_dn / total_days) * 100, 2),
+        'PD-H': pd_h,
+        'PD-H %': round((pd_h / total_days) * 100, 2),
+        'PD-L': pd_l,
+        'PD-L %': round((pd_l / total_days) * 100, 2),
+        'PD-HL': pd_hl,
+        'PD-HL %': round((pd_hl / total_days) * 100, 2),
+        'PD-nHL': pd_nhl,
+        'PD-nHL %': round((pd_nhl / total_days) * 100, 2),
+    }
+
+    return stats
+
+
+def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date):
+    """
+    Computes day trading statistics for each year in the OHLC data, filtered by the given date range.
+
+    Args:
+        ohlc_data (pd.DataFrame): DataFrame containing 'Date', 'Open', 'High', 'Low', 'Close' columns.
+        start_date (str): Start date of the date range (from the Date-Picker).
+        end_date (str): End date of the date range (from the Date-Picker).
+
+    Returns:
+        pd.DataFrame: DataFrame containing the metrics for each year within the date range.
+    """
+    # Ensure 'Date' is datetime and remove duplicates
+    ohlc_data['Date'] = pd.to_datetime(ohlc_data['Date'])
+    ohlc_data.drop_duplicates(subset=['Date'], inplace=True)  # Remove any duplicate rows based on the 'Date'
+
+    # Filter data based on the date range from the Date-Picker
+    filtered_data = ohlc_data[(ohlc_data['Date'] >= pd.to_datetime(start_date)) &
+                              (ohlc_data['Date'] <= pd.to_datetime(end_date))]
+
+    # Get list of unique years within the filtered range
+    years = filtered_data['Date'].dt.year.unique()
+    stats_list = []
+
+    # Process each year separately
+    for year in sorted(years):
+        df_year = filtered_data[filtered_data['Date'].dt.year == year].copy()
+        if len(df_year) > 1:  # Need at least two days to compute previous day's data
+            stats = compute_day_trading_stats(df_year)
+            stats_list.append(stats)
+
+    # If no data was found, return an empty DataFrame
+    if not stats_list:
+        return pd.DataFrame()
+
+    # Create DataFrame from the list of dictionaries
+    stats_df = pd.DataFrame(stats_list)
+
+    # Calculate total row
+    total_days = stats_df['Total Days'].sum()
+
+    total_row = {
+        'Year': 'Total',
+        'Total Days': total_days,
+        'D UP': stats_df['D UP'].sum(),
+        'D UP %': round((stats_df['D UP'].sum() / total_days) * 100, 2),
+        'D DN': stats_df['D DN'].sum(),
+        'D DN %': round((stats_df['D DN'].sum() / total_days) * 100, 2),
+        'PD-H': stats_df['PD-H'].sum(),
+        'PD-H %': round((stats_df['PD-H'].sum() / total_days) * 100, 2),
+        'PD-L': stats_df['PD-L'].sum(),
+        'PD-L %': round((stats_df['PD-L'].sum() / total_days) * 100, 2),
+        'PD-HL': stats_df['PD-HL'].sum(),
+        'PD-HL %': round((stats_df['PD-HL'].sum() / total_days) * 100, 2),
+        'PD-nHL': stats_df['PD-nHL'].sum(),
+        'PD-nHL %': round((stats_df['PD-nHL'].sum() / total_days) * 100, 2),
+    }
+
+    # Remove duplicates and sort the DataFrame by Year in descending order, excluding the 'Total' row
+    stats_df.drop_duplicates(inplace=True)
+    stats_df = stats_df[stats_df['Year'] != 'Total']  # Exclude total row during sorting
+    stats_df = stats_df.sort_values(by='Year', ascending=False)
+
+    # Add the 'Total' row back to the bottom of the DataFrame
+    stats_df = pd.concat([stats_df, pd.DataFrame([total_row])], ignore_index=True)
+
+    return stats_df
+
+
 
 def register_callbacks(app):
 
@@ -1706,7 +1844,8 @@ def register_callbacks(app):
          Output('risk-metrics-summary-15', 'children'),
          Output('risk-metrics-summary-30', 'children'),
          Output('risk-metrics-summary-15-stoploss', 'children'),
-         Output('risk-metrics-summary-30-stoploss', 'children')],
+         Output('risk-metrics-summary-30-stoploss', 'children'),
+         Output('day-trading-stats-table', 'data')],
         [Input('perform-analysis-button', 'n_clicks'),
          Input('interval-auto-load', 'n_intervals')],
         [State('date-picker-range', 'start_date'),
@@ -1728,6 +1867,7 @@ def register_callbacks(app):
 
         if start_month is None or start_day is None or end_month is None or end_day is None:
             return [], "Please provide valid start and end dates.", "", {}, {}
+
 
         # Initialize an empty DataFrame to store all OHLC data
         ohlc_data_all_years = pd.DataFrame()
@@ -1820,8 +1960,26 @@ def register_callbacks(app):
         stop_loss_metrics_summary_15 = update_risk_metrics_summary(stop_loss_metrics_15, stop_loss_color)
         stop_loss_metrics_summary_30 = update_risk_metrics_summary(stop_loss_metrics_30, stop_loss_color)
 
+        # Compute day trading stats
+        # ohlc_data_all_years.to_csv('ohlcDataAllYears.csv', index=False)
+        stats_df = compute_day_trading_stats_for_all_years(ohlc_data_all_years, start_date, end_date)
 
+        # Separate the 'Total' row and the numeric years for sorting
+        total_row = stats_df[stats_df['Year'] == 'Total']
+        stats_df = stats_df[stats_df['Year'] != 'Total']
 
+        # Ensure the 'Year' column is integer type for sorting
+        stats_df['Year'] = stats_df['Year'].astype(int)
+
+        # Sort the data in descending order by 'Year'
+        stats_df.drop_duplicates(subset=['Year'], inplace=True)
+        stats_df.sort_values(by='Year', ascending=False, inplace=True)
+
+        # Add the 'Total' row back to the end of the DataFrame
+        stats_df = pd.concat([stats_df, total_row], ignore_index=True)
+
+        # Convert the DataFrame to a dictionary for Dash DataTable
+        day_trading_stats = stats_df.to_dict('records')
 
         # Return both unoptimized and optimized results, summaries, and charts
         return (
@@ -1841,6 +1999,6 @@ def register_callbacks(app):
             risk_metrics_summary_15,
             risk_metrics_summary_30,
             stop_loss_metrics_summary_15,
-            stop_loss_metrics_summary_30
+            stop_loss_metrics_summary_30,
+            day_trading_stats,
         )
-
