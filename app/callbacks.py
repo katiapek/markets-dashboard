@@ -288,45 +288,79 @@ def find_nearest_date(data, target_date, max_delta=3):
     return None  # No matching data found within the range
 
 
-def simulate_optimal_trades(yearly_data, ohlc_data, start_month, start_day, end_month, end_day, optimal_results):
+def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month, end_day, optimal_results):
+    """
+    Simulates trades with stop-loss and exit strategy applied, using the optimal results.
+    Args:
+        analysis_results (list): Yearly analysis results.
+        ohlc_data (pd.DataFrame): OHLC data for the market.
+        start_month, start_day, end_month, end_day (int): Date range for the analysis.
+        optimal_results (dict): Optimal stop-loss and exit strategy values.
+    Returns:
+        list: List of simulated trade results with stop-loss and exit applied.
+    """
+
+    # Initialize list to store results
     optimal_trades_results = []
-    for result in yearly_data:
-        start_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == result['Year']],
-                                       f"{result['Year']}-{start_month:02d}-{start_day:02d}")
-        end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == result['Year']],
-                                     f"{result['Year']}-{end_month:02d}-{end_day:02d}")
+
+    # Iterate through the analysis results
+    for result in analysis_results:
+        year = result['Year']
+
+        # Fetch the 'Open' and 'Close' prices from the original OHLC data for the year
+        start_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
+                                       f"{year}-{start_month:02d}-{start_day:02d}")
+        end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
+                                     f"{year}-{end_month:02d}-{end_day:02d}")
 
         if start_data is None or end_data is None:
+            # Skip if no valid start or end data for the year
             continue
 
         open_price = pd.to_numeric(start_data['Open'], errors='coerce')
         close_price = pd.to_numeric(end_data['Close'], errors='coerce')
 
+        if pd.isnull(open_price) or pd.isnull(close_price):
+            # Skip if the conversion to numeric failed
+            continue
+
         max_drawdown = result['Max Drawdown (%)']
         max_gain = result['Max Gain (%)']
 
-        if max_drawdown >= optimal_results['optimal_stop_loss']:
-            percentage_change = -optimal_results['optimal_stop_loss']
-            max_drawdown = percentage_change
-        elif max_gain >= optimal_results['optimal_exit']:
-            percentage_change = optimal_results['optimal_exit']
-            max_gain = percentage_change
+        # Ensure optimal stop-loss and exit are not None
+        stop_loss_threshold = optimal_results.get('optimal_stop_loss')
+        exit_threshold = optimal_results.get('optimal_exit')
+
+        if stop_loss_threshold is None or exit_threshold is None:
+            # If stop loss or exit is missing, skip the year
+            continue
+
+        # Apply stop loss and exit strategy
+        if max_drawdown >= stop_loss_threshold:
+            # If the stop loss is hit, calculate the loss
+            points_change = -stop_loss_threshold * open_price / 100
+        elif max_gain >= exit_threshold:
+            # If the exit is hit, calculate the gain
+            points_change = exit_threshold * open_price / 100
         else:
-            percentage_change = 100 * (close_price - open_price)/open_price
+            # If neither stop loss nor exit is hit, calculate the normal close-to-open change
+            points_change = close_price - open_price
 
-        points_change = open_price * percentage_change
+        percentage_change = (points_change / open_price) * 100
 
+        # Append the result
         optimal_trades_results.append({
-            'Year': result['Year'],
-            'Max Drawdown (Points)': max_drawdown * open_price,
-            'Max Drawdown (%)': max_drawdown,
-            'Max Gain (Points)': max_gain * open_price,
-            'Max Gain (%)': max_gain,
+            'Year': year,
+            'Max Drawdown (Points)': result['Max Drawdown (Points)'],
+            'Max Drawdown (%)': result['Max Drawdown (%)'],
+            'Max Gain (Points)': result['Max Gain (Points)'],
+            'Max Gain (%)': result['Max Gain (%)'],
             'Closing Points': round(points_change, 4),
             'Closing Percentage': round(percentage_change, 1)
         })
 
     return optimal_trades_results
+
 
 
 def update_cumulative_chart_layout(fig, title):
@@ -517,6 +551,11 @@ def calculate_stop_loss_return(yearly_data, optimal_results, direction):
     stop_loss_hit = False
     take_profit_hit = False
 
+    # Ensure the optimal stop-loss and exit values are valid
+    if optimal_results.get('optimal_stop_loss') is None or optimal_results.get('optimal_exit') is None:
+        # If either stop-loss or exit is None, return the Close_Close_Pct_Change as is
+        return yearly_data['Close_Close_Pct_Change'].fillna(0)
+
     # Define the stop-loss and take-profit prices based on the Open of the first day
     first_open = yearly_data.iloc[0]['Open']
 
@@ -592,16 +631,6 @@ def calculate_risk_metrics(daily_returns, cumulative_returns):
     }
 
 
-def format_risk_metrics(risk_metrics):
-    return f"""
-    Sharpe Ratio: {risk_metrics['Sharpe Ratio']:.2f}\n
-    Sortino Ratio: {risk_metrics['Sortino Ratio']:.2f}\n
-    Max Drawdown: {risk_metrics['Max Drawdown']:.2f}\n
-    Calmar Ratio: {risk_metrics['Calmar Ratio']:.4f}\n
-    Volatility: {risk_metrics['Volatility']:.2f}
-    """
-
-
 def update_risk_metrics_summary(risk_metrics, color):
     """
     Format the risk metrics with the given color.
@@ -628,10 +657,27 @@ def compute_day_trading_stats(df):
         df (pd.DataFrame): DataFrame containing 'Date', 'Open', 'High', 'Low', 'Close' columns.
 
     Returns:
-        dict: Dictionary containing the computed metrics.
+        dict: Dictionary containing the computed metrics or an empty dict if df is empty.
     """
     # Ensure the data is sorted by date
     df = df.sort_values('Date').reset_index(drop=True)
+
+    # Check if the DataFrame is empty
+    if df.empty:
+        return {}  # Return an empty dict to avoid further processing
+
+    # Convert 'Open', 'High', 'Low', and 'Close' columns to numeric in case they are not
+    df['Open'] = pd.to_numeric(df['Open'], errors='coerce')
+    df['Close'] = pd.to_numeric(df['Close'], errors='coerce')
+    df['High'] = pd.to_numeric(df['High'], errors='coerce')
+    df['Low'] = pd.to_numeric(df['Low'], errors='coerce')
+
+    # Drop rows where conversion to numeric failed (if needed)
+    df.dropna(subset=['Open', 'Close', 'High', 'Low'], inplace=True)
+
+    # Check again after dropping NaNs
+    if df.empty:
+        return {}
 
     # Calculate daily changes
     df['Close_Change'] = df['Close'] - df['Open']
@@ -646,11 +692,11 @@ def compute_day_trading_stats(df):
     df['Prev_High'] = df['High'].shift(1)
     df['Prev_Low'] = df['Low'].shift(1)
 
-    # PD-H: High >= Previous High but Low is not below or at Previous Low
-    pd_h = ((df['High'] >= df['Prev_High']) & (df['Low'] > df['Prev_Low'])).sum()
+    # PD-H: High >= Previous High
+    pd_h = (df['High'] >= df['Prev_High']).sum()
 
-    # PD-L: Low <= Previous Low but High is not above or at Previous High
-    pd_l = ((df['Low'] <= df['Prev_Low']) & (df['High'] < df['Prev_High'])).sum()
+    # PD-L: Low <= Previous Low
+    pd_l = (df['Low'] <= df['Prev_Low']).sum()
 
     # PD-HL: Outside days (High > Prev High and Low < Prev Low)
     pd_hl = ((df['High'] > df['Prev_High']) & (df['Low'] < df['Prev_Low'])).sum()
@@ -667,7 +713,7 @@ def compute_day_trading_stats(df):
 
     # Calculate percentages
     stats = {
-        'Year': df['Date'].dt.year.iloc[0],
+        'Year': df['Date'].dt.year.iloc[0],  # Ensure there's at least one row before accessing
         'Total Days': total_days,
         'D UP': d_up,
         'D UP %': round((d_up / total_days) * 100, 2),
@@ -686,40 +732,62 @@ def compute_day_trading_stats(df):
     return stats
 
 
-def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date):
+
+
+def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, group_by='year'):
     """
-    Computes day trading statistics for each year in the OHLC data, filtered by the given date range.
+    Computes day trading statistics for each year or weekday in the OHLC data, filtered by the given date range.
 
     Args:
         ohlc_data (pd.DataFrame): DataFrame containing 'Date', 'Open', 'High', 'Low', 'Close' columns.
         start_date (str): Start date of the date range (from the Date-Picker).
         end_date (str): End date of the date range (from the Date-Picker).
+        group_by (str): Whether to group by 'year' or 'weekday'. Default is 'year'.
 
     Returns:
-        pd.DataFrame: DataFrame containing the metrics for each year within the date range.
+        pd.DataFrame: DataFrame containing the metrics for each year or weekday within the date range.
     """
     # Ensure 'Date' is datetime and remove duplicates
     ohlc_data['Date'] = pd.to_datetime(ohlc_data['Date'])
-    ohlc_data.drop_duplicates(subset=['Date'], inplace=True)  # Remove any duplicate rows based on the 'Date'
+    ohlc_data.drop_duplicates(subset=['Date'], inplace=True)
 
     # Convert the start and end dates into day-month format for filtering each year
     start_month_day = pd.to_datetime(start_date).strftime('%m-%d')
     end_month_day = pd.to_datetime(end_date).strftime('%m-%d')
 
-    # Get list of unique years within the filtered range
-    years = ohlc_data['Date'].dt.year.unique()
+    # Filter the data by the selected date range
+    filtered_data = ohlc_data[
+        (ohlc_data['Date'].dt.strftime('%m-%d') >= start_month_day) &
+        (ohlc_data['Date'].dt.strftime('%m-%d') <= end_month_day)
+        ].copy()
+
+    # Initialize an empty list for stats
     stats_list = []
 
-    # Process each year separately
-    for year in sorted(years):
-        # Filter for the current year, then slice data by the start and end dates within that year
-        df_year = ohlc_data[(ohlc_data['Date'].dt.year == year) &
-                            (ohlc_data['Date'].dt.strftime('%m-%d') >= start_month_day) &
-                            (ohlc_data['Date'].dt.strftime('%m-%d') <= end_month_day)].copy()
+    # Check whether to group by year or by weekday
+    if group_by == 'year':
+        # Get list of unique years within the filtered range
+        years = filtered_data['Date'].dt.year.unique()
 
-        if len(df_year) > 1:  # Need at least two days to compute previous day's data
-            stats = compute_day_trading_stats(df_year)
-            stats_list.append(stats)
+        # Process each year separately
+        for year in sorted(years):
+            df_year = filtered_data[filtered_data['Date'].dt.year == year].copy()
+            if len(df_year) > 1:  # Need at least two days to compute previous day's data
+                stats = compute_day_trading_stats(df_year)
+                stats['Year'] = year
+                stats_list.append(stats)
+
+    elif group_by == 'weekday':
+        # Process each weekday separately (0=Monday, 6=Sunday)
+        weekdays = range(0, 5)  # Monday to Friday (adjust this if weekends are included)
+        weekday_labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+
+        for weekday in weekdays:
+            df_weekday = filtered_data[filtered_data['Date'].dt.weekday == weekday].copy()
+            if len(df_weekday) > 1:  # Need at least two days to compute previous day's data
+                stats = compute_day_trading_stats(df_weekday)
+                stats['Weekday'] = weekday_labels[weekday]  # Add 'Weekday' column for weekday label
+                stats_list.append(stats)
 
     # If no data was found, return an empty DataFrame
     if not stats_list:
@@ -728,35 +796,52 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date):
     # Create DataFrame from the list of dictionaries
     stats_df = pd.DataFrame(stats_list)
 
-    # Calculate total row
-    total_days = stats_df['Total Days'].sum()
-
-    total_row = {
-        'Year': 'Total',
-        'Total Days': total_days,
-        'D UP': stats_df['D UP'].sum(),
-        'D UP %': round((stats_df['D UP'].sum() / total_days) * 100, 2),
-        'D DN': stats_df['D DN'].sum(),
-        'D DN %': round((stats_df['D DN'].sum() / total_days) * 100, 2),
-        'PD-H': stats_df['PD-H'].sum(),
-        'PD-H %': round((stats_df['PD-H'].sum() / total_days) * 100, 2),
-        'PD-L': stats_df['PD-L'].sum(),
-        'PD-L %': round((stats_df['PD-L'].sum() / total_days) * 100, 2),
-        'PD-HL': stats_df['PD-HL'].sum(),
-        'PD-HL %': round((stats_df['PD-HL'].sum() / total_days) * 100, 2),
-        'PD-nHL': stats_df['PD-nHL'].sum(),
-        'PD-nHL %': round((stats_df['PD-nHL'].sum() / total_days) * 100, 2),
-    }
-
-    # Remove duplicates and sort the DataFrame by Year in descending order, excluding the 'Total' row
-    stats_df.drop_duplicates(inplace=True)
-    stats_df = stats_df[stats_df['Year'] != 'Total']  # Exclude total row during sorting
-    stats_df = stats_df.sort_values(by='Year', ascending=False)
-
-    # Add the 'Total' row back to the bottom of the DataFrame
-    stats_df = pd.concat([stats_df, pd.DataFrame([total_row])], ignore_index=True)
+    # If grouped by year, add a total row
+    if group_by == 'year':
+        total_days = stats_df['Total Days'].sum()
+        total_row = {
+            'Year': 'Total',
+            'Total Days': total_days,
+            'D UP': stats_df['D UP'].sum(),
+            'D UP %': round((stats_df['D UP'].sum() / total_days) * 100, 2),
+            'D DN': stats_df['D DN'].sum(),
+            'D DN %': round((stats_df['D DN'].sum() / total_days) * 100, 2),
+            'PD-H': stats_df['PD-H'].sum(),
+            'PD-H %': round((stats_df['PD-H'].sum() / total_days) * 100, 2),
+            'PD-L': stats_df['PD-L'].sum(),
+            'PD-L %': round((stats_df['PD-L'].sum() / total_days) * 100, 2),
+            'PD-HL': stats_df['PD-HL'].sum(),
+            'PD-HL %': round((stats_df['PD-HL'].sum() / total_days) * 100, 2),
+            'PD-nHL': stats_df['PD-nHL'].sum(),
+            'PD-nHL %': round((stats_df['PD-nHL'].sum() / total_days) * 100, 2),
+        }
+        # Add the total row to the DataFrame
+        stats_df = pd.concat([stats_df, pd.DataFrame([total_row])], ignore_index=True)
 
     return stats_df
+
+
+def calculate_points_change(direction, open_price, close_price):
+    """
+    Calculate the points and percentage change based on trade direction (Long/Short).
+
+    Args:
+        direction (str): Trade direction ('Long' or 'Short').
+        open_price (float): Opening price for the period.
+        close_price (float): Closing price for the period.
+
+    Returns:
+        tuple: points_change (float), percentage_change (float)
+    """
+    # Calculate points change and percentage change for Long/Short direction
+    if direction == 'Long':
+        points_change = close_price - open_price
+        percentage_change = (points_change / open_price) * 100
+    else:  # Short direction
+        points_change = open_price - close_price
+        percentage_change = (points_change / open_price) * 100
+
+    return points_change, percentage_change
 
 
 def register_callbacks(app):
@@ -1482,10 +1567,15 @@ def register_callbacks(app):
 
     # Callback for Opportunity Analysis section
 
-    def perform_analysis(market, start_month, start_day, end_month, end_day, direction, ohlc_data):
+    def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         """
-        Perform analysis on OHLC data for a given market, start/end date range, and direction (Long/Short).
+        Perform analysis on OHLC data for a given market, start/end date range, and direction (Long/Short),
+        including yearly results, optimal trades, and day trading stats.
         """
+        # Extract start and end months and days from the given dates
+        start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day
+        end_month, end_day = pd.to_datetime(end_date).month, pd.to_datetime(end_date).day
+
         # Ensure 'Date' is a datetime-like object
         ohlc_data['Date'] = pd.to_datetime(ohlc_data['Date'], errors='coerce')
 
@@ -1495,53 +1585,37 @@ def register_callbacks(app):
         # Get unique years from the OHLC data
         unique_years = ohlc_data['Date'].dt.year.unique()
 
+        # Perform yearly analysis
         for year in unique_years:
             yearly_data = ohlc_data[ohlc_data['Date'].dt.year == year]
-
-            # Get start and end dates for this year
             start_date_str = f"{year}-{start_month:02d}-{start_day:02d}"
             end_date_str = f"{year + (1 if end_month < start_month else 0)}-{end_month:02d}-{end_day:02d}"
 
-            # Find the nearest available data for start and end dates within ±3 days
             start_data = find_nearest_date(yearly_data, start_date_str)
             end_data = find_nearest_date(yearly_data, end_date_str)
 
             if start_data is None or end_data is None:
-                # Skip the year if no data is available within ±3 days of the start or end date
                 continue
 
-            # Use the 'Date' directly without accessing .values[0] (since 'Date' is a Timestamp)
+            # Filter and analyze the data for each year
             start_date = start_data['Date']
             end_date = end_data['Date']
-
-            # Filter the data for this year to be within the specified date range
             filtered_yearly_data = yearly_data[(yearly_data['Date'] >= start_date) & (yearly_data['Date'] <= end_date)]
 
             if filtered_yearly_data.empty:
-                # Skip the year if no data is available in the date range
                 continue
 
-            # Convert 'Open' and 'Close' prices to numeric to avoid errors
             open_price = pd.to_numeric(start_data['Open'], errors='coerce')
             close_price = pd.to_numeric(end_data['Close'], errors='coerce')
 
             if pd.isnull(open_price) or pd.isnull(close_price):
-                # Skip the year if conversion failed and any value is NaN
                 continue
 
-            # Calculate points and percentage change based on direction (Long or Short)
-            if direction == 'Long':
-                points_change = close_price - open_price
-                percentage_change = (points_change / open_price) * 100
-            else:
-                points_change = open_price - close_price
-                percentage_change = (points_change / open_price) * 100
-
-            # Calculate max drawdown and max gain for the filtered data range
+            # Perform calculations (points change, max drawdown, etc.)
+            points_change, percentage_change = calculate_points_change(direction, open_price, close_price)
             max_drawdown = calculate_max_drawdown(filtered_yearly_data, open_price, close_price, direction)
             max_gain = calculate_max_gain(filtered_yearly_data, open_price, close_price, direction)
 
-            # Store yearly result with the year included
             analysis_results.append({
                 'Year': year,
                 'Max Drawdown (Points)': round(max_drawdown['points'], 4),
@@ -1552,64 +1626,33 @@ def register_callbacks(app):
                 'Closing Percentage': round(percentage_change, 1)
             })
 
-        # Sort results by year in descending order
         analysis_results = sorted(analysis_results, key=lambda x: x['Year'], reverse=True)
 
-        # Calculate summary statistics for the most recent 15 and 30 years
-        summary_15y = calculate_summary_statistics(analysis_results[:15])  # First 15 items after sorting
-        summary_30y = calculate_summary_statistics(analysis_results[:30])  # First 30 items after sorting
-
-        # Now, calculate optimal stop-loss and exit based on historical data
+        # Calculate optimal stop-loss and exit
         optimal_results = calculate_optimal_exit_and_stop_loss(analysis_results)
 
-        # Simulate trades with optimal S/L and exit
-        optimal_trades_results = []
-        for result in analysis_results:
-            # Get the 'Open' and 'Close' prices from the original data
-            start_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == result['Year']],
-                                           f"{result['Year']}-{start_month:02d}-{start_day:02d}")
-            end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == result['Year']],
-                                         f"{result['Year']}-{end_month:02d}-{end_day:02d}")
+        # Simulate optimal trades
+        optimal_trades_results = simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month,
+                                                         end_day, optimal_results)
 
-            if start_data is None or end_data is None:
-                continue
+        # Calculate summary statistics
+        summary_15 = calculate_summary_statistics(analysis_results[:15])
+        summary_30 = calculate_summary_statistics(analysis_results[:30])
 
-            open_price = pd.to_numeric(start_data['Open'], errors='coerce')
-            close_price = pd.to_numeric(end_data['Close'], errors='coerce')
+        # Day trading stats by year
+        day_trading_stats = compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, group_by='year')
 
-            # Apply stop loss and exit strategy based on optimal calculations
-            max_drawdown = result['Max Drawdown (%)']
-            max_gain = result['Max Gain (%)']
+        # Day trading stats by weekday
+        day_trading_stats_weekday = compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date,
+                                                                            group_by='weekday')
 
-            if max_drawdown >= optimal_results['optimal_stop_loss']:
-                # If the stop loss is hit
-                points_change = -optimal_results['optimal_stop_loss'] * open_price / 100
-            elif max_gain >= optimal_results['optimal_exit']:
-                # If the exit is hit
-                points_change = optimal_results['optimal_exit'] * open_price / 100
-            else:
-                # If neither is hit, use the normal closing points
-                points_change = close_price - open_price
-
-            percentage_change = (points_change / open_price) * 100
-
-            # Append the results in the same structure
-            optimal_trades_results.append({
-                'Year': result['Year'],
-                'Max Drawdown (Points)': result['Max Drawdown (Points)'],
-                'Max Drawdown (%)': result['Max Drawdown (%)'],
-                'Max Gain (Points)': result['Max Gain (Points)'],
-                'Max Gain (%)': result['Max Gain (%)'],
-                'Closing Points': round(points_change, 4),
-                'Closing Percentage': round(percentage_change, 1)
-            })
-
-        # Return optimal trades results along with the other data
         return {
             'yearly_results': analysis_results,
-            'optimal_trades_results': optimal_trades_results,  # Add this for the optimal trade strategy
-            '15_year_summary': summary_15y,
-            '30_year_summary': summary_30y
+            'optimal_trades_results': optimal_trades_results,
+            '15_year_summary': summary_15,
+            '30_year_summary': summary_30,
+            'day_trading_stats': day_trading_stats,
+            'day_trading_stats_weekday': day_trading_stats_weekday
         }
 
     def calculate_max_drawdown(df, open_price, close_price, direction):
@@ -1716,7 +1759,9 @@ def register_callbacks(app):
 
                 # Calculate win rate for this stop loss and exit level
                 win_rate = (wins / total_years) * 100
-
+                print(f"TOTAL POINTS: {total_points} vs. "
+                      f"BEST COMBO SO FAR: {best_combination['points_gained']} "
+                      f"result BEST COMBO S/L: {best_combination['stop_loss']}")
                 # If this combination yields better points, update the best combination
                 if total_points > best_combination['points_gained']:
                     best_combination = {
@@ -1725,6 +1770,7 @@ def register_callbacks(app):
                         'win_rate': win_rate,
                         'points_gained': total_points
                     }
+
 
         # Return the best combination of stop loss and exit
         return {
@@ -1848,7 +1894,8 @@ def register_callbacks(app):
          Output('risk-metrics-summary-30', 'children'),
          Output('risk-metrics-summary-15-stoploss', 'children'),
          Output('risk-metrics-summary-30-stoploss', 'children'),
-         Output('day-trading-stats-table', 'data')],
+         Output('day-trading-stats-table', 'data'),
+         Output('day-trading-stats-weekday-table', 'data')],
         [Input('perform-analysis-button', 'n_clicks'),
          Input('interval-auto-load', 'n_intervals')],
         [State('date-picker-range', 'start_date'),
@@ -1858,70 +1905,35 @@ def register_callbacks(app):
          State('stored-market', 'data')],
         prevent_initial_call=True
     )
-    def perform_analysis_and_update_layout(n_clicks, n_intervals, start_date,  end_date, direction, years_range, stored_market):
-
-        # Convert the start and end dates to month and day values for processing
+    def perform_analysis_and_update_layout(n_clicks, n_intervals, start_date, end_date, direction, years_range,
+                                           stored_market):
         start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day
         end_month, end_day = pd.to_datetime(end_date).month, pd.to_datetime(end_date).day
 
-        # Ensure that the callback is only triggered when either the button is clicked or the interval fires
-        if n_clicks is None and n_intervals == 0:
-            raise dash.exceptions.PreventUpdate
-
-        if start_month is None or start_day is None or end_month is None or end_day is None:
-            return [], "Please provide valid start and end dates.", "", {}, {}
-
-
-        # Initialize an empty DataFrame to store all OHLC data
         ohlc_data_all_years = pd.DataFrame()
+        current_year = 2024
 
-        # Get the current year
-        current_year = 2024  # Or dynamically fetch current year
-
-        # Fetch OHLC data for the given range of years
         for year_offset in years_range:
             year = current_year - year_offset
-            start_date = f'{year}-{start_month:02d}-{start_day:02d}'
-            end_date = f'{current_year}-{end_month:02d}-{end_day:02d}'
-
-            print(f"Fetching OHLC data for {stored_market} from {start_date} to {end_date}")
-
-            # Fetch OHLC data for the market within the specified range
-            ohlc_data_year = OHLCDataFetcher.fetch_ohlc_data_by_range(stored_market, start_date, end_date)
+            start_date_str = f'{year}-{start_month:02d}-{start_day:02d}'
+            end_date_str = f'{current_year}-{end_month:02d}-{end_day:02d}'
+            ohlc_data_year = OHLCDataFetcher.fetch_ohlc_data_by_range(stored_market, start_date_str, end_date_str)
 
             if not ohlc_data_year.empty:
                 ohlc_data_all_years = pd.concat([ohlc_data_all_years, ohlc_data_year], ignore_index=True)
 
-        # Check if any data has been fetched
         if ohlc_data_all_years.empty:
-            print(f"No OHLC data found for {stored_market} in the selected date range.")
             return [], "No data available for 15-Year Summary", "No data available for 30-Year Summary", {}, {}
 
-        print(f"Fetched OHLC data: {ohlc_data_all_years.head()}")
-
         # Perform analysis on the fetched OHLC data (Unoptimized results)
-        analysis_results = perform_analysis(stored_market, start_month, start_day, end_month, end_day, direction,
-                                            ohlc_data_all_years)
+        analysis_results = perform_analysis(stored_market, start_date, end_date, direction, ohlc_data_all_years)
 
         # Prepare data for the yearly analysis table (Unoptimized)
         yearly_data = analysis_results['yearly_results']
 
-        # Calculate optimal stop-loss and exit for 15 and 30 years
-        optimal_results_15y = calculate_optimal_exit_and_stop_loss(yearly_data[:15])
-
-        optimal_results_30y = calculate_optimal_exit_and_stop_loss(yearly_data[:30])
-
-        # Simulate trades with optimal S/L and exit for 15 years (Optimized)
-        optimal_trades_results_15y = simulate_optimal_trades(yearly_data[:15], ohlc_data_all_years, start_month,
-                                                             start_day, end_month, end_day, optimal_results_15y)
-
-        # Simulate trades with optimal S/L and exit for 30 years (Optimized)
-        optimal_trades_results_30y = simulate_optimal_trades(yearly_data[:30], ohlc_data_all_years, start_month,
-                                                             start_day, end_month, end_day, optimal_results_30y)
-
         # Prepare summaries for 15 years and 30 years
-        summary_15 = calculate_summary_statistics(yearly_data[:15])
-        summary_30 = calculate_summary_statistics(yearly_data[:30])
+        summary_15 = calculate_summary_statistics(yearly_data[:15])  # First 15 years
+        summary_30 = calculate_summary_statistics(yearly_data[:30])  # First 30 years
 
         # Calculate optimal stop-loss and exit for 15 and 30 years
         optimal_results_15y = calculate_optimal_exit_and_stop_loss(yearly_data[:15])
@@ -1945,27 +1957,25 @@ def register_callbacks(app):
             optimal_results_30y
         )
 
-        # Calculate risk metrics using cumulative returns for max drawdown
+        # Calculate risk metrics using cumulative returns
         risk_metrics_15 = calculate_risk_metrics(daily_returns_15, cum_returns_no_stop_15)
         risk_metrics_30 = calculate_risk_metrics(daily_returns_30, cum_returns_no_stop_30)
 
+        # Calculate stop-loss risk metrics
         stop_loss_metrics_15 = calculate_risk_metrics(daily_returns_15_stoploss, cum_returns_stop_15)
         stop_loss_metrics_30 = calculate_risk_metrics(daily_returns_30_stoploss, cum_returns_stop_30)
 
-        # After calculating the risk metrics and cumulative charts:
-        stop_loss_color = '#ff7e67'  # Use the color of the line in your cumulative chart
-        no_stop_loss_color = '#347474'  # Color for the other line
+        # Risk metrics and summaries for both scenarios (with and without stop-loss)
+        no_stop_loss_color = '#347474'
+        stop_loss_color = '#ff7e67'
 
-        # Pass these colors into the risk metrics summary
         risk_metrics_summary_15 = update_risk_metrics_summary(risk_metrics_15, no_stop_loss_color)
         risk_metrics_summary_30 = update_risk_metrics_summary(risk_metrics_30, no_stop_loss_color)
-
         stop_loss_metrics_summary_15 = update_risk_metrics_summary(stop_loss_metrics_15, stop_loss_color)
         stop_loss_metrics_summary_30 = update_risk_metrics_summary(stop_loss_metrics_30, stop_loss_color)
 
-        # Compute day trading stats
-        # ohlc_data_all_years.to_csv('ohlcDataAllYears.csv', index=False)
-        stats_df = compute_day_trading_stats_for_all_years(ohlc_data_all_years, start_date, end_date)
+        # Compute day trading stats by year
+        stats_df = compute_day_trading_stats_for_all_years(ohlc_data_all_years, start_date, end_date, group_by='year')
 
         # Separate the 'Total' row and the numeric years for sorting
         total_row = stats_df[stats_df['Year'] == 'Total']
@@ -1984,14 +1994,31 @@ def register_callbacks(app):
         # Convert the DataFrame to a dictionary for Dash DataTable
         day_trading_stats = stats_df.to_dict('records')
 
-        # Return both unoptimized and optimized results, summaries, and charts
+        # Compute day trading stats by weekday
+        stats_weekday_df = compute_day_trading_stats_for_all_years(ohlc_data_all_years, start_date, end_date,
+                                                                   group_by='weekday')
+
+        # Convert the weekday DataFrame to a dictionary for Dash DataTable
+        day_trading_stats_weekday = stats_weekday_df.to_dict('records')
+
+        # Handle formatting for optimal stop-loss and exit for 15-year summary
+        optimal_sl_15 = f"{summary_15['optimal_stop_loss']:.2f}%" if summary_15[
+                                                                         'optimal_stop_loss'] is not None else "N/A"
+        optimal_exit_15 = f"{summary_15['optimal_exit']:.2f}%" if summary_15['optimal_exit'] is not None else "N/A"
+
+        # Handle formatting for optimal stop-loss and exit for 30-year summary
+        optimal_sl_30 = f"{summary_30['optimal_stop_loss']:.2f}%" if summary_30[
+                                                                         'optimal_stop_loss'] is not None else "N/A"
+        optimal_exit_30 = f"{summary_30['optimal_exit']:.2f}%" if summary_30['optimal_exit'] is not None else "N/A"
+
+        # Return the values in the f-string
         return (
             yearly_data,  # Unoptimized data for the yearly analysis table
             f"15-Year Summary: Win Rate: {summary_15['win_rate']:.2f}%, Points Gained: {summary_15['total_points_gained']}, "
-            f"Optimal S/L: {summary_15['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_15['optimal_exit']:.2f}%, "
+            f"Optimal S/L: {optimal_sl_15}, Optimal Exit: {optimal_exit_15}, "
             f"Optimal Win Rate: {summary_15['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_15['optimal_points_gained']}",
             f"30-Year Summary: Win Rate: {summary_30['win_rate']:.2f}%, Points Gained: {summary_30['total_points_gained']}, "
-            f"Optimal S/L: {summary_30['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_30['optimal_exit']:.2f}%, "
+            f"Optimal S/L: {optimal_sl_30}, Optimal Exit: {optimal_exit_30}, "
             f"Optimal Win Rate: {summary_30['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_30['optimal_points_gained']}",
             distribution_chart_15,  # Unoptimized distribution chart for 15 years
             optimal_distribution_chart_15,  # Optimized distribution chart for 15 years
@@ -2003,5 +2030,12 @@ def register_callbacks(app):
             risk_metrics_summary_30,
             stop_loss_metrics_summary_15,
             stop_loss_metrics_summary_30,
-            day_trading_stats,
+            day_trading_stats,  # Day trading stats grouped by year
+            day_trading_stats_weekday  # Day trading stats grouped by weekday
         )
+
+
+
+
+
+

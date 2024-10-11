@@ -291,6 +291,38 @@ def create_layout(app):
                     style={'margin-top': '20px'}
                 ),
 
+                html.Div(children=[
+                    html.Label("Day Trading Stats by Weekday", style={'margin-bottom': '5px'}),
+                    dash.dash_table.DataTable(id='day-trading-stats-weekday-table',
+                                              columns=[
+                                                  {'name': 'Weekday', 'id': 'Weekday'},
+                                                  {'name': 'Total Days', 'id': 'Total Days'},
+                                                  {'name': 'D UP', 'id': 'D UP'},
+                                                  {'name': 'D UP %', 'id': 'D UP %'},
+                                                  {'name': 'D DN', 'id': 'D DN'},
+                                                  {'name': 'D DN %', 'id': 'D DN %'},
+                                                  {'name': 'PD-H', 'id': 'PD-H'},
+                                                  {'name': 'PD-H %', 'id': 'PD-H %'},
+                                                  {'name': 'PD-L', 'id': 'PD-L'},
+                                                  {'name': 'PD-L %', 'id': 'PD-L %'},
+                                                  {'name': 'PD-HL', 'id': 'PD-HL'},
+                                                  {'name': 'PD-HL %', 'id': 'PD-HL %'},
+                                                  {'name': 'PD-nHL', 'id': 'PD-nHL'},
+                                                  {'name': 'PD-nHL %', 'id': 'PD-nHL %'}
+                                              ],
+                                              data=[],
+                                              style_header={'backgroundColor': '#333', 'color': 'white',
+                                                            'border': '1px solid white',
+                                                            'fontFamily': "'Press Start 2P', monospace",
+                                                            'fontSize': '10px'},
+                                              style_cell={'backgroundColor': '#1e1e1e', 'color': 'white',
+                                                          'border': '1px solid #444',
+                                                          'fontFamily': "'Press Start 2P', monospace",
+                                                          'fontSize': '10px'},
+                                              style_table={'overflowX': 'scroll'}
+                                              )
+                ], style={'padding-top': '15px'})
+
             ],
             style={'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
         ),
