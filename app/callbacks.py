@@ -1975,7 +1975,7 @@ def register_callbacks(app):
         stop_loss_metrics_summary_30 = update_risk_metrics_summary(stop_loss_metrics_30, stop_loss_color)
 
         # Compute day trading stats by year
-        stats_df = compute_day_trading_stats_for_all_years(ohlc_data_all_years, start_date, end_date, group_by='year')
+        stats_df = analysis_results['day_trading_stats']
 
         # Separate the 'Total' row and the numeric years for sorting
         total_row = stats_df[stats_df['Year'] == 'Total']
@@ -1995,8 +1995,7 @@ def register_callbacks(app):
         day_trading_stats = stats_df.to_dict('records')
 
         # Compute day trading stats by weekday
-        stats_weekday_df = compute_day_trading_stats_for_all_years(ohlc_data_all_years, start_date, end_date,
-                                                                   group_by='weekday')
+        stats_weekday_df = analysis_results['day_trading_stats_weekday']
 
         # Convert the weekday DataFrame to a dictionary for Dash DataTable
         day_trading_stats_weekday = stats_weekday_df.to_dict('records')
