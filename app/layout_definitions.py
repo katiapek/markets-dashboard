@@ -232,6 +232,55 @@ def create_day_trading_stats_section():
         )
     ])
 
+def create_day_trading_stats_1_section():
+    """
+    Creates the Day Trading Stats section of the app.
+    Returns:
+        html.Div: The layout containing the day trading stats table.
+    """
+    return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
+                           'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
+                    children=[
+        html.H3("Day Trading Stats - continuation", style={'textAlign': 'center'}),
+        dash.dash_table.DataTable(
+            id='day-trading-stats-1-table',
+
+            columns=[
+                {'name': 'Year', 'id': 'Year'},
+                {'name': 'Total Days', 'id': 'Total Days'},
+                {'name': 'CaPD-H', 'id': 'CaPD-H'},
+                {'name': 'CaPD-H %', 'id': 'CaPD-H %'},
+                {'name': 'CbPD-L', 'id': 'CbPD-L'},
+                {'name': 'CbPD-L %', 'id': 'CbPD-L %'},
+                {'name': 'CaPD-HL', 'id': 'CaPD-HL'},
+                {'name': 'CaPD-HL %', 'id': 'CaPD-HL %'},
+                {'name': 'CbPD-HL', 'id': 'CbPD-HL'},
+                {'name': 'CbPD-HL %', 'id': 'CbPD-HL %'},
+                {'name': 'BISI', 'id': 'BISI'},
+                {'name': 'BISI %', 'id': 'BISI %'},
+                {'name': 'SIBI', 'id': 'SIBI'},
+                {'name': 'SIBI %', 'id': 'SIBI %'},
+            ],
+            data=[],
+            style_header={
+                'backgroundColor': '#333',
+                'color': 'white',
+                'border': '1px solid white',
+                'fontFamily': "'Press Start 2P', monospace",
+                'fontSize': '10px'
+            },
+            style_cell={
+                'backgroundColor': '#1e1e1e',
+                'color': 'white',
+                'border': '1px solid #444',
+                'fontFamily': "'Press Start 2P', monospace",
+                'fontSize': '10px',
+                'textAlign': 'center'
+            },
+            style_table={'overflowX': 'scroll'}
+        )
+    ])
+
 
 def create_layout(app):
     """
@@ -291,37 +340,18 @@ def create_layout(app):
                     style={'margin-top': '20px'}
                 ),
 
-                html.Div(children=[
-                    html.Label("Day Trading Stats by Weekday", style={'margin-bottom': '5px'}),
-                    dash.dash_table.DataTable(id='day-trading-stats-weekday-table',
-                                              columns=[
-                                                  {'name': 'Weekday', 'id': 'Weekday'},
-                                                  {'name': 'Total Days', 'id': 'Total Days'},
-                                                  {'name': 'D UP', 'id': 'D UP'},
-                                                  {'name': 'D UP %', 'id': 'D UP %'},
-                                                  {'name': 'D DN', 'id': 'D DN'},
-                                                  {'name': 'D DN %', 'id': 'D DN %'},
-                                                  {'name': 'PD-H', 'id': 'PD-H'},
-                                                  {'name': 'PD-H %', 'id': 'PD-H %'},
-                                                  {'name': 'PD-L', 'id': 'PD-L'},
-                                                  {'name': 'PD-L %', 'id': 'PD-L %'},
-                                                  {'name': 'PD-HL', 'id': 'PD-HL'},
-                                                  {'name': 'PD-HL %', 'id': 'PD-HL %'},
-                                                  {'name': 'PD-nHL', 'id': 'PD-nHL'},
-                                                  {'name': 'PD-nHL %', 'id': 'PD-nHL %'}
-                                              ],
-                                              data=[],
-                                              style_header={'backgroundColor': '#333', 'color': 'white',
-                                                            'border': '1px solid white',
-                                                            'fontFamily': "'Press Start 2P', monospace",
-                                                            'fontSize': '10px'},
-                                              style_cell={'backgroundColor': '#1e1e1e', 'color': 'white',
-                                                          'border': '1px solid #444',
-                                                          'fontFamily': "'Press Start 2P', monospace",
-                                                          'fontSize': '10px'},
-                                              style_table={'overflowX': 'scroll'}
-                                              )
-                ], style={'padding-top': '15px'})
+                # Day Trading Extended below the Stats section
+                html.Div(
+                    children=[
+                        create_day_trading_stats_1_section(),
+                        dcc.Loading(
+                            id='day-trading-stats-1',
+                            children=[html.Div(id='day-trading-stats-1-output')],
+                            type='default'
+                        )
+                    ],
+                    style={'margin-top': '20px'}
+                ),
 
             ],
             style={'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
