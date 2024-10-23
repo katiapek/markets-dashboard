@@ -2,7 +2,7 @@ import subprocess
 
 # List of scripts to run in order
 scripts_to_run = [
-    'Fetch_COT_Legacy_Combined.py',
+    # 'Fetch_COT_Legacy_Combined.py',
     'Fetch_COT_Legacy_Futures_Only.py',
     'Fetch_COT_Disaggregated_Combined.py',
     'Fetch_COT_Disaggregated_Futures_Only.py',

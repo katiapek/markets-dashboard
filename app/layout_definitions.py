@@ -282,6 +282,49 @@ def create_day_trading_stats_1_section():
     ])
 
 
+def create_pdh_analysis_section():
+    """
+    Creates a section for PD-H day analysis including distributions and scatter plots.
+
+    Returns:
+        html.Div: The layout containing input fields and result placeholders for PD-H day analysis.
+    """
+    return html.Div(children=[
+        html.H3("PD-H Day Analysis", style={'textAlign': 'center'}),
+
+        # Distribution Plots
+        html.Div([
+            html.Div([
+                dcc.Graph(id='pdh-open-high-dist'),
+            ], style={'width': '33%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='pdh-open-low-dist'),
+            ], style={'width': '33%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='pdh-open-close-dist'),
+            ], style={'width': '33%', 'display': 'inline-block'}),
+        ], style={'display': 'flex'}),
+
+        # Scatter Plots
+        html.Div([
+            html.Div([
+                dcc.Graph(id='pdh-open-low-vs-high-scatter'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='pdh-open-low-vs-close-scatter'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+        ], style={'display': 'flex'}),
+
+        # High vs Previous High Distribution
+        html.Div([
+            dcc.Graph(id='pdh-high-vs-prev-high-dist'),
+        ], style={'width': '50%', 'margin': '0 auto'}),
+    ])
+
+
 def create_layout(app):
     """
     Create and set the layout for the Dash application.
@@ -352,6 +395,19 @@ def create_layout(app):
                     ],
                     style={'margin-top': '20px'}
                 ),
+
+                # Create PD-H analysis section
+                html.Div(
+                    children=[
+                        create_pdh_analysis_section(),
+                        dcc.Loading(
+                            id='pdh-analysis-loading',
+                            children=[html.Div(id='pdh-analysis-output')],
+                            type='default'
+                        )
+                    ],
+                    style={'margin-top': '20px'}
+                )
 
             ],
             style={'flex': 1, 'padding': '10px', 'overflow': 'hidden'}

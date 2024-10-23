@@ -28,6 +28,10 @@ def calculate_percentage_changes(df):
     df['Close_High_Pct_Change'] = ((df['High'] - df['Close']) / df['Close']) * 100
     df['Close_Low_Pct_Change'] = ((df['Low'] - df['Close']) / df['Close']) * 100
 
+    # New calculations for PDL_Low_Pct_Change and PDH_High_Pct_Change
+    df['PDL_Low_Pct_Change'] = ((df['Low'] - df['Low'].shift(1)) / df['Low'].shift(1)) * 100
+    df['PDH_High_Pct_Change'] = ((df['High'] - df['High'].shift(1)) / df['High'].shift(1)) * 100
+
     # Round the percentage change columns to 2 decimal places
     df = df.round(2)
 

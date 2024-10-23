@@ -812,6 +812,94 @@ def calculate_points_change(direction, open_price, close_price):
     return points_change, percentage_change
 
 
+def filter_pdh_days(df):
+    """
+    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High).
+
+    Args:
+        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+
+    Returns:
+        pd.DataFrame: A dataframe filtered for PD-H days.
+    """
+    # Create a new column to identify PD-H days
+    df['PD_H'] = df['High'] >= df['High'].shift(1)
+
+    # Filter for PD-H days
+    pdh_days = df[df['PD_H']].copy()
+
+    return pdh_days
+
+
+import plotly.express as px
+
+
+def create_pdh_distributions(pdh_days):
+    """
+    Create distribution plots for Open-High, Open-Low, and Open-Close percentage changes for PD-H days.
+
+    Args:
+        pdh_days (pd.DataFrame): The filtered dataframe containing PD-H days.
+
+    Returns:
+        dict: A dictionary of Plotly figures for the three distributions.
+    """
+    # Open-High distribution
+    fig_open_high = px.histogram(pdh_days, x='Open_High_Pct_Change', nbins=50, title='PD-H: Open-High Distribution')
+
+    # Open-Low distribution
+    fig_open_low = px.histogram(pdh_days, x='Open_Low_Pct_Change', nbins=50, title='PD-H: Open-Low Distribution')
+
+    # Open-Close distribution
+    fig_open_close = px.histogram(pdh_days, x='Open_Close_Pct_Change', nbins=50, title='PD-H: Open-Close Distribution')
+
+    return {
+        'open_high': fig_open_high,
+        'open_low': fig_open_low,
+        'open_close': fig_open_close
+    }
+
+
+def create_pdh_scatter_plots(pdh_days):
+    """
+    Create scatter plots to show the relationship between Open-Low and Open-High, and Open-Low and Open-Close for PD-H days.
+
+    Args:
+        pdh_days (pd.DataFrame): The filtered dataframe containing PD-H days.
+
+    Returns:
+        dict: A dictionary of Plotly figures for the two scatter plots.
+    """
+    # Open-Low vs. Open-High scatter plot
+    fig_open_low_vs_high = px.scatter(pdh_days, x='Open_Low_Pct_Change', y='Open_High_Pct_Change',
+                                      title='PD-H: Open-Low vs. Open-High')
+
+    # Open-Low vs. Open-Close scatter plot
+    fig_open_low_vs_close = px.scatter(pdh_days, x='Open_Low_Pct_Change', y='Open_Close_Pct_Change',
+                                       title='PD-H: Open-Low vs. Open-Close')
+
+    return {
+        'open_low_vs_high': fig_open_low_vs_high,
+        'open_low_vs_close': fig_open_low_vs_close
+    }
+
+
+def create_pdh_high_vs_prev_high_distribution(pdh_days):
+    """
+    Create a distribution plot for the percentage change of the High compared to the previous day's High for PD-H days.
+
+    Args:
+        pdh_days (pd.DataFrame): The filtered dataframe containing PD-H days.
+
+    Returns:
+        fig: A Plotly figure showing the distribution of the High/Previous High percentage change.
+    """
+    fig_pdh_high_vs_prev_high = px.histogram(pdh_days, x='PDH_High_Pct_Change', nbins=50,
+                                             title='PD-H: High vs Previous Day High Distribution')
+
+    return fig_pdh_high_vs_prev_high
+
+
 def register_callbacks(app):
 
     # Callback to toggle the foldable menu for "Legacy - Combined"
@@ -1988,6 +2076,69 @@ def register_callbacks(app):
             day_trading_stats,  # Day trading stats
             day_trading_stats_1,
         )
+
+    @app.callback(
+        [
+            Output('pdh-open-high-dist', 'figure'),
+            Output('pdh-open-low-dist', 'figure'),
+            Output('pdh-open-close-dist', 'figure'),
+            Output('pdh-open-low-vs-high-scatter', 'figure'),
+            Output('pdh-open-low-vs-close-scatter', 'figure'),
+            Output('pdh-high-vs-prev-high-dist', 'figure'),
+        ],
+        [
+            Input('perform-analysis-button', 'n_clicks'),
+            Input('interval-auto-load', 'n_intervals')
+        ],
+        [
+            State('date-picker-range', 'start_date'),
+            State('date-picker-range', 'end_date'),
+            State('market-dropdown', 'value')
+        ],
+        prevent_initial_call=True
+    )
+    def update_pdh_analysis(n_clicks, n_intervals, start_date, end_date, market_name):
+        if not market_name:
+            market_name = DEFAULT_MARKET  # Use default if not provided
+
+        start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day
+        end_month, end_day = pd.to_datetime(end_date).month, pd.to_datetime(end_date).day
+
+        ohlc_data_all_years = pd.DataFrame()
+        current_year = 2024
+
+        for year_offset in range(15):  # Example for fetching last 15 years
+            year = current_year - year_offset
+            start_date_str = f'{year}-{start_month:02d}-{start_day:02d}'
+            end_date_str = f'{year}-{end_month:02d}-{end_day:02d}'
+            yearly_data = OHLCDataFetcher.fetch_ohlc_data_by_range(market_name, start_date_str, end_date_str)
+
+            if not yearly_data.empty:
+                ohlc_data_all_years = pd.concat([ohlc_data_all_years, yearly_data], ignore_index=True)
+
+        if ohlc_data_all_years.empty:
+            return [{}, {}, {}, {}, {}, {}]
+
+        # Filter PD-H days
+        pdh_days = filter_pdh_days(ohlc_data_all_years)
+
+        # Generate distribution and scatter plots
+        pdh_distributions = create_pdh_distributions(pdh_days)
+        pdh_scatters = create_pdh_scatter_plots(pdh_days)
+        pdh_high_vs_prev_high_dist = create_pdh_high_vs_prev_high_distribution(pdh_days)
+
+        # Return figures for Dash components
+        return (
+            pdh_distributions['open_high'],
+            pdh_distributions['open_low'],
+            pdh_distributions['open_close'],
+            pdh_scatters['open_low_vs_high'],
+            pdh_scatters['open_low_vs_close'],
+            pdh_high_vs_prev_high_dist
+        )
+
+
+
 
 
 
