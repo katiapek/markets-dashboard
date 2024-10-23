@@ -20,6 +20,9 @@ from data_fetchers import (
 )
 from scripts.config import market_tickers
 import matplotlib.pyplot as plt
+import plotly.express as px
+from sklearn.linear_model import LinearRegression
+import numpy as np
 # from scipy.stats import norm
 
 # Constants for trace colors and default values
@@ -833,55 +836,174 @@ def filter_pdh_days(df):
 
 import plotly.express as px
 
+import numpy as np
+import plotly.graph_objects as go
+
 
 def create_pdh_distributions(pdh_days):
-    """
-    Create distribution plots for Open-High, Open-Low, and Open-Close percentage changes for PD-H days.
+    distributions = {}
 
-    Args:
-        pdh_days (pd.DataFrame): The filtered dataframe containing PD-H days.
+    # Example: Calculate Open-High percentage changes
+    open_high_pct = pdh_days['Open_High_Pct_Change'].dropna()
 
-    Returns:
-        dict: A dictionary of Plotly figures for the three distributions.
-    """
-    # Open-High distribution
-    fig_open_high = px.histogram(pdh_days, x='Open_High_Pct_Change', nbins=50, title='PD-H: Open-High Distribution')
+    # Calculate standard deviations
+    mean_open_high = open_high_pct.mean()
+    std_open_high = open_high_pct.std()
+
+    # Histogram for Open-High
+    distributions['open_high'] = go.Figure(data=[
+        go.Histogram(x=open_high_pct, nbinsx=50)
+    ])
+
+    # Add 1-std and 2-std lines to the histogram
+    distributions['open_high'].add_vline(x=mean_open_high - std_open_high, line_dash="dash", line_color="blue",
+                                         annotation_text="-1 STD")
+    distributions['open_high'].add_vline(x=mean_open_high + std_open_high, line_dash="dash", line_color="blue",
+                                         annotation_text="+1 STD")
+    distributions['open_high'].add_vline(x=mean_open_high - 2 * std_open_high, line_dash="dash", line_color="red",
+                                         annotation_text="-2 STD")
+    distributions['open_high'].add_vline(x=mean_open_high + 2 * std_open_high, line_dash="dash", line_color="red",
+                                         annotation_text="+2 STD")
+
+    # Repeat for Open-Low and Open-Close distributions
+    open_low_pct = pdh_days['Open_Low_Pct_Change'].dropna()
+    open_close_pct = pdh_days['Open_Close_Pct_Change'].dropna()
 
     # Open-Low distribution
-    fig_open_low = px.histogram(pdh_days, x='Open_Low_Pct_Change', nbins=50, title='PD-H: Open-Low Distribution')
+    distributions['open_low'] = go.Figure(data=[
+        go.Histogram(x=open_low_pct, nbinsx=50)
+    ])
+    mean_open_low = open_low_pct.mean()
+    std_open_low = open_low_pct.std()
+    distributions['open_low'].add_vline(x=mean_open_low - std_open_low, line_dash="dash", line_color="blue",
+                                        annotation_text="-1 STD")
+    distributions['open_low'].add_vline(x=mean_open_low + std_open_low, line_dash="dash", line_color="blue",
+                                        annotation_text="+1 STD")
 
     # Open-Close distribution
-    fig_open_close = px.histogram(pdh_days, x='Open_Close_Pct_Change', nbins=50, title='PD-H: Open-Close Distribution')
+    distributions['open_close'] = go.Figure(data=[
+        go.Histogram(x=open_close_pct, nbinsx=50)
+    ])
+    mean_open_close = open_close_pct.mean()
+    std_open_close = open_close_pct.std()
+    distributions['open_close'].add_vline(x=mean_open_close - std_open_close, line_dash="dash", line_color="blue",
+                                          annotation_text="-1 STD")
+    distributions['open_close'].add_vline(x=mean_open_close + std_open_close, line_dash="dash", line_color="blue",
+                                          annotation_text="+1 STD")
 
-    return {
-        'open_high': fig_open_high,
-        'open_low': fig_open_low,
-        'open_close': fig_open_close
-    }
+    return distributions
 
 
 def create_pdh_scatter_plots(pdh_days):
     """
-    Create scatter plots to show the relationship between Open-Low and Open-High, and Open-Low and Open-Close for PD-H days.
+    Create scatter plots for PD-H day analysis, including:
+    - Open-Low vs Open-High
+    - Open-Low vs Open-Close
+    Additionally, highlight the optimal stop-loss/exit combination for both scatter plots.
 
     Args:
-        pdh_days (pd.DataFrame): The filtered dataframe containing PD-H days.
+        pdh_days (pd.DataFrame): DataFrame containing PD-H day data.
 
     Returns:
-        dict: A dictionary of Plotly figures for the two scatter plots.
+        dict: Dictionary containing the scatter plot figures.
     """
-    # Open-Low vs. Open-High scatter plot
-    fig_open_low_vs_high = px.scatter(pdh_days, x='Open_Low_Pct_Change', y='Open_High_Pct_Change',
-                                      title='PD-H: Open-Low vs. Open-High')
+    scatter_plots = {}
 
-    # Open-Low vs. Open-Close scatter plot
-    fig_open_low_vs_close = px.scatter(pdh_days, x='Open_Low_Pct_Change', y='Open_Close_Pct_Change',
-                                       title='PD-H: Open-Low vs. Open-Close')
+    # 1. Scatter plot for Open-Low vs Open-High
+    scatter_plots['open_low_vs_high'] = go.Figure()
 
-    return {
-        'open_low_vs_high': fig_open_low_vs_high,
-        'open_low_vs_close': fig_open_low_vs_close
-    }
+    scatter_plots['open_low_vs_high'].add_trace(go.Scatter(
+        x=pdh_days['Open_Low_Pct_Change'],
+        y=pdh_days['Open_High_Pct_Change'],
+        mode='markers',
+        name='Open-Low vs Open-High',
+        marker=dict(color='blue')
+    ))
+
+    # Optimize stop-loss and exit levels for Open-Low vs Open-High
+    optimal_stop_loss_level_high, optimal_exit_level_high = optimize_stop_loss_exit_open_low_high(pdh_days)
+
+    # Highlight the optimal stop-loss and exit point on the scatter plot
+    scatter_plots['open_low_vs_high'].add_trace(go.Scatter(
+        x=[optimal_stop_loss_level_high],
+        y=[optimal_exit_level_high],
+        mode='markers',
+        name='Optimal Stop-Loss/Exit (Open-Low vs Open-High)',
+        marker=dict(color='red', size=12, symbol='star')
+    ))
+
+    # Set titles and labels for Open-Low vs Open-High scatter plot
+    scatter_plots['open_low_vs_high'].update_layout(
+        title='Open-Low vs Open-High Scatter Plot',
+        xaxis_title='Open-Low Percentage Change',
+        yaxis_title='Open-High Percentage Change'
+    )
+
+    # 2. Scatter plot for Open-Low vs Open-Close
+    scatter_plots['open_low_vs_close'] = go.Figure()
+
+    scatter_plots['open_low_vs_close'].add_trace(go.Scatter(
+        x=pdh_days['Open_Low_Pct_Change'],
+        y=pdh_days['Open_Close_Pct_Change'],
+        mode='markers',
+        name='Open-Low vs Open-Close',
+        marker=dict(color='green')
+    ))
+
+    # Optimize stop-loss level for Open-Low vs Open-Close
+    optimal_stop_loss_level_close = optimize_stop_loss_open_low_close(pdh_days)
+
+    # Highlight the optimal stop-loss point on the scatter plot
+    scatter_plots['open_low_vs_close'].add_trace(go.Scatter(
+        x=[optimal_stop_loss_level_close],
+        y=[pdh_days[pdh_days['Open_Low_Pct_Change'] == optimal_stop_loss_level_close]['Open_Close_Pct_Change'].sum()],
+        mode='markers',
+        name='Optimal Stop-Loss (Open-Low vs Open-Close)',
+        marker=dict(color='red', size=12, symbol='star')
+    ))
+
+    # Set titles and labels for Open-Low vs Open-Close scatter plot
+    scatter_plots['open_low_vs_close'].update_layout(
+        title='Open-Low vs Open-Close Scatter Plot',
+        xaxis_title='Open-Low Percentage Change',
+        yaxis_title='Open-Close Percentage Change'
+    )
+
+    return scatter_plots
+
+
+
+
+def create_scatter_with_trendline(df, x_col, y_col):
+    """
+    Create a scatter plot with a trendline and 1 std shaded area.
+    """
+    x_data = df[x_col].dropna()
+    y_data = df[y_col].dropna()
+
+    # Perform linear regression for trendline
+    x_values = x_data.values.reshape(-1, 1)
+    y_values = y_data.values
+    model = LinearRegression().fit(x_values, y_values)
+    trendline = model.predict(x_values)
+
+    # Calculate standard deviation of residuals
+    residuals = y_values - trendline
+    std_residual = np.std(residuals)
+
+    # Create scatter plot
+    fig = px.scatter(x=x_data, y=y_data, labels={x_col: x_col, y_col: y_col}, title=f'{x_col} vs {y_col}')
+
+    # Add trendline
+    fig.add_traces(go.Scatter(x=x_data, y=trendline, mode='lines', name='Trendline', line=dict(color='blue')))
+
+    # Add shaded area for 1 std
+    fig.add_traces(go.Scatter(x=x_data, y=trendline + std_residual, fill=None, mode='lines',
+                              line=dict(color='green', dash='dash')))
+    fig.add_traces(go.Scatter(x=x_data, y=trendline - std_residual, fill='tonexty', mode='lines',
+                              line=dict(color='green', dash='dash'), name='±1 STD'))
+
+    return fig
 
 
 def create_pdh_high_vs_prev_high_distribution(pdh_days):
@@ -898,6 +1020,77 @@ def create_pdh_high_vs_prev_high_distribution(pdh_days):
                                              title='PD-H: High vs Previous Day High Distribution')
 
     return fig_pdh_high_vs_prev_high
+
+
+def optimize_stop_loss_open_low_close(pdh_days):
+    """
+    Optimize stop-loss based on Open-Low and Open-Close percentage changes.
+
+    Args:
+        pdh_days (pd.DataFrame): DataFrame containing PD-H day data with 'Open_Low_Pct_Change' and 'Open_Close_Pct_Change'.
+
+    Returns:
+        float: Optimal stop-loss level (percentage change) that maximizes the sum of Open-Close percentage changes.
+    """
+    best_stop_loss_level = None
+    max_cumulative_return = -float('inf')
+
+    # Define the range of stop-loss levels to test (e.g., from -5% to 0%)
+    stop_loss_range = np.linspace(-5, 0, 100)  # Use numpy instead of pd.np
+
+    # Loop through possible stop-loss levels
+    for stop_loss_level in stop_loss_range:
+        # Filter out days where Open-Low is below the current stop-loss level (stop-loss hit)
+        trades_with_stop_loss = pdh_days[pdh_days['Open_Low_Pct_Change'] >= stop_loss_level]
+
+        # Sum up the Open-Close percentage changes for these trades
+        cumulative_return = trades_with_stop_loss['Open_Close_Pct_Change'].sum()
+
+        # Check if this stop-loss level provides a better result
+        if cumulative_return > max_cumulative_return:
+            max_cumulative_return = cumulative_return
+            best_stop_loss_level = stop_loss_level
+
+    return best_stop_loss_level
+
+def optimize_stop_loss_exit_open_low_high(pdh_days):
+    """
+    Optimize stop-loss (Open-Low) and exit (Open-High) for day trades.
+
+    Args:
+        pdh_days (pd.DataFrame): DataFrame containing PD-H day data with 'Open_Low_Pct_Change' and 'Open_High_Pct_Change'.
+
+    Returns:
+        tuple: (Optimal stop-loss level, Optimal take-profit level) that maximizes the net return.
+    """
+    best_stop_loss_level = None
+    best_exit_level = None
+    max_net_return = -float('inf')
+
+    # Define the range of stop-loss and take-profit levels to test
+    stop_loss_range = np.linspace(-5, 0, 100)  # Stop-loss range from -5% to 0%
+    take_profit_range = np.linspace(0, 5, 100)  # Take-profit range from 0% to +5%
+
+    # Loop through possible stop-loss levels
+    for stop_loss_level in stop_loss_range:
+        # Loop through possible take-profit levels
+        for exit_level in take_profit_range:
+            # Filter days where Open-Low is above the stop-loss and Open-High is above the take-profit
+            trades_with_stop_loss_exit = pdh_days[
+                (pdh_days['Open_Low_Pct_Change'] >= stop_loss_level) &
+                (pdh_days['Open_High_Pct_Change'] >= exit_level)
+            ]
+
+            # Calculate the net return for this combination (e.g., use Open-Close or Open-High)
+            net_return = trades_with_stop_loss_exit['Open_High_Pct_Change'].sum()
+
+            # Update if this combination provides a better result
+            if net_return > max_net_return:
+                max_net_return = net_return
+                best_stop_loss_level = stop_loss_level
+                best_exit_level = exit_level
+
+    return best_stop_loss_level, best_exit_level
 
 
 def register_callbacks(app):
@@ -1813,9 +2006,9 @@ def register_callbacks(app):
 
                 # Calculate win rate for this stop loss and exit level
                 win_rate = (wins / total_years) * 100
-                print(f"TOTAL POINTS: {total_points} vs. "
-                      f"BEST COMBO SO FAR: {best_combination['points_gained']} "
-                      f"result BEST COMBO S/L: {best_combination['stop_loss']}")
+                # print(f"TOTAL POINTS: {total_points} vs. "
+                #      f"BEST COMBO SO FAR: {best_combination['points_gained']} "
+                #      f"result BEST COMBO S/L: {best_combination['stop_loss']}")
                 # If this combination yields better points, update the best combination
                 if total_points > best_combination['points_gained']:
                     best_combination = {
@@ -2087,62 +2280,63 @@ def register_callbacks(app):
             Output('pdh-high-vs-prev-high-dist', 'figure'),
         ],
         [
-            Input('perform-analysis-button', 'n_clicks'),
-            Input('interval-auto-load', 'n_intervals')
-        ],
-        [
-            State('date-picker-range', 'start_date'),
-            State('date-picker-range', 'end_date'),
-            State('market-dropdown', 'value')
-        ],
-        prevent_initial_call=True
+            Input('market-dropdown', 'value'),
+            Input('date-picker-range', 'start_date'),
+            Input('date-picker-range', 'end_date'),
+        ]
     )
-    def update_pdh_analysis(n_clicks, n_intervals, start_date, end_date, market_name):
-        if not market_name:
-            market_name = DEFAULT_MARKET  # Use default if not provided
-
+    def update_pdh_analysis(market_name, start_date, end_date):
+        # Parse the selected dates to extract the month and day
         start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day
         end_month, end_day = pd.to_datetime(end_date).month, pd.to_datetime(end_date).day
 
-        ohlc_data_all_years = pd.DataFrame()
-        current_year = 2024
+        if market_name is None:
+            market_name = DEFAULT_MARKET
 
-        for year_offset in range(15):  # Example for fetching last 15 years
+        # Loop through the years and accumulate data
+        current_year = 2024  # This can be dynamic depending on the latest available year in the dataset
+        years_range = range(15, 36)  # Adjust the range as per the available data
+
+        # Create an empty DataFrame to collect the data
+        pdh_days_all_years = pd.DataFrame()
+
+        for year_offset in years_range:
             year = current_year - year_offset
+
+            # Construct start and end date strings for each year
             start_date_str = f'{year}-{start_month:02d}-{start_day:02d}'
             end_date_str = f'{year}-{end_month:02d}-{end_day:02d}'
+
+            # Fetch data for each year and combine into a single DataFrame
             yearly_data = OHLCDataFetcher.fetch_ohlc_data_by_range(market_name, start_date_str, end_date_str)
 
             if not yearly_data.empty:
-                ohlc_data_all_years = pd.concat([ohlc_data_all_years, yearly_data], ignore_index=True)
+                pdh_days_all_years = pd.concat([pdh_days_all_years, yearly_data], ignore_index=True)
 
-        if ohlc_data_all_years.empty:
-            return [{}, {}, {}, {}, {}, {}]
+        # Ensure we have data to analyze
+        if pdh_days_all_years.empty:
+            return {}, {}, {}, {}, {}, {}
 
         # Filter PD-H days
-        pdh_days = filter_pdh_days(ohlc_data_all_years)
+        pdh_days = filter_pdh_days(pdh_days_all_years)
 
-        # Generate distribution and scatter plots
+        # Generate distribution plots for Open-High, Open-Low, Open-Close
         pdh_distributions = create_pdh_distributions(pdh_days)
+
+        # Generate scatter plots for Open-Low vs Open-High and Open-Low vs Open-Close
         pdh_scatters = create_pdh_scatter_plots(pdh_days)
+
+        # Generate the high vs previous high distribution for PD-H days
         pdh_high_vs_prev_high_dist = create_pdh_high_vs_prev_high_distribution(pdh_days)
 
         # Return figures for Dash components
         return (
-            pdh_distributions['open_high'],
-            pdh_distributions['open_low'],
-            pdh_distributions['open_close'],
-            pdh_scatters['open_low_vs_high'],
-            pdh_scatters['open_low_vs_close'],
+            pdh_distributions.get('open_high', {}),
+            pdh_distributions.get('open_low', {}),
+            pdh_distributions.get('open_close', {}),
+            pdh_scatters.get('open_low_vs_high', {}),
+            pdh_scatters.get('open_low_vs_close', {}),
             pdh_high_vs_prev_high_dist
         )
-
-
-
-
-
-
-
-
 
 
