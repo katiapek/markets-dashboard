@@ -287,7 +287,7 @@ def find_nearest_date(data, target_date, max_delta=3):
     return None  # No matching data found within the range
 
 
-def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month, end_day, optimal_results):
+def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month, end_day, optimal_results, direction):
     """
     Simulates trades with stop-loss and exit strategy applied, using the optimal results.
     Args:
@@ -295,6 +295,7 @@ def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day,
         ohlc_data (pd.DataFrame): OHLC data for the market.
         start_month, start_day, end_month, end_day (int): Date range for the analysis.
         optimal_results (dict): Optimal stop-loss and exit strategy values.
+        direction (str): Direction of the trade ('Long' or 'Short').
     Returns:
         list: List of simulated trade results with stop-loss and exit applied.
     """
@@ -311,6 +312,7 @@ def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day,
                                        f"{year}-{start_month:02d}-{start_day:02d}")
         end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
                                      f"{year}-{end_month:02d}-{end_day:02d}")
+
 
         if start_data is None or end_data is None:
             # Skip if no valid start or end data for the year
@@ -334,7 +336,6 @@ def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day,
             # If stop loss or exit is missing, skip the year
             continue
 
-        # Apply stop loss and exit strategy
         if max_drawdown >= stop_loss_threshold:
             # If the stop loss is hit, calculate the loss
             points_change = -stop_loss_threshold * open_price / 100
@@ -343,7 +344,10 @@ def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day,
             points_change = exit_threshold * open_price / 100
         else:
             # If neither stop loss nor exit is hit, calculate the normal close-to-open change
-            points_change = close_price - open_price
+            if direction == 'Long':
+                points_change = close_price - open_price
+            else:
+                points_change = open_price - close_price
 
         percentage_change = (points_change / open_price) * 100
 
@@ -359,7 +363,6 @@ def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day,
         })
 
     return optimal_trades_results
-
 
 
 def update_cumulative_chart_layout(fig, title):
@@ -1168,13 +1171,15 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     optimal_results_15y = calculate_optimal_exit_and_stop_loss(analysis_results[:15])
     # Simulate optimal trades
     optimal_trades_results_15y = simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month,
-                                                     end_day, optimal_results_15y)
+                                                     end_day, optimal_results_15y, direction)
+    # CHECK
+    print(f"OTR {optimal_trades_results_15y}")
 
     # Calculate optimal stop-loss and exit
     optimal_results_30y = calculate_optimal_exit_and_stop_loss(analysis_results[:30])
     # Simulate optimal trades
     optimal_trades_results_30y = simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month,
-                                                         end_day, optimal_results_30y)
+                                                         end_day, optimal_results_30y, direction)
 
     # Calculate summary statistics
     summary_15 = calculate_summary_statistics(analysis_results[:15])
