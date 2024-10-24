@@ -7,6 +7,23 @@ from scripts.config import db_path_str
 from datetime import timedelta
 from dateutil import parser
 
+def clean_ohlc_data(df):
+    """
+    Clean OHLC data by removing commas from Open, High, Low, Close columns.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing OHLC data.
+
+    Returns:
+        pd.DataFrame: Cleaned DataFrame with commas removed from numeric columns.
+    """
+    ohlc_columns = ['Open', 'High', 'Low', 'Close']
+
+    for col in ohlc_columns:
+        df[col] = df[col].astype(str).str.replace(',', '').astype(float)
+
+    return df
+
 
 
 # Set the database path
@@ -104,6 +121,7 @@ class OHLCDataFetcher(BaseDataFetcher):
             df['Date'] = pd.to_datetime(df['Date'], format="%Y-%m-%d %H:%M:%S")
             df['Day_of_Year'] = df['Date'].dt.dayofyear
             print(f"Fetched data for {year}: {df.head()}")
+        df = clean_ohlc_data(df)
 
         return df
 
@@ -133,6 +151,7 @@ class OHLCDataFetcher(BaseDataFetcher):
             df['Date'] = pd.to_datetime(df['Date'], format="%Y-%m-%d %H:%M:%S")
             df['Day_of_Year'] = df['Date'].dt.dayofyear
 
+        df = clean_ohlc_data(df)
         return df
 
 
