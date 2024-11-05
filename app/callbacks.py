@@ -831,80 +831,44 @@ def filter_pdh_days(df):
 
 
 
-def create_pdh_distributions(pdh_days):
+def create_distributions(day_data):
     distributions = {}
+    open_high_col = f"Open_High_Pct_Change"
+    open_low_col = f"Open_Low_Pct_Change"
+    open_close_col = f"Open_Close_Pct_Change"
 
-    # Example: Calculate Open-High percentage changes
-    open_high_pct = pdh_days['Open_High_Pct_Change'].dropna()
-    mean_open_high = open_high_pct.mean()
-    std_open_high = open_high_pct.std()
+    # Calculate distributions for each metric
+    for key, col in zip(['open_high', 'open_low', 'open_close'], [open_high_col, open_low_col, open_close_col]):
+        metric_data = day_data[col].dropna()
+        mean_metric = metric_data.mean()
+        std_metric = metric_data.std()
 
-    # Histogram for Open-High
-    distributions['open_high'] = go.Figure(data=[
-        go.Histogram(x=open_high_pct, nbinsx=50)
-    ])
-    distributions['open_high'].update_layout(
-        xaxis_title='Open-High % Change',
-        yaxis_title='Frequency',
-        plot_bgcolor='#1e1e1e',
-        paper_bgcolor='#1e1e1e',
-        font=dict(color='white', family="'Press Start 2P', monospace"),
-        bargap=0.1
-    )
+        # Create histogram with std lines
+        distributions[key] = go.Figure(data=[go.Histogram(x=metric_data, nbinsx=50)])
+        distributions[key].add_vline(x=mean_metric - std_metric, line_dash="dash", line_color="blue",
+                                     annotation_text="-1 STD")
+        distributions[key].add_vline(x=mean_metric + std_metric, line_dash="dash", line_color="blue",
+                                     annotation_text="+1 STD")
+        distributions[key].add_vline(x=mean_metric - 2 * std_metric, line_dash="dash", line_color="red",
+                                     annotation_text="-2 STD")
+        distributions[key].add_vline(x=mean_metric + 2 * std_metric, line_dash="dash", line_color="red",
+                                     annotation_text="+2 STD")
 
-    # Add 1-std and 2-std lines
-    # distributions['open_high'].add_vline(x=mean_open_high - std_open_high, line_dash="dash", line_color="blue")
-    distributions['open_high'].add_vline(x=mean_open_high + std_open_high, line_dash="dash", line_color="blue")
-    # distributions['open_high'].add_vline(x=mean_open_high - 2 * std_open_high, line_dash="dash", line_color="red")
-    distributions['open_high'].add_vline(x=mean_open_high + 2 * std_open_high, line_dash="dash", line_color="red")
-
-    # Repeat for Open-Low and Open-Close distributions
-    open_low_pct = pdh_days['Open_Low_Pct_Change'].dropna()
-    open_close_pct = pdh_days['Open_Close_Pct_Change'].dropna()
-
-    # Open-Low distribution
-    distributions['open_low'] = go.Figure(data=[
-        go.Histogram(x=open_low_pct, nbinsx=50)
-    ])
-    mean_open_low = open_low_pct.mean()
-    std_open_low = open_low_pct.std()
-    distributions['open_low'].update_layout(
-        xaxis_title='Open-Low % Change',
-        yaxis_title='Frequency',
-        plot_bgcolor='#1e1e1e',
-        paper_bgcolor='#1e1e1e',
-        font=dict(color='white', family="'Press Start 2P', monospace"),
-        bargap=0.1
-    )
-    distributions['open_low'].add_vline(x=mean_open_low - std_open_low, line_dash="dash", line_color="blue")
-    # distributions['open_low'].add_vline(x=mean_open_low + std_open_low, line_dash="dash", line_color="blue")
-    distributions['open_low'].add_vline(x=mean_open_low - 2 * std_open_low, line_dash="dash", line_color="red")
-    # distributions['open_low'].add_vline(x=mean_open_low + 2 * std_open_low, line_dash="dash", line_color="red")
-
-    # Open-Close distribution
-    distributions['open_close'] = go.Figure(data=[
-        go.Histogram(x=open_close_pct, nbinsx=50)
-    ])
-    mean_open_close = open_close_pct.mean()
-    std_open_close = open_close_pct.std()
-    distributions['open_close'].update_layout(
-        xaxis_title='Open-Close % Change',
-        yaxis_title='Frequency',
-        plot_bgcolor='#1e1e1e',
-        paper_bgcolor='#1e1e1e',
-        font=dict(color='white', family="'Press Start 2P', monospace"),
-        bargap=0.1
-    )
-    distributions['open_close'].add_vline(x=mean_open_close - std_open_close, line_dash="dash", line_color="blue")
-    distributions['open_close'].add_vline(x=mean_open_close + std_open_close, line_dash="dash", line_color="blue")
-    distributions['open_close'].add_vline(x=mean_open_close - 2 * std_open_close, line_dash="dash", line_color="red")
-    distributions['open_close'].add_vline(x=mean_open_close + 2 * std_open_close, line_dash="dash", line_color="red")
+        # Update layout for styling
+        distributions[key].update_layout(
+            xaxis_title=f"{col.replace('_Pct_Change', '').replace('_', ' ')} % Change",
+            yaxis_title='Frequency',
+            plot_bgcolor='#1e1e1e',
+            paper_bgcolor='#1e1e1e',
+            font=dict(color='white', family="'Press Start 2P', monospace"),
+            bargap=0.1
+        )
 
     return distributions
 
 
 
-def create_pdh_scatter_plots(pdh_days, best_stop_loss_level=None, best_exit_level=None):
+def create_scatter_plots(pdh_days, best_stop_loss_level=None, best_exit_level=None):
     scatter_open_low_vs_high = go.Figure()
     scatter_open_low_vs_high.add_trace(go.Scatter(
         x=pdh_days['Open_Low_Pct_Change'],
@@ -968,40 +932,67 @@ def create_pdh_scatter_plots(pdh_days, best_stop_loss_level=None, best_exit_leve
     }
 
 
+def create_high_low_vs_prev_distribution(day_data, day_type="pdh"):
+    """
+    Create distribution plots for percentage changes relative to the previous day's high or low.
 
-def create_pdh_high_vs_prev_high_distribution(pdh_days):
-    # Calculate mean and standard deviation
-    high_pct_changes = pdh_days['PDH_High_Pct_Change'].dropna()
-    mean_high = high_pct_changes.mean()
-    std_high = high_pct_changes.std()
+    Args:
+        day_data (pd.DataFrame): The filtered dataframe containing PD-H, PD-L, or PD-HL days.
+        day_type (str): Type of day for analysis - 'pdh', 'pdl', or 'pdhl'.
 
-    # Create the histogram
-    fig_pdh_high_vs_prev_high = px.histogram(
-        high_pct_changes,
-        x='PDH_High_Pct_Change',
-        nbins=50,
-        # title='PD-H: High vs Previous Day High Distribution'
-    )
+    Returns:
+        go.Figure or tuple: Distribution figures. A single figure for `pdh` and `pdl` types, or a tuple of figures for `pdhl`.
+    """
+    if day_type == "pdh":
+        high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
+        fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
+        add_std_lines(fig_high, high_pct_changes, title='PD-H: High vs Previous Day High')
+        return fig_high
 
-    # Add 1-std and 2-std vertical lines
-    # fig_pdh_high_vs_prev_high.add_vline(x=mean_high - std_high, line_dash="dash", line_color="blue", annotation_text="-1 STD")
-    fig_pdh_high_vs_prev_high.add_vline(x=mean_high + std_high, line_dash="dash", line_color="blue")
-    # fig_pdh_high_vs_prev_high.add_vline(x=mean_high - 2 * std_high, line_dash="dash", line_color="red", annotation_text="-2 STD")
-    fig_pdh_high_vs_prev_high.add_vline(x=mean_high + 2 * std_high, line_dash="dash", line_color="red")
+    elif day_type == "pdl":
+        low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
+        fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
+        add_std_lines(fig_low, low_pct_changes, title='PD-L: Low vs Previous Day Low')
+        return fig_low
 
-    # Update layout for styling
-    fig_pdh_high_vs_prev_high.update_layout(
-        xaxis_title='High/Prev High % Change',
+    elif day_type == "pdhl":
+        high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
+        fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
+        add_std_lines(fig_high, high_pct_changes, title='PD-HL: High vs Previous Day High')
+
+        low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
+        fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
+        add_std_lines(fig_low, low_pct_changes, title='PD-HL: Low vs Previous Day Low')
+
+        return fig_high, fig_low
+
+
+def add_std_lines(fig, data, title=""):
+    """
+    Add standard deviation lines to a given figure.
+
+    Args:
+        fig (go.Figure): The plotly figure to update.
+        data (pd.Series): Data to calculate mean and standard deviation.
+        title (str): Title for the figure.
+    """
+    mean_val = data.mean()
+    std_val = data.std()
+
+    fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="blue", annotation_text="-1 STD")
+    fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="blue", annotation_text="+1 STD")
+    fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="red", annotation_text="-2 STD")
+    fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="red", annotation_text="+2 STD")
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Percentage Change',
         yaxis_title='Frequency',
         plot_bgcolor='#1e1e1e',
         paper_bgcolor='#1e1e1e',
         font=dict(color='white', family="'Press Start 2P', monospace"),
         bargap=0.1
     )
-
-    return fig_pdh_high_vs_prev_high
-
-
 
 
 def optimize_stop_loss_open_low_close(pdh_days):
@@ -1167,9 +1158,9 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     best_exit_level = optimize_stop_loss_exit_open_low_high(pdh_days, best_stop_loss_level)
 
     # Create distribution and scatter plots
-    pdh_distributions = create_pdh_distributions(pdh_days)
-    pdh_scatters = create_pdh_scatter_plots(pdh_days, best_stop_loss_level, best_exit_level)
-    pdh_high_vs_prev_high_dist = create_pdh_high_vs_prev_high_distribution(pdh_days)
+    pdh_distributions = create_distributions(pdh_days)
+    pdh_scatters = create_scatter_plots(pdh_days, best_stop_loss_level, best_exit_level)
+    pdh_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(pdh_days)
 
     # Calculate optimal stop-loss and exit for 15 and 30 years
     optimal_results_15y = calculate_optimal_exit_and_stop_loss(analysis_results[:15])
