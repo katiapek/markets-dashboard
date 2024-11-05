@@ -846,7 +846,23 @@ def filter_pdl_days(df):
 
     return pdl_days
 
+def filter_pdhl_days(df):
+    """
+    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
+    and today's Low is greater than yesterday's Low).
 
+    Args:
+        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+
+    Returns:
+        pd.DataFrame: A dataframe filtered for PD-H days.
+    """
+    # Correct the condition with proper parentheses around each condition
+    df['PD_HL'] = (df['Low'] <= df['Low'].shift(1)) & (df['High'] >= df['High'].shift(1))
+    # Filter for PD-H days
+    pdhl_days = df[df['PD_HL']].copy()
+
+    return pdhl_days
 
 
 def create_distributions(day_data):
@@ -1138,7 +1154,12 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     # Get unique years from the OHLC data
     unique_years = ohlc_data['Date'].dt.year.unique()
 
-    # Perform yearly analysis
+    # Concatenated DataFrames for PD-H, PD-L, and PD-HL day types
+    pdh_days_all_years = pd.DataFrame()
+    pdl_days_all_years = pd.DataFrame()
+    pdhl_days_all_years = pd.DataFrame()
+
+    # Perform yearly analysis and accumulate filtered data for each day type
     for year in unique_years:
         yearly_data = ohlc_data[ohlc_data['Date'].dt.year == year]
         start_date_str = f"{year}-{start_month:02d}-{start_day:02d}"
@@ -1150,7 +1171,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         if start_data is None or end_data is None:
             continue
 
-        # Filter and analyze the data for each year
+        # Filter data for this year and date range
         start_date = start_data['Date']
         end_date = end_data['Date']
         filtered_yearly_data = yearly_data[(yearly_data['Date'] >= start_date) & (yearly_data['Date'] <= end_date)]
@@ -1158,13 +1179,18 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         if filtered_yearly_data.empty:
             continue
 
+        # Aggregate filtered data for PD-H, PD-L, and PD-HL analysis across all years
+        pdh_days_all_years = pd.concat([pdh_days_all_years, filter_pdh_days(filtered_yearly_data)], ignore_index=True)
+        pdl_days_all_years = pd.concat([pdl_days_all_years, filter_pdl_days(filtered_yearly_data)], ignore_index=True)
+        pdhl_days_all_years = pd.concat([pdhl_days_all_years, filter_pdhl_days(filtered_yearly_data)], ignore_index=True)
+
+
+        # Perform calculations (points change, max drawdown, etc.)
         open_price = pd.to_numeric(start_data['Open'], errors='coerce')
         close_price = pd.to_numeric(end_data['Close'], errors='coerce')
-
         if pd.isnull(open_price) or pd.isnull(close_price):
             continue
 
-        # Perform calculations (points change, max drawdown, etc.)
         points_change, percentage_change = calculate_points_change(direction, open_price, close_price)
         max_drawdown = calculate_max_drawdown(filtered_yearly_data, open_price, close_price, direction)
         max_gain = calculate_max_gain(filtered_yearly_data, open_price, close_price, direction)
@@ -1183,24 +1209,37 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     analysis_results = sorted(analysis_results, key=lambda x: x['Year'], reverse=True)
 
     # PD-H Analysis
-    pdh_days = filter_pdh_days(ohlc_data)
-    best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_days)
-    best_exit_level = optimize_stop_loss_and_exit(pdh_days, best_stop_loss_level)
-
-    # Create distribution and scatter plots
-    pdh_distributions = create_distributions(pdh_days)
-    pdh_scatters = create_scatter_plots(pdh_days, best_stop_loss_level, best_exit_level)
-    pdh_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(pdh_days, day_type='pdh')
+    pdh_best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_days_all_years, direction)
+    pdh_best_exit_level = optimize_stop_loss_and_exit(pdh_days_all_years, pdh_best_stop_loss_level, direction)
+    pdh_distributions = create_distributions(pdh_days_all_years)
+    pdh_scatters = create_scatter_plots(pdh_days_all_years, pdh_best_stop_loss_level, pdh_best_exit_level)
+    pdh_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(pdh_days_all_years, day_type='pdh')
 
     # PD-L Analysis
-    pdl_days = filter_pdl_days(ohlc_data)
-    best_stop_loss_level = optimize_stop_loss_open_to_close(pdl_days)
-    best_exit_level = optimize_stop_loss_and_exit(pdl_days, best_stop_loss_level)
+    pdl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdl_days_all_years, direction)
+    pdl_best_exit_level = optimize_stop_loss_and_exit(pdl_days_all_years, pdl_best_stop_loss_level, direction)
+    pdl_distributions = create_distributions(pdl_days_all_years)
+    pdl_scatters = create_scatter_plots(pdl_days_all_years, pdl_best_stop_loss_level, pdl_best_exit_level)
+    pdl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdl_days_all_years, day_type='pdl')
 
-    # Create distribution and scatter plots
-    pdl_distributions = create_distributions(pdl_days)
-    pdl_scatters = create_scatter_plots(pdl_days, best_stop_loss_level, best_exit_level)
-    pdl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdl_days, day_type='pdl')
+    # PD-HL Analysis
+    pdhl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdhl_days_all_years, direction)
+    pdhl_best_exit_level = optimize_stop_loss_and_exit(pdhl_days_all_years, pdhl_best_stop_loss_level, direction)
+    pdhl_distributions = create_distributions(pdhl_days_all_years)
+    pdhl_scatters = create_scatter_plots(pdhl_days_all_years, pdhl_best_stop_loss_level, pdhl_best_exit_level)
+    pdhl_high_vs_prev_high_dist, pdhl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdhl_days_all_years, day_type='pdhl')
+
+    # PD-H, PD-L and PD-HL day types
+    pdh_pdl_pdhl_days_all_years = pd.concat([pdh_days_all_years, pdl_days_all_years, pdhl_days_all_years],
+                                            ignore_index=True)
+    pdh_pdl_pdhl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_pdl_pdhl_days_all_years, direction)
+    pdh_pdl_pdhl_best_exit_level = optimize_stop_loss_and_exit(pdh_pdl_pdhl_days_all_years, pdh_pdl_pdhl_best_stop_loss_level,
+                                                          direction)
+    pdh_pdl_pdhl_distributions = create_distributions(pdh_pdl_pdhl_days_all_years)
+    pdh_pdl_pdhl_scatters = create_scatter_plots(pdh_pdl_pdhl_days_all_years, pdh_pdl_pdhl_best_stop_loss_level,
+                                             pdh_pdl_pdhl_best_exit_level)
+    pdh_pdl_pdhl_high_vs_prev_high_dist, pdh_pdl_pdhl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdh_pdl_pdhl_days_all_years,
+                                                                                                  day_type='pdhl')
 
     # Calculate optimal stop-loss and exit for 15 and 30 years
     optimal_results_15y = calculate_optimal_exit_and_stop_loss(analysis_results[:15])
@@ -1235,6 +1274,14 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         'pdl_distributions': pdl_distributions,
         'pdl_scatters': pdl_scatters,
         'pdl_low_vs_prev_low_dist': pdl_low_vs_prev_low_dist,
+        'pdhl_distributions': pdhl_distributions,
+        'pdhl_scatters': pdhl_scatters,
+        'pdhl_low_vs_prev_low_dist': pdl_low_vs_prev_low_dist,
+        'pdhl_high_vs_prev_high_dist': pdhl_high_vs_prev_high_dist,
+        'pdh_pdl_pdhl_distributions': pdhl_distributions,
+        'pdh_pdl_pdhl_scatters': pdhl_scatters,
+        'pdh_pdl_pdhl_low_vs_prev_low_dist': pdl_low_vs_prev_low_dist,
+        'pdh_pdl_pdhl_high_vs_prev_high_dist': pdhl_high_vs_prev_high_dist,
     }
 
 
@@ -2195,7 +2242,14 @@ def register_callbacks(app):
             Output('pdl-open-close-dist', 'figure'),
             Output('pdl-open-low-vs-high-scatter', 'figure'),
             Output('pdl-open-low-vs-close-scatter', 'figure'),
-            Output('pdl-low-vs-prev-low-dist', 'figure')
+            Output('pdl-low-vs-prev-low-dist', 'figure'),
+            Output('pdhl-open-high-dist', 'figure'),
+            Output('pdhl-open-low-dist', 'figure'),
+            Output('pdhl-open-close-dist', 'figure'),
+            Output('pdhl-open-low-vs-high-scatter', 'figure'),
+            Output('pdhl-open-low-vs-close-scatter', 'figure'),
+            Output('pdhl-low-vs-prev-low-dist', 'figure'),
+            Output('pdhl-high-vs-prev-high-dist', 'figure')
         ],
         [Input('perform-analysis-button', 'n_clicks'),
          Input('interval-auto-load', 'n_intervals')],
@@ -2253,6 +2307,12 @@ def register_callbacks(app):
         pdl_distributions = analysis_results['pdl_distributions']
         pdl_scatters = analysis_results['pdl_scatters']
         pdl_low_vs_prev_low_dist = analysis_results['pdl_low_vs_prev_low_dist']
+
+        # PD-HL stats
+        pdhl_distributions = analysis_results['pdhl_distributions']
+        pdhl_scatters = analysis_results['pdhl_scatters']
+        pdhl_low_vs_prev_low_dist = analysis_results['pdhl_low_vs_prev_low_dist']
+        pdhl_high_vs_prev_high_dist = analysis_results['pdhl_high_vs_prev_high_dist']
 
         # Distribution Charts for 15 and 30 years
         distribution_chart_15 = create_distribution_chart(yearly_data[:15])
@@ -2347,5 +2407,13 @@ def register_callbacks(app):
             pdl_distributions.get('open_close', {}),
             pdl_scatters.get('open_low_vs_high', {}),
             pdl_scatters.get('open_low_vs_close', {}),
-            pdl_low_vs_prev_low_dist
+            pdl_low_vs_prev_low_dist,
+            # PD-HL distribution and scatter plots
+            pdhl_distributions.get('open_high', {}),
+            pdhl_distributions.get('open_low', {}),
+            pdhl_distributions.get('open_close', {}),
+            pdhl_scatters.get('open_low_vs_high', {}),
+            pdhl_scatters.get('open_low_vs_close', {}),
+            pdhl_low_vs_prev_low_dist,
+            pdhl_high_vs_prev_high_dist,
         )
