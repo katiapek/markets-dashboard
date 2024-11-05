@@ -2249,7 +2249,14 @@ def register_callbacks(app):
             Output('pdhl-open-low-vs-high-scatter', 'figure'),
             Output('pdhl-open-low-vs-close-scatter', 'figure'),
             Output('pdhl-low-vs-prev-low-dist', 'figure'),
-            Output('pdhl-high-vs-prev-high-dist', 'figure')
+            Output('pdhl-high-vs-prev-high-dist', 'figure'),
+            Output('pdh-pdl-pdhl-open-high-dist', 'figure'),
+            Output('pdh-pdl-pdhl-open-low-dist', 'figure'),
+            Output('pdh-pdl-pdhl-open-close-dist', 'figure'),
+            Output('pdh-pdl-pdhl-open-low-vs-high-scatter', 'figure'),
+            Output('pdh-pdl-pdhl-open-low-vs-close-scatter', 'figure'),
+            Output('pdh-pdl-pdhl-low-vs-prev-low-dist', 'figure'),
+            Output('pdh-pdl-pdhl-high-vs-prev-high-dist', 'figure')
         ],
         [Input('perform-analysis-button', 'n_clicks'),
          Input('interval-auto-load', 'n_intervals')],
@@ -2313,6 +2320,12 @@ def register_callbacks(app):
         pdhl_scatters = analysis_results['pdhl_scatters']
         pdhl_low_vs_prev_low_dist = analysis_results['pdhl_low_vs_prev_low_dist']
         pdhl_high_vs_prev_high_dist = analysis_results['pdhl_high_vs_prev_high_dist']
+
+        # PD-H, PD-L and PD-HL stats
+        pdh_pdl_pdhl_distributions = analysis_results['pdh_pdl_pdhl_distributions']
+        pdh_pdl_pdhl_scatters = analysis_results['pdh_pdl_pdhl_scatters']
+        pdh_pdl_pdhl_low_vs_prev_low_dist = analysis_results['pdh_pdl_pdhl_low_vs_prev_low_dist']
+        pdh_pdl_pdhl_high_vs_prev_high_dist = analysis_results['pdh_pdl_pdhl_high_vs_prev_high_dist']
 
         # Distribution Charts for 15 and 30 years
         distribution_chart_15 = create_distribution_chart(yearly_data[:15])
@@ -2416,4 +2429,12 @@ def register_callbacks(app):
             pdhl_scatters.get('open_low_vs_close', {}),
             pdhl_low_vs_prev_low_dist,
             pdhl_high_vs_prev_high_dist,
+            # PD-H, PD-L, PD-HL distribution and scatter plots
+            pdh_pdl_pdhl_distributions.get('open_high', {}),
+            pdh_pdl_pdhl_distributions.get('open_low', {}),
+            pdh_pdl_pdhl_distributions.get('open_close', {}),
+            pdh_pdl_pdhl_scatters.get('open_low_vs_high', {}),
+            pdh_pdl_pdhl_scatters.get('open_low_vs_close', {}),
+            pdh_pdl_pdhl_low_vs_prev_low_dist,
+            pdh_pdl_pdhl_high_vs_prev_high_dist,
         )

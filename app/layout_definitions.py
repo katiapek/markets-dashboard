@@ -440,6 +440,65 @@ def create_pdhl_analysis_section():
 
     ])
 
+def create_pdh_pdl_pdhl_analysis_section():
+    """
+    Creates a section for PD-H day analysis including distributions and scatter plots.
+
+    Returns:
+        html.Div: The layout containing input fields and result placeholders for PD-H day analysis.
+    """
+    return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
+                           'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
+                    children=[
+        html.H3("PD-H, PD-L, PD-HL Day Analysis", style={'textAlign': 'center'}),
+
+        # Distribution Plots
+        html.Div([
+            html.Div([
+                dcc.Graph(id='pdh-pdl-pdhl-open-high-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='pdh-pdl-pdhl-open-low-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+        ], style={'display': 'flex'}),
+
+        # Open-Close distribution
+        html.Div([
+            html.Div([
+                dcc.Graph(id='pdh-pdl-pdhl-open-close-dist'),
+            ], style={'width': '50%', 'display': 'block', 'margin': '0 auto'}),
+        ]),
+
+
+        # Low vs Prev Day Low and High vs Prev Day High distribution
+        html.Div([
+            html.Div([
+                dcc.Graph(id='pdh-pdl-pdhl-low-vs-prev-low-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='pdh-pdl-pdhl-high-vs-prev-high-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+        ]),
+
+
+        # Scatter Plots
+        html.Div([
+            html.Div([
+                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-close-scatter'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-high-scatter'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+
+        ], style={'display': 'flex'}),
+
+    ])
+
 
 def create_layout(app):
     """
@@ -545,6 +604,19 @@ def create_layout(app):
                         dcc.Loading(
                             id='pdhl-analysis-loading',
                             children=[html.Div(id='pdhl-analysis-output')],
+                            type='default'
+                        )
+                    ],
+                    style={'margin-top': '20px'}
+                ),
+
+                # Create PD-H, PD-L, PD-HL analysis section
+                html.Div(
+                    children=[
+                        create_pdh_pdl_pdhl_analysis_section(),
+                        dcc.Loading(
+                            id='pdh-pdl-pdhl-analysis-loading',
+                            children=[html.Div(id='pdh-pdl-pdhl-analysis-output')],
                             type='default'
                         )
                     ],
