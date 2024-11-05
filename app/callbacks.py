@@ -6,6 +6,9 @@ import numpy as np
 from datetime import timedelta
 import plotly.graph_objs as go
 import plotly.subplots as sp
+import plotly.express as px
+import numpy as np
+import plotly.graph_objects as go
 import pandas as pd  # Import pandas for data manipulation
 from layout_definitions import format_market_name
 from data_fetchers import (
@@ -22,8 +25,7 @@ from scripts.config import market_tickers
 import matplotlib.pyplot as plt
 import plotly.express as px
 from sklearn.linear_model import LinearRegression
-import numpy as np
-# from scipy.stats import norm
+
 
 # Constants for trace colors and default values
 DEFAULT_MARKET = 'SP 500'
@@ -810,7 +812,8 @@ def calculate_points_change(direction, open_price, close_price):
 
 def filter_pdh_days(df):
     """
-    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High).
+    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
+    and today's Low is greater than yesterday's Low).
 
     Args:
         df (pd.DataFrame): The input OHLC dataframe with percentage changes.
@@ -818,19 +821,14 @@ def filter_pdh_days(df):
     Returns:
         pd.DataFrame: A dataframe filtered for PD-H days.
     """
-    # Create a new column to identify PD-H days
-    df['PD_H'] = df['High'] >= df['High'].shift(1)
-
+    # Correct the condition with proper parentheses around each condition
+    df['PD_H'] = (df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1))
     # Filter for PD-H days
     pdh_days = df[df['PD_H']].copy()
 
     return pdh_days
 
 
-import plotly.express as px
-
-import numpy as np
-import plotly.graph_objects as go
 
 
 def create_pdh_distributions(pdh_days):
@@ -1172,8 +1170,6 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     # Simulate optimal trades
     optimal_trades_results_15y = simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month,
                                                      end_day, optimal_results_15y, direction)
-    # CHECK
-    print(f"OTR {optimal_trades_results_15y}")
 
     # Calculate optimal stop-loss and exit
     optimal_results_30y = calculate_optimal_exit_and_stop_loss(analysis_results[:30])
@@ -2233,12 +2229,14 @@ def register_callbacks(app):
         stats_df = stats_df[stats_df['Year'] != 'Total']
 
         # Ensure the 'Year' column is integer type for sorting
+        stats_df = stats_df.copy()  # Explicitly create a copy to avoid SettingWithCopyWarning
         stats_df['Year'] = stats_df['Year'].astype(int)
+
+        stats_1_df = stats_1_df.copy()  # Explicitly create a copy to avoid SettingWithCopyWarning
         stats_1_df['Year'] = stats_1_df['Year'].astype(int)
 
-        # Sort the data in descending order by 'Year'
-        stats_df.drop_duplicates(subset=['Year'], inplace=True)
-        stats_df.sort_values(by='Year', ascending=False, inplace=True)
+        # Drop duplicates and sort in one line with chaining
+        stats_df = stats_df.drop_duplicates(subset=['Year']).sort_values(by='Year', ascending=False)
 
         stats_1_df.drop_duplicates(subset=['Year'], inplace=True)
         stats_1_df.sort_values(by='Year', ascending=False, inplace=True)
@@ -2249,6 +2247,8 @@ def register_callbacks(app):
         # Convert the DataFrame to a dictionary for Dash DataTable
         day_trading_stats = stats_df.to_dict('records')
         day_trading_stats_1 = stats_1_df.to_dict('records')
+
+
 
         # Remove the weekday-related calculations and return only the relevant outputs:
         return (
@@ -2295,7 +2295,6 @@ def register_callbacks(app):
 
         if stored_market is None:
             stored_market = DEFAULT_MARKET
-
 
         # Loop through the years and accumulate data
         current_year = 2024  # This can be dynamic depending on the latest available year in the dataset
