@@ -289,23 +289,33 @@ def create_pdh_analysis_section():
     Returns:
         html.Div: The layout containing input fields and result placeholders for PD-H day analysis.
     """
-    return html.Div(children=[
+    return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
+                           'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
+                    children=[
         html.H3("PD-H Day Analysis", style={'textAlign': 'center'}),
 
         # Distribution Plots
         html.Div([
             html.Div([
                 dcc.Graph(id='pdh-open-high-dist'),
-            ], style={'width': '33%', 'display': 'inline-block'}),
+            ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
                 dcc.Graph(id='pdh-open-low-dist'),
-            ], style={'width': '33%', 'display': 'inline-block'}),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+        ], style={'display': 'flex'}),
 
+        # High vs Previous High Distribution
+        html.Div([
             html.Div([
                 dcc.Graph(id='pdh-open-close-dist'),
-            ], style={'width': '33%', 'display': 'inline-block'}),
-        ], style={'display': 'flex'}),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='pdh-high-vs-prev-high-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+        ]),
 
         # Scatter Plots
         html.Div([
@@ -318,10 +328,6 @@ def create_pdh_analysis_section():
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
-        # High vs Previous High Distribution
-        html.Div([
-            dcc.Graph(id='pdh-high-vs-prev-high-dist'),
-        ], style={'width': '50%', 'margin': '0 auto'}),
     ])
 
 
