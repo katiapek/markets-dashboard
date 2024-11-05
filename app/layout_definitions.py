@@ -330,6 +330,54 @@ def create_pdh_analysis_section():
 
     ])
 
+def create_pdl_analysis_section():
+    """
+    Creates a section for PD-H day analysis including distributions and scatter plots.
+
+    Returns:
+        html.Div: The layout containing input fields and result placeholders for PD-H day analysis.
+    """
+    return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
+                           'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
+                    children=[
+        html.H3("PD-L Day Analysis", style={'textAlign': 'center'}),
+
+        # Distribution Plots
+        html.Div([
+            html.Div([
+                dcc.Graph(id='pdl-open-high-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='pdl-open-low-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+        ], style={'display': 'flex'}),
+
+        # High vs Previous High Distribution
+        html.Div([
+            html.Div([
+                dcc.Graph(id='pdl-open-close-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='pdl-low-vs-prev-low-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+        ]),
+
+        # Scatter Plots
+        html.Div([
+            html.Div([
+                dcc.Graph(id='pdl-open-low-vs-high-scatter'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='pdl-open-low-vs-close-scatter'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+        ], style={'display': 'flex'}),
+
+    ])
+
 
 def create_layout(app):
     """
@@ -409,6 +457,19 @@ def create_layout(app):
                         dcc.Loading(
                             id='pdh-analysis-loading',
                             children=[html.Div(id='pdh-analysis-output')],
+                            type='default'
+                        )
+                    ],
+                    style={'margin-top': '20px'}
+                ),
+
+                # Create PD-L analysis section
+                html.Div(
+                    children=[
+                        create_pdl_analysis_section(),
+                        dcc.Loading(
+                            id='pdl-analysis-loading',
+                            children=[html.Div(id='pdl-analysis-output')],
                             type='default'
                         )
                     ],

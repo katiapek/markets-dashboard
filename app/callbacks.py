@@ -828,6 +828,24 @@ def filter_pdh_days(df):
 
     return pdh_days
 
+def filter_pdl_days(df):
+    """
+    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
+    and today's Low is greater than yesterday's Low).
+
+    Args:
+        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+
+    Returns:
+        pd.DataFrame: A dataframe filtered for PD-H days.
+    """
+    # Correct the condition with proper parentheses around each condition
+    df['PD_L'] = (df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1))
+    # Filter for PD-H days
+    pdl_days = df[df['PD_L']].copy()
+
+    return pdl_days
+
 
 
 
@@ -995,12 +1013,14 @@ def add_std_lines(fig, data, title=""):
     )
 
 
-def optimize_stop_loss_open_low_close(pdh_days):
+def optimize_stop_loss_open_to_close(day_data, direction="Long"):
     """
-    Optimize stop-loss based on Open-Low and Open-Close percentage changes.
+    Optimize stop-loss based on Open-Low (for Long) or Open-High (for Short) and Open-Close percentage changes.
 
     Args:
-        pdh_days (pd.DataFrame): DataFrame containing PD-H day data with 'Open_Low_Pct_Change' and 'Open_Close_Pct_Change'.
+        day_data (pd.DataFrame): DataFrame containing day data with 'Open_Low_Pct_Change' and 'Open_Close_Pct_Change' (Long)
+                                 or 'Open_High_Pct_Change' and 'Open_Close_Pct_Change' (Short).
+        direction (str): Trade direction, either "Long" or "Short".
 
     Returns:
         float: Optimal stop-loss level (percentage change) that maximizes the sum of Open-Close percentage changes.
@@ -1009,17 +1029,20 @@ def optimize_stop_loss_open_low_close(pdh_days):
     max_cumulative_return = -float('inf')
 
     # Define the range of stop-loss levels to test (e.g., from -5% to 0%)
-    stop_loss_range = np.linspace(-5, 0, 100)  # Use numpy instead of pd.np
+    stop_loss_range = np.linspace(-5, 0, 100)
+
+    # Choose columns based on direction
+    stop_loss_col = 'Open_Low_Pct_Change' if direction == "Long" else 'Open_High_Pct_Change'
 
     # Loop through possible stop-loss levels
     for stop_loss_level in stop_loss_range:
-        # Filter out days where Open-Low is below the current stop-loss level (stop-loss hit)
-        trades_with_stop_loss = pdh_days[pdh_days['Open_Low_Pct_Change'] >= stop_loss_level]
+        # Filter out trades where stop-loss would be hit
+        trades_with_stop_loss = day_data[day_data[stop_loss_col] >= stop_loss_level]
 
-        # Sum up the Open-Close percentage changes for these trades
+        # Calculate cumulative return based on Open-Close percentage changes
         cumulative_return = trades_with_stop_loss['Open_Close_Pct_Change'].sum()
 
-        # Check if this stop-loss level provides a better result
+        # Update best stop-loss level if this level gives a higher cumulative return
         if cumulative_return > max_cumulative_return:
             max_cumulative_return = cumulative_return
             best_stop_loss_level = stop_loss_level
@@ -1027,51 +1050,58 @@ def optimize_stop_loss_open_low_close(pdh_days):
     return best_stop_loss_level
 
 
-def optimize_stop_loss_exit_open_low_high(pdh_days, best_stop_loss_level):
+def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"):
     """
-    Optimize take-profit (Open-High) based on a fixed stop-loss (Open-Low).
+    Optimize take-profit based on a fixed stop-loss level and Open-High (Long) or Open-Low (Short).
 
     Args:
-        pdh_days (pd.DataFrame): DataFrame containing PD-H day data with 'Open_Low_Pct_Change' and 'Open_High_Pct_Change'.
-        best_stop_loss_level (float): The previously calculated optimal stop-loss level from Open-Low and Open-Close.
+        day_data (pd.DataFrame): DataFrame containing day data with 'Open_Low_Pct_Change', 'Open_High_Pct_Change',
+                                 and 'Open_Close_Pct_Change'.
+        best_stop_loss_level (float): Optimal stop-loss level calculated previously.
+        direction (str): Trade direction, either "Long" or "Short".
 
     Returns:
-        float: Optimal take-profit level (percentage change) that maximizes the net return above stop-loss.
+        float: Optimal take-profit level (percentage change) that maximizes net return.
     """
     best_exit_level = None
     max_net_return = -float('inf')
 
-    # Define the range of take-profit levels to test
+    # Define range of take-profit levels
     take_profit_range = np.linspace(0, 10, 100)
+
+    # Choose columns based on direction
+    exit_col = 'Open_High_Pct_Change' if direction == "Long" else 'Open_Low_Pct_Change'
 
     # Loop through possible take-profit levels
     for exit_level in take_profit_range:
-        # Filter days where Open-Low is above the stop-loss and Open-High is above the take-profit
-        trades_with_stop_loss_exit = pdh_days[
-            (pdh_days['Open_Low_Pct_Change'] >= best_stop_loss_level) &
-            (pdh_days['Open_High_Pct_Change'] >= exit_level)
-            ]
+        # Filter days where stop-loss is met, and exit level is reached
+        trades_with_stop_loss_exit = day_data[
+            (day_data['Open_Low_Pct_Change'] >= best_stop_loss_level if direction == "Long" else
+             day_data['Open_High_Pct_Change'] <= best_stop_loss_level) &
+            (day_data[exit_col] >= exit_level)
+        ]
 
-        # If the take-profit is not reached, use Open-Close for the final value
-        trades_with_no_exit = pdh_days[
-            (pdh_days['Open_Low_Pct_Change'] >= best_stop_loss_level) &
-            (pdh_days['Open_High_Pct_Change'] < exit_level)
-            ]
+        # Calculate net return for trades reaching the take-profit level
+        net_return_exit = len(trades_with_stop_loss_exit) * exit_level
 
-        # Count the trades that reached the exit level
-        num_trades_with_exit = len(trades_with_stop_loss_exit)
-
-        # Net return from trades where the exit level is reached (i.e., exit at take-profit level)
-        net_return_exit = num_trades_with_exit * exit_level
+        # For trades where take-profit is not reached, use Open-Close as final return
+        trades_with_no_exit = day_data[
+            (day_data['Open_Low_Pct_Change'] >= best_stop_loss_level if direction == "Long" else
+             day_data['Open_High_Pct_Change'] <= best_stop_loss_level) &
+            (day_data[exit_col] < exit_level)
+        ]
         net_return_no_exit = trades_with_no_exit['Open_Close_Pct_Change'].sum()
+
+        # Total net return
         total_net_return = net_return_exit + net_return_no_exit
 
-        # Update if this combination provides a better result
+        # Update the best exit level if it provides a better result
         if total_net_return > max_net_return:
             max_net_return = total_net_return
             best_exit_level = exit_level
 
     return best_exit_level
+
 
 # Function to get the market name based on its index
 def get_market_by_index(index, market_tickers):
@@ -1154,13 +1184,23 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
 
     # PD-H Analysis
     pdh_days = filter_pdh_days(ohlc_data)
-    best_stop_loss_level = optimize_stop_loss_open_low_close(pdh_days)
-    best_exit_level = optimize_stop_loss_exit_open_low_high(pdh_days, best_stop_loss_level)
+    best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_days)
+    best_exit_level = optimize_stop_loss_and_exit(pdh_days, best_stop_loss_level)
 
     # Create distribution and scatter plots
     pdh_distributions = create_distributions(pdh_days)
     pdh_scatters = create_scatter_plots(pdh_days, best_stop_loss_level, best_exit_level)
-    pdh_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(pdh_days)
+    pdh_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(pdh_days, day_type='pdh')
+
+    # PD-L Analysis
+    pdl_days = filter_pdl_days(ohlc_data)
+    best_stop_loss_level = optimize_stop_loss_open_to_close(pdl_days)
+    best_exit_level = optimize_stop_loss_and_exit(pdl_days, best_stop_loss_level)
+
+    # Create distribution and scatter plots
+    pdl_distributions = create_distributions(pdl_days)
+    pdl_scatters = create_scatter_plots(pdl_days, best_stop_loss_level, best_exit_level)
+    pdl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdl_days, day_type='pdl')
 
     # Calculate optimal stop-loss and exit for 15 and 30 years
     optimal_results_15y = calculate_optimal_exit_and_stop_loss(analysis_results[:15])
@@ -1191,7 +1231,10 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         'day_trading_stats_1': day_trading_stats_1,
         'pdh_distributions': pdh_distributions,
         'pdh_scatters': pdh_scatters,
-        'pdh_high_vs_prev_high_dist': pdh_high_vs_prev_high_dist
+        'pdh_high_vs_prev_high_dist': pdh_high_vs_prev_high_dist,
+        'pdl_distributions': pdl_distributions,
+        'pdl_scatters': pdl_scatters,
+        'pdl_low_vs_prev_low_dist': pdl_low_vs_prev_low_dist,
     }
 
 
@@ -2146,7 +2189,13 @@ def register_callbacks(app):
             Output('pdh-open-close-dist', 'figure'),
             Output('pdh-open-low-vs-high-scatter', 'figure'),
             Output('pdh-open-low-vs-close-scatter', 'figure'),
-            Output('pdh-high-vs-prev-high-dist', 'figure')
+            Output('pdh-high-vs-prev-high-dist', 'figure'),
+            Output('pdl-open-high-dist', 'figure'),
+            Output('pdl-open-low-dist', 'figure'),
+            Output('pdl-open-close-dist', 'figure'),
+            Output('pdl-open-low-vs-high-scatter', 'figure'),
+            Output('pdl-open-low-vs-close-scatter', 'figure'),
+            Output('pdl-low-vs-prev-low-dist', 'figure')
         ],
         [Input('perform-analysis-button', 'n_clicks'),
          Input('interval-auto-load', 'n_intervals')],
@@ -2199,6 +2248,11 @@ def register_callbacks(app):
         pdh_distributions = analysis_results['pdh_distributions']
         pdh_scatters = analysis_results['pdh_scatters']
         pdh_high_vs_prev_high_dist = analysis_results['pdh_high_vs_prev_high_dist']
+
+        # PD-L stats
+        pdl_distributions = analysis_results['pdl_distributions']
+        pdl_scatters = analysis_results['pdl_scatters']
+        pdl_low_vs_prev_low_dist = analysis_results['pdl_low_vs_prev_low_dist']
 
         # Distribution Charts for 15 and 30 years
         distribution_chart_15 = create_distribution_chart(yearly_data[:15])
@@ -2286,5 +2340,12 @@ def register_callbacks(app):
             pdh_distributions.get('open_close', {}),
             pdh_scatters.get('open_low_vs_high', {}),
             pdh_scatters.get('open_low_vs_close', {}),
-            pdh_high_vs_prev_high_dist
+            pdh_high_vs_prev_high_dist,
+            # PD-L distribution and scatter plots
+            pdl_distributions.get('open_high', {}),
+            pdl_distributions.get('open_low', {}),
+            pdl_distributions.get('open_close', {}),
+            pdl_scatters.get('open_low_vs_high', {}),
+            pdl_scatters.get('open_low_vs_close', {}),
+            pdl_low_vs_prev_low_dist
         )
