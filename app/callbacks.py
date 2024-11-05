@@ -1107,7 +1107,7 @@ def get_market_by_index(index, market_tickers):
 def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     """
     Perform analysis on OHLC data for a given market, start/end date range, and direction (Long/Short),
-    including yearly results, optimal trades, and day trading stats.
+    including yearly results, optimal trades, day trading stats, and PD-H analysis.
     """
     # Extract start and end months and days from the given dates
     start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day
@@ -1163,17 +1163,25 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
             'Closing Percentage': round(percentage_change, 1)
         })
 
+    # Sort analysis results by year
     analysis_results = sorted(analysis_results, key=lambda x: x['Year'], reverse=True)
 
-    # Calculate optimal stop-loss and exit
-    optimal_results_15y = calculate_optimal_exit_and_stop_loss(analysis_results[:15])
-    # Simulate optimal trades
-    optimal_trades_results_15y = simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month,
-                                                     end_day, optimal_results_15y, direction)
+    # PD-H Analysis
+    pdh_days = filter_pdh_days(ohlc_data)
+    best_stop_loss_level = optimize_stop_loss_open_low_close(pdh_days)
+    best_exit_level = optimize_stop_loss_exit_open_low_high(pdh_days, best_stop_loss_level)
 
-    # Calculate optimal stop-loss and exit
+    # Create distribution and scatter plots
+    pdh_distributions = create_pdh_distributions(pdh_days)
+    pdh_scatters = create_pdh_scatter_plots(pdh_days, best_stop_loss_level, best_exit_level)
+    pdh_high_vs_prev_high_dist = create_pdh_high_vs_prev_high_distribution(pdh_days)
+
+    # Calculate optimal stop-loss and exit for 15 and 30 years
+    optimal_results_15y = calculate_optimal_exit_and_stop_loss(analysis_results[:15])
+    optimal_trades_results_15y = simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month,
+                                                         end_day, optimal_results_15y, direction)
+
     optimal_results_30y = calculate_optimal_exit_and_stop_loss(analysis_results[:30])
-    # Simulate optimal trades
     optimal_trades_results_30y = simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month,
                                                          end_day, optimal_results_30y, direction)
 
@@ -1184,7 +1192,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     # Day trading stats by year
     day_trading_stats, day_trading_stats_1 = compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, group_by='year')
 
-
+    # Return analysis results and PD-H analysis data
     return {
         'yearly_results': analysis_results,
         'optimal_results_15y': optimal_results_15y,
@@ -1194,8 +1202,12 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         '15_year_summary': summary_15,
         '30_year_summary': summary_30,
         'day_trading_stats': day_trading_stats,
-        'day_trading_stats_1': day_trading_stats_1
+        'day_trading_stats_1': day_trading_stats_1,
+        'pdh_distributions': pdh_distributions,
+        'pdh_scatters': pdh_scatters,
+        'pdh_high_vs_prev_high_dist': pdh_high_vs_prev_high_dist
     }
+
 
 def calculate_max_drawdown(df, open_price, close_price, direction):
     """
@@ -2126,24 +2138,30 @@ def register_callbacks(app):
 
     # Callback for Opportunity Analysis section
 
-
-
     @app.callback(
-        [Output('yearly-analysis-table', 'data'),
-         Output('15-year-summary', 'children'),
-         Output('30-year-summary', 'children'),
-         Output('distribution-chart-15', 'figure'),
-         Output('distribution-chart-optimal-15', 'figure'),
-         Output('distribution-chart-30', 'figure'),
-         Output('distribution-chart-optimal-30', 'figure'),
-         Output('cumulative-return-chart-15', 'figure'),
-         Output('cumulative-return-chart-30', 'figure'),
-         Output('risk-metrics-summary-15', 'children'),
-         Output('risk-metrics-summary-30', 'children'),
-         Output('risk-metrics-summary-15-stoploss', 'children'),
-         Output('risk-metrics-summary-30-stoploss', 'children'),
-         Output('day-trading-stats-table', 'data'),
-         Output('day-trading-stats-1-table', 'data')],
+        [
+            Output('yearly-analysis-table', 'data'),
+            Output('15-year-summary', 'children'),
+            Output('30-year-summary', 'children'),
+            Output('distribution-chart-15', 'figure'),
+            Output('distribution-chart-optimal-15', 'figure'),
+            Output('distribution-chart-30', 'figure'),
+            Output('distribution-chart-optimal-30', 'figure'),
+            Output('cumulative-return-chart-15', 'figure'),
+            Output('cumulative-return-chart-30', 'figure'),
+            Output('risk-metrics-summary-15', 'children'),
+            Output('risk-metrics-summary-30', 'children'),
+            Output('risk-metrics-summary-15-stoploss', 'children'),
+            Output('risk-metrics-summary-30-stoploss', 'children'),
+            Output('day-trading-stats-table', 'data'),
+            Output('day-trading-stats-1-table', 'data'),
+            Output('pdh-open-high-dist', 'figure'),
+            Output('pdh-open-low-dist', 'figure'),
+            Output('pdh-open-close-dist', 'figure'),
+            Output('pdh-open-low-vs-high-scatter', 'figure'),
+            Output('pdh-open-low-vs-close-scatter', 'figure'),
+            Output('pdh-high-vs-prev-high-dist', 'figure')
+        ],
         [Input('perform-analysis-button', 'n_clicks'),
          Input('interval-auto-load', 'n_intervals')],
         [State('date-picker-range', 'start_date'),
@@ -2190,6 +2208,11 @@ def register_callbacks(app):
         # Simulate trades with optimal S/L and exit for 15 and 30 years
         optimal_trades_results_15y = analysis_results['optimal_trades_results_15y']
         optimal_trades_results_30y = analysis_results['optimal_trades_results_30y']
+
+        # PD-H stats
+        pdh_distributions = analysis_results['pdh_distributions']
+        pdh_scatters = analysis_results['pdh_scatters']
+        pdh_high_vs_prev_high_dist = analysis_results['pdh_high_vs_prev_high_dist']
 
         # Distribution Charts for 15 and 30 years
         distribution_chart_15 = create_distribution_chart(yearly_data[:15])
@@ -2271,73 +2294,7 @@ def register_callbacks(app):
             stop_loss_metrics_summary_30,
             day_trading_stats,  # Day trading stats
             day_trading_stats_1,
-        )
-
-    @app.callback(
-        [
-            Output('pdh-open-high-dist', 'figure'),
-            Output('pdh-open-low-dist', 'figure'),
-            Output('pdh-open-close-dist', 'figure'),
-            Output('pdh-open-low-vs-high-scatter', 'figure'),
-            Output('pdh-open-low-vs-close-scatter', 'figure'),
-            Output('pdh-high-vs-prev-high-dist', 'figure'),
-        ],
-        [
-            Input('stored-market', 'data'),
-            Input('date-picker-range', 'start_date'),
-            Input('date-picker-range', 'end_date'),
-        ],
-    )
-    def update_pdh_analysis(stored_market, start_date, end_date):
-        # Parse the selected dates to extract the month and day
-        start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day
-        end_month, end_day = pd.to_datetime(end_date).month, pd.to_datetime(end_date).day
-
-        if stored_market is None:
-            stored_market = DEFAULT_MARKET
-
-        # Loop through the years and accumulate data
-        current_year = 2024  # This can be dynamic depending on the latest available year in the dataset
-        years_range = range(35)  # Adjust the range as per the available data
-
-        # Create an empty DataFrame to collect the data
-        pdh_days_all_years = pd.DataFrame()
-
-        for year_offset in years_range:
-            year = current_year - year_offset
-
-            # Construct start and end date strings for each year
-            start_date_str = f'{year}-{start_month:02d}-{start_day:02d}'
-            end_date_str = f'{year}-{end_month:02d}-{end_day:02d}'
-
-            # Fetch data for each year and combine into a single DataFrame
-            yearly_data = OHLCDataFetcher.fetch_ohlc_data_by_range(stored_market, start_date_str, end_date_str)
-
-            if not yearly_data.empty:
-                pdh_days_all_years = pd.concat([pdh_days_all_years, yearly_data], ignore_index=True)
-
-        # Ensure we have data to analyze
-        if pdh_days_all_years.empty:
-            return {}, {}, {}, {}, {}, {}
-
-        # Filter PD-H days
-        pdh_days = filter_pdh_days(pdh_days_all_years)
-
-        # Step 1: Calculate the optimal stop-loss for Open-Low, Open-Close
-        best_stop_loss_level = optimize_stop_loss_open_low_close(pdh_days)
-
-        # Step 2: Use the stop-loss to find the best exit level for Open-Low, Open-High
-        best_exit_level = optimize_stop_loss_exit_open_low_high(pdh_days, best_stop_loss_level)
-
-        # Generate distribution and scatter plots
-        pdh_distributions = create_pdh_distributions(pdh_days)
-        # Generate scatter plots for Open-Low vs Open-High and Open-Low vs Open-Close
-        pdh_scatters = create_pdh_scatter_plots(pdh_days, best_stop_loss_level, best_exit_level)
-
-        pdh_high_vs_prev_high_dist = create_pdh_high_vs_prev_high_distribution(pdh_days)
-
-        # Return figures for Dash components
-        return (
+            # PD-H distribution and scatter plots
             pdh_distributions.get('open_high', {}),
             pdh_distributions.get('open_low', {}),
             pdh_distributions.get('open_close', {}),
@@ -2345,7 +2302,3 @@ def register_callbacks(app):
             pdh_scatters.get('open_low_vs_close', {}),
             pdh_high_vs_prev_high_dist
         )
-
-
-
-
