@@ -593,7 +593,7 @@ def create_layout(app):
                     id='combined-chart',
                     config={
                         'scrollZoom': True,
-                        'doubleClick': 'reset',
+                        'doubleClick': 'autosize',
                         'displayModeBar': False,
 
                     },

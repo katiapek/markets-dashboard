@@ -83,8 +83,6 @@ dcc.Graph, dcc.Checklist  {
     color: #FFFFFF; /* Light text color */
 }
 
-
-
 .collapsed-header {
     background-color: #2e2e2e;
     border-bottom: 1px solid #333;
@@ -141,9 +139,6 @@ dcc.Graph, dcc.Checklist  {
     color: #00FF00 !important; /* Color for dropdown arrow */
 }
 
-
-
-
 .above-chart-button {
     background-color: #2b2b2b;
     color: white;
@@ -156,4 +151,12 @@ dcc.Graph, dcc.Checklist  {
 }
 .above-chart-button:hover {
     background-color: #3d3d3d;
+}
+
+/* Style each label by targeting the checklist items */
+#years-checklist label:nth-child(1) {
+    color: #FF7F0E;
+}
+#years-checklist label:nth-child(2) {
+    color: #1F77B4;
 }

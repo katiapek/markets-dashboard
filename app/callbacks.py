@@ -44,9 +44,15 @@ COLORS = {
     'seasonality_35y': '#347474',
 }
 
+# Define color scheme for seasonality traces
+# Must match with styles.css #years-checklist
+SEASONALITY_COLORS = {
+    15: '#FF7F0E',  # Color for 15 Years
+    35: '#1F77B4'   # Color for 35 Years
+}
+
 # Create a dictionary to map market names to the first part of their ticker (up to the "=")
 ticker_prefixes = {name: ticker.split('=')[0] for name, ticker in market_tickers.items()}
-
 
 
 def add_trace(fig, x, y, name, row, col, mode='lines', line_color=None, secondary_y=False, chart_type='line',
@@ -101,8 +107,6 @@ def update_yaxis(fig, row, col, title, y_min=None, y_max=None, secondary_y=False
 def add_shape(fig, x0, x1, y0, y1, row, col, color='gray', dash='dash'):
     fig.add_shape(type='line', x0=x0, x1=x1, y0=y0, y1=y1, line=dict(color=color, dash=dash), row=row, col=col)
 
-
-# CHECK here simulate_optimal_trades what does it do? Does this function even work.
 def compare_portfolios(start_month, start_day, end_month, end_day, direction, ohlc_data, number_of_years_to_combine):
     """
     Function to compare no stop-loss vs stop-loss and optimal exit portfolios over a 15 or 30 year period.
@@ -1786,9 +1790,20 @@ def register_callbacks(app):
             df = SeasonalDataFetcher.fetch_seasonal_data(format_market_name(stored_market), years, current_year)
             if not df.empty:
                 # Connect the lines even if there are missing dates
-                add_trace(fig, df['Date'], df['Indexed_Cumulative_Percent_Change'], f'{years} Years', row=1,
-                          col=1, opacity=0.6, secondary_y=True, hide_yaxis_ticks=True, show_legend=False, disable_hover=True)
-
+                add_trace(
+                    fig,
+                    df['Date'],
+                    df['Indexed_Cumulative_Percent_Change'],
+                    f'{years} Years',
+                    row=1,
+                    col=1,
+                    opacity=0.6,
+                    line_color=SEASONALITY_COLORS[years],  # Use corresponding color
+                    secondary_y=True,
+                    hide_yaxis_ticks=True,
+                    show_legend=False,
+                    disable_hover=False
+                )
         row_index = 2
         for subplot, table_suffix, report_type in active_subplots:
             if subplot == 'Open Interest':
@@ -2042,7 +2057,7 @@ def register_callbacks(app):
                                   f'Non-Commercials 26W Index', row=row_index, col=1, line_color=COLORS['noncomm_long'])
                         add_trace(fig, df['Date'], df['comm_26w_index'],
                                   f'Commercials 26W Index', row=row_index, col=1, line_color=COLORS['comm_long'])
-                        add_shape(fig, df['Date'].min(), df['Date'].max(), 50, 50, row=row_index, col=1)
+                        # add_shape(fig, df['Date'].min(), df['Date'].max(), 50, 50, row=row_index, col=1)
                         # update_yaxis(fig, row=row_index, col=1, title='26-Week Index')
 
                     elif report_type == 'disaggregated':
@@ -2055,7 +2070,7 @@ def register_callbacks(app):
                         add_trace(fig, df['Date'], df['swap_26w_index'],
                                   f'Swap Dealers 26W Index', row=row_index, col=1,
                                   line_color=COLORS['other_long'])
-                        add_shape(fig, df['Date'].min(), df['Date'].max(), 50, 50, row=row_index, col=1)
+                        # add_shape(fig, df['Date'].min(), df['Date'].max(), 50, 50, row=row_index, col=1)
                         # update_yaxis(fig, row=row_index, col=1, title='26-Week Index')
 
                     elif report_type == 'tff':
@@ -2068,7 +2083,8 @@ def register_callbacks(app):
                         add_trace(fig, df['Date'], df['dealer_26w_index'],
                                   f'Dealers 26W Index', row=row_index, col=1,
                                   line_color=COLORS['other_long'])
-                        add_shape(fig, df['Date'].min(), df['Date'].max(), 50, 50, row=row_index, col=1)
+                        # add_shape(fig, df['Date'].min(), df['Date'].max(), 50, 50, row=row_index, col=1)
+                        # fig.add_hline(50)
                         # update_yaxis(fig, row=row_index, col=1, title='26-Week Index')
 
             row_index += 1
@@ -2100,55 +2116,24 @@ def register_callbacks(app):
             dragmode="pan"
         )
 
-
-        """""
-        fig.update_layout(
-            height=total_height,
-            title=f'{stored_market} - Year {current_year}',
-            legend=dict(
-                orientation="h",
-                yanchor="top",
-                y=-0.15,
-                xanchor="center",
-                x=0.5
-            ),
-            plot_bgcolor="#1e1e1e",
-            paper_bgcolor='#1e1e1e',
-            font=dict(
-                family="'Press Start 2P', monospace",  # Set the font for the graph
-                size=10,  # Adjust size as needed
-                color='white'),
-            hoversubplots="axis",
-            hovermode="x",
-            dragmode="pan",
-            yaxis=dict(
-                showgrid=False,  # Hide x-axis grid lines
-                zeroline=False,),
-            yaxis2=dict(
-                showgrid=False,  # Hide x-axis grid lines
-                zeroline=False, )  # Hide x-axis zero line if it exists
-            # Hide x-axis zero line if it exists
-        )
-        """""
-
         # Dynamically update axes settings for each subplot
         for i in range(1, num_rows + 1):  # Assuming num_rows is the total number of rows in your subplot
             fig.update_xaxes(
                 showgrid=False,  # Hide x-axis grid lines
                 zeroline=False,  # Hide x-axis zero line
-                #showline=False,  # Hide x-axis line
-                #mirror=False,  # Avoid axis line mirroring
+                # showline=False,  # Hide x-axis line
+                # mirror=False,  # Avoid axis line mirroring
                 row=i, col=1
             )
             fig.update_yaxes(
                 showgrid=False,  # Hide y-axis grid lines
                 zeroline=False,  # Hide y-axis zero line
-                #showline=False,  # Hide y-axis line
-                #mirror=False,  # Avoid axis line mirroring
+                # showline=False,  # Hide y-axis line
+                # mirror=False,  # Avoid axis line mirroring
                 row=i, col=1
             )
 
-        # fig.update_traces(hoverinfo="x+y", xaxis="x1") # If added xaxis="x1" it gives nice vertical line accross all subplots but not working for Week 26 Index
+        fig.update_traces(hoverinfo="x+y", xaxis="x1") # If added xaxis="x1" it gives nice vertical line accross all subplots but not working for Week 26 Index
 
         return fig
 
