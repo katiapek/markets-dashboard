@@ -8,6 +8,7 @@ from scripts.config import market_tickers
 # Define constants for repeated strings, styles, and default values
 DEFAULT_MARKET = 'SP 500'
 DEFAULT_YEARS = [15, 35]
+DEFAULT_DIRECTION = 'Long'
 
 CHECKLIST_OPTIONS = {
     'years': [
@@ -41,7 +42,7 @@ BUTTON_STYLES = {'margin-bottom': '3px'}
 CHECKLIST_STYLES = {'margin-bottom': '10px'}
 LAYOUT_STYLES = {'display': 'flex'}
 GRAPH_STYLES = {'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
-INPUT_STYLE = {"margin-right": "10px", "width":"80px"}
+INPUT_STYLE = {"margin-right": "10px", "width":"40px"}
 
 def format_market_name(market_name):
     """
@@ -87,15 +88,19 @@ def create_analysis_section():
 
             html.Div(children=[
                 html.Label("Direction", style={'margin-bottom': '5px'}),
-                dcc.Dropdown(id='direction-dropdown',
-                             options=[
-                                 {'label': 'Long', 'value': 'Long'},
-                                 {'label': 'Short', 'value': 'Short'}
-                             ],
-                             value='Long',
-                             style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
-                             clearable=False,
-                             className='dropdown-menu-1'),  # Disable the clearable option
+                dcc.Dropdown(
+                    id='direction-dropdown',
+                    options=[
+                        {'label': 'Long', 'value': 'Long'},
+                        {'label': 'Short', 'value': 'Short'}
+                    ],
+                    value=DEFAULT_DIRECTION,  # Default value
+                    placeholder=DEFAULT_DIRECTION,
+                    style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
+                    clearable=False,
+                    className='dropdown-menu-direction',
+                    searchable=False,
+                ),
             ], style={'width': '200px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
 
             html.Div(children=[

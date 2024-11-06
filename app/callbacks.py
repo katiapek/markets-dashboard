@@ -713,13 +713,13 @@ def compute_day_trading_stats(df):
     stats_1 = {
         'Total Days': total_days,
         'CaPD-H': capd_h,
-        'CaPD-H %': round((capd_h / pd_h) * 100, 2) if pd_h != 0 else 0,
+        'CaPD-H %': round((capd_h / total_days) * 100, 2) if pd_h != 0 else 0,
         'CbPD-L': cbpd_l,
-        'CbPD-L %': round((cbpd_l / pd_l) * 100, 2) if pd_l != 0 else 0,
+        'CbPD-L %': round((cbpd_l / total_days) * 100, 2) if pd_l != 0 else 0,
         'CaPD-HL': capd_hl,
-        'CaPD-HL %': round((capd_hl / pd_hl) * 100, 2) if pd_hl != 0 else 0,
+        'CaPD-HL %': round((capd_hl / total_days) * 100, 2) if pd_hl != 0 else 0,
         'CbPD-HL': cbpd_hl,
-        'CbPD-HL %': round((cbpd_hl / pd_hl) * 100, 2) if pd_hl != 0 else 0,
+        'CbPD-HL %': round((cbpd_hl / total_days) * 100, 2) if pd_hl != 0 else 0,
         'BISI': bisi,
         'BISI %': round((bisi / total_days) * 100, 2),
         'SIBI': sibi,
@@ -801,6 +801,26 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, gro
     # Add the total row to the DataFrame
     stats_df = pd.concat([stats_df, pd.DataFrame([total_row])], ignore_index=True)
 
+    total_1_days = stats_1_df['Total Days'].sum()
+    total_1_row = {
+        'Year': 'Total',
+        'Total Days': total_1_days,
+        'CaPD-H': stats_1_df['CaPD-H'].sum(),
+        'CaPD-H %': round((stats_1_df['CaPD-H'].sum() / total_1_days) * 100, 2),
+        'CbPD-L': stats_1_df['CbPD-L'].sum(),
+        'CbPD-L %': round((stats_1_df['CbPD-L'].sum() / total_1_days) * 100, 2),
+        'CaPD-HL': stats_1_df['CaPD-HL'].sum(),
+        'CaPD-HL %': round((stats_1_df['CaPD-HL'].sum() / total_1_days) * 100, 2),
+        'CbPD-HL': stats_1_df['CbPD-HL'].sum(),
+        'CbPD-HL %': round((stats_1_df['CbPD-HL'].sum() / total_1_days) * 100, 2),
+        'BISI': stats_1_df['BISI'].sum(),
+        'BISI %': round((stats_1_df['BISI'].sum() / total_1_days) * 100, 2),
+        'SIBI': stats_1_df['SIBI'].sum(),
+        'SIBI %': round((stats_1_df['SIBI'].sum() / total_1_days) * 100, 2),
+    }
+    # Add the total row to the DataFrame
+    stats_1_df = pd.concat([stats_1_df, pd.DataFrame([total_1_row])], ignore_index=True)
+
     return stats_df, stats_1_df
 
 
@@ -838,10 +858,9 @@ def filter_pdh_days(df):
     Returns:
         pd.DataFrame: A dataframe filtered for PD-H days.
     """
-    # Correct the condition with proper parentheses around each condition
-    df['PD_H'] = (df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1))
+    df.loc[:, 'PD_H'] = (df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1))
     # Filter for PD-H days
-    pdh_days = df[df['PD_H']].copy()
+    pdh_days = df.loc[df['PD_H']].copy()
 
     return pdh_days
 
@@ -856,10 +875,9 @@ def filter_pdl_days(df):
     Returns:
         pd.DataFrame: A dataframe filtered for PD-H days.
     """
-    # Correct the condition with proper parentheses around each condition
-    df['PD_L'] = (df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1))
-    # Filter for PD-H days
-    pdl_days = df[df['PD_L']].copy()
+    df.loc[:, 'PD_L'] = (df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1))
+    # Filter for PD-L days
+    pdl_days = df.loc[df['PD_L']].copy()
 
     return pdl_days
 
@@ -874,10 +892,9 @@ def filter_pdhl_days(df):
     Returns:
         pd.DataFrame: A dataframe filtered for PD-H days.
     """
-    # Correct the condition with proper parentheses around each condition
-    df['PD_HL'] = (df['Low'] <= df['Low'].shift(1)) & (df['High'] >= df['High'].shift(1))
-    # Filter for PD-H days
-    pdhl_days = df[df['PD_HL']].copy()
+    df.loc[:, 'PD_HL'] = (df['Low'] <= df['Low'].shift(1)) & (df['High'] >= df['High'].shift(1))
+    # Filter for PD-HL days
+    pdhl_days = df.loc[df['PD_HL']].copy()
 
     return pdhl_days
 
@@ -1061,19 +1078,23 @@ def optimize_stop_loss_open_to_close(day_data, direction="Long"):
     best_stop_loss_level = None
     max_cumulative_return = -float('inf')
 
-    # Define the range of stop-loss levels to test (e.g., from -5% to 0%)
-    stop_loss_range = np.linspace(-5, 0, 100)
+    # Define a broader range that includes both positive and negative stop-loss levels
+    stop_loss_range = np.linspace(-5, 5, 100)
 
     # Choose columns based on direction
     stop_loss_col = 'Open_Low_Pct_Change' if direction == "Long" else 'Open_High_Pct_Change'
+    close_pct_col = 'Open_Close_Pct_Change'
 
     # Loop through possible stop-loss levels
     for stop_loss_level in stop_loss_range:
-        # Filter out trades where stop-loss would be hit
-        trades_with_stop_loss = day_data[day_data[stop_loss_col] >= stop_loss_level]
+        if direction == "Long":
+            trades_with_stop_loss = day_data[day_data[stop_loss_col] >= stop_loss_level]
+        else:
+            # For Short, we check if the stop-loss level (negative) is exceeded
+            trades_with_stop_loss = day_data[day_data[stop_loss_col] <= stop_loss_level]
 
         # Calculate cumulative return based on Open-Close percentage changes
-        cumulative_return = trades_with_stop_loss['Open_Close_Pct_Change'].sum()
+        cumulative_return = trades_with_stop_loss[close_pct_col].sum()
 
         # Update best stop-loss level if this level gives a higher cumulative return
         if cumulative_return > max_cumulative_return:
@@ -1104,36 +1125,45 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
 
     # Choose columns based on direction
     exit_col = 'Open_High_Pct_Change' if direction == "Long" else 'Open_Low_Pct_Change'
+    stop_loss_col = 'Open_Low_Pct_Change' if direction == "Long" else 'Open_High_Pct_Change'
+    close_pct_col = 'Open_Close_Pct_Change'
 
     # Loop through possible take-profit levels
     for exit_level in take_profit_range:
-        # Filter days where stop-loss is met, and exit level is reached
-        trades_with_stop_loss_exit = day_data[
-            (day_data['Open_Low_Pct_Change'] >= best_stop_loss_level if direction == "Long" else
-             day_data['Open_High_Pct_Change'] <= best_stop_loss_level) &
-            (day_data[exit_col] >= exit_level)
-        ]
+        if direction == "Long":
+            # Filter days where stop-loss is met and exit level is reached
+            trades_with_stop_loss_exit = day_data[
+                (day_data[stop_loss_col] >= best_stop_loss_level) &
+                (day_data[exit_col] >= exit_level)
+            ]
+            # For trades where take-profit is not reached, use Open-Close as final return
+            trades_with_no_exit = day_data[
+                (day_data[stop_loss_col] >= best_stop_loss_level) &
+                (day_data[exit_col] < exit_level)
+            ]
+        else:
+            # Filter days for Short trades where stop-loss and exit are met
+            trades_with_stop_loss_exit = day_data[
+                (day_data[stop_loss_col] <= best_stop_loss_level) &
+                (day_data[exit_col] <= exit_level)
+            ]
+            trades_with_no_exit = day_data[
+                (day_data[stop_loss_col] <= best_stop_loss_level) &
+                (day_data[exit_col] > exit_level)
+            ]
 
-        # Calculate net return for trades reaching the take-profit level
+        # Calculate net return
         net_return_exit = len(trades_with_stop_loss_exit) * exit_level
-
-        # For trades where take-profit is not reached, use Open-Close as final return
-        trades_with_no_exit = day_data[
-            (day_data['Open_Low_Pct_Change'] >= best_stop_loss_level if direction == "Long" else
-             day_data['Open_High_Pct_Change'] <= best_stop_loss_level) &
-            (day_data[exit_col] < exit_level)
-        ]
-        net_return_no_exit = trades_with_no_exit['Open_Close_Pct_Change'].sum()
-
-        # Total net return
+        net_return_no_exit = trades_with_no_exit[close_pct_col].sum()
         total_net_return = net_return_exit + net_return_no_exit
 
-        # Update the best exit level if it provides a better result
+        # Update best exit level if it provides a higher net return
         if total_net_return > max_net_return:
             max_net_return = total_net_return
             best_exit_level = exit_level
 
     return best_exit_level
+
 
 
 # Function to get the market name based on its index
@@ -2365,6 +2395,10 @@ def register_callbacks(app):
         total_row = stats_df[stats_df['Year'] == 'Total']
         stats_df = stats_df[stats_df['Year'] != 'Total']
 
+        total_1_row = stats_1_df[stats_1_df['Year'] == 'Total']
+        stats_1_df = stats_1_df[stats_1_df['Year'] != 'Total']
+
+
         # Ensure the 'Year' column is integer type for sorting
         stats_df = stats_df.copy()  # Explicitly create a copy to avoid SettingWithCopyWarning
         stats_df['Year'] = stats_df['Year'].astype(int)
@@ -2375,11 +2409,12 @@ def register_callbacks(app):
         # Drop duplicates and sort in one line with chaining
         stats_df = stats_df.drop_duplicates(subset=['Year']).sort_values(by='Year', ascending=False)
 
-        stats_1_df.drop_duplicates(subset=['Year'], inplace=True)
-        stats_1_df.sort_values(by='Year', ascending=False, inplace=True)
+        stats_1_df = stats_1_df.drop_duplicates(subset=['Year']).sort_values(by='Year', ascending=False)
+
 
         # Add the 'Total' row back to the end of the DataFrame
         stats_df = pd.concat([stats_df, total_row], ignore_index=True)
+        stats_1_df = pd.concat([stats_1_df, total_1_row], ignore_index=True)
 
         # Convert the DataFrame to a dictionary for Dash DataTable
         day_trading_stats = stats_df.to_dict('records')

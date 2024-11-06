@@ -46,10 +46,19 @@ body, html {
     cursor: pointer;
     padding: 5px 10px;
     margin-bottom: 10px;
+    position: fixed; /* Make the button fixed */
+    top: 10px; /* Position from the top */
+    right: 10px; /* Position from the right */
+    z-index: 1000; /* Ensure it stays above other elements */
+    width: auto; /* Adjust width to fit content */
+    white-space: nowrap; /* Prevent text from wrapping */
 }
+
 #toggle-button:hover {
     background-color: #3d3d3d;
 }
+
+
 
 
 html.A {
@@ -159,4 +168,55 @@ dcc.Graph, dcc.Checklist  {
 }
 #years-checklist label:nth-child(2) {
     color: #1F77B4;
+}
+
+.dropdown-menu-direction .Select-control {
+    background-color: #333;
+    color: white;
+    border: 1px solid white;
+    border-radius: 3px;
+    font-weight: bold; /* Thicker font */
+    font-size: 16px; /* Adjust font size if needed */
+    padding: 5px 10px;
+    width: 120px; /* Adjusted width to fit "Long" and "Short" comfortably */
+    white-space: nowrap;
+}
+
+.dropdown-menu-direction .Select-arrow-zone {
+    color: white;
+    display: none;
+}
+
+.dropdown-menu-direction .Select-option {
+    background-color: #333;
+    color: white;
+}
+
+.dropdown-menu-direction .Select-option:hover {
+    background-color: #444;
+}
+
+.dropdown-menu-direction .Select-menu-outer {
+    border: 1px solid white;
+    background-color: #333;
+    color: white;
+}
+
+.dropdown-menu-direction .Select-value-label {
+    font-size: 10px; /* Adjust text size */
+    color: white !important;
+    text-align: center; /* Center text */
+    padding: 0; /* Remove extra padding if needed */
+}
+
+/* Remove the dropdown arrow */
+.dropdown-menu-direction .dropdown-indicator {
+    display: none; /* Hide the arrow */
+}
+
+.dropdown-menu-direction .Select-control {
+    border: 1px solid white !important; /* Add white border */
+    box-shadow: none !important; /* Remove default shadow */
+    background-color: #333 !important; /* Match background color */
+    color: white;
 }
