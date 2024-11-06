@@ -604,8 +604,28 @@ class Index26WDataFetcher(BaseDataFetcher):
         return df
 
 
-"""""
-def format_market_name(market_name):
-    
-    return market_name_map.get(market_name, market_name.lower().replace(' ', '_') + '_ohlc')
-"""""
+class CorrelationDataFetcher(BaseDataFetcher):
+    """
+    Data fetcher for correlation data.
+    """
+
+    @staticmethod
+    def fetch_correlation_data(table_name):
+        """
+        Fetch correlation data from the specified table.
+
+        Args:
+            table_name (str): The table name (e.g., "correlation_180_days" or "correlation_15_years").
+
+        Returns:
+            pd.DataFrame: DataFrame containing the correlation data.
+        """
+        query = f"SELECT * FROM {table_name}"
+        df = CorrelationDataFetcher.fetch_data(query)
+
+        if df.empty:
+            print(f"No data found in {table_name}")
+        else:
+            print(f"Fetched correlation data from {table_name}: {df.head()}")
+
+        return df

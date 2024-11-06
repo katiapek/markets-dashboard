@@ -19,7 +19,8 @@ from data_fetchers import (
     PositionsChangeDataFetcher,
     NetPositionsDataFetcher,
     PositionsChangeNetDataFetcher,
-    Index26WDataFetcher
+    Index26WDataFetcher,
+    CorrelationDataFetcher
 )
 from scripts.config import market_tickers
 import matplotlib.pyplot as plt
@@ -42,6 +43,10 @@ COLORS = {
     'seasonality_15y': '#ff7e67',
     'seasonality_35y': '#347474',
 }
+
+# Create a dictionary to map market names to the first part of their ticker (up to the "=")
+ticker_prefixes = {name: ticker.split('=')[0] for name, ticker in market_tickers.items()}
+
 
 
 def add_trace(fig, x, y, name, row, col, mode='lines', line_color=None, secondary_y=False, chart_type='line',
@@ -612,20 +617,27 @@ def calculate_stop_loss_return(yearly_data, optimal_results, direction):
 
 def calculate_risk_metrics(daily_returns, cumulative_returns):
     """
-    Function to calculate various risk metrics including Max Drawdown using cumulative returns.
+    Function to calculate various risk metrics including Max Drawdown using cumulative returns,
+    and annualized expected return based on daily returns.
     """
+    # Calculate core risk metrics
     sharpe_ratio = calculate_sharpe_ratio(daily_returns)
     sortino_ratio = calculate_sortino_ratio(daily_returns)
     max_drawdown = calculate_maximum_drawdown(cumulative_returns)  # Pass cumulative returns here
     calmar_ratio = calculate_calmar_ratio(daily_returns, max_drawdown)
     volatility = calculate_volatility(daily_returns)
 
+    # Calculate the annualized expected return
+    average_daily_return = daily_returns.mean()
+    annualized_expected_return = average_daily_return * 252  # assuming 252 trading days in a year
+
     return {
         'Sharpe Ratio': sharpe_ratio,
         'Sortino Ratio': sortino_ratio,
         'Max Drawdown': max_drawdown,
         'Calmar Ratio': calmar_ratio,
-        'Volatility': volatility
+        'Volatility': volatility,
+        'Annualized Expected Return': annualized_expected_return
     }
 
 
@@ -643,7 +655,8 @@ def update_risk_metrics_summary(risk_metrics, color):
                f"Sortino Ratio: {risk_metrics['Sortino Ratio']:.2f},"
                f" Max Drawdown: {risk_metrics['Max Drawdown']:.2f}%, "
                f"Calmar Ratio: {risk_metrics['Calmar Ratio']:.4f}, "
-               f"Volatility: {risk_metrics['Volatility']:.2f}%", style={'color': color})
+               f"Volatility: {risk_metrics['Volatility']:.2f}%, "
+               f"Expected Return: {risk_metrics['Annualized Expected Return']:.2f}%", style={'color': color})
     ])
 
 
@@ -1158,6 +1171,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     pdh_days_all_years = pd.DataFrame()
     pdl_days_all_years = pd.DataFrame()
     pdhl_days_all_years = pd.DataFrame()
+    pdh_pdl_pdhl_days_all_years = pd.DataFrame()
 
     # Perform yearly analysis and accumulate filtered data for each day type
     for year in unique_years:
@@ -1278,10 +1292,10 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         'pdhl_scatters': pdhl_scatters,
         'pdhl_low_vs_prev_low_dist': pdl_low_vs_prev_low_dist,
         'pdhl_high_vs_prev_high_dist': pdhl_high_vs_prev_high_dist,
-        'pdh_pdl_pdhl_distributions': pdhl_distributions,
-        'pdh_pdl_pdhl_scatters': pdhl_scatters,
-        'pdh_pdl_pdhl_low_vs_prev_low_dist': pdl_low_vs_prev_low_dist,
-        'pdh_pdl_pdhl_high_vs_prev_high_dist': pdhl_high_vs_prev_high_dist,
+        'pdh_pdl_pdhl_distributions': pdh_pdl_pdhl_distributions,
+        'pdh_pdl_pdhl_scatters': pdh_pdl_pdhl_scatters,
+        'pdh_pdl_pdhl_low_vs_prev_low_dist': pdh_pdl_pdhl_low_vs_prev_low_dist,
+        'pdh_pdl_pdhl_high_vs_prev_high_dist': pdh_pdl_pdhl_high_vs_prev_high_dist,
     }
 
 
@@ -1507,6 +1521,7 @@ def create_optimal_distribution_chart(optimal_trades_results):
     )
 
     return fig
+
 
 def register_callbacks(app):
 
@@ -2343,6 +2358,7 @@ def register_callbacks(app):
         risk_metrics_15 = calculate_risk_metrics(daily_returns_15, cum_returns_no_stop_15)
         risk_metrics_30 = calculate_risk_metrics(daily_returns_30, cum_returns_no_stop_30)
 
+
         # Calculate stop-loss risk metrics
         stop_loss_metrics_15 = calculate_risk_metrics(daily_returns_15_stoploss, cum_returns_stop_15)
         stop_loss_metrics_30 = calculate_risk_metrics(daily_returns_30_stoploss, cum_returns_stop_30)
@@ -2438,3 +2454,41 @@ def register_callbacks(app):
             pdh_pdl_pdhl_low_vs_prev_low_dist,
             pdh_pdl_pdhl_high_vs_prev_high_dist,
         )
+
+    @app.callback(
+        [Output('correlation-180-days-table', 'data'),
+         Output('correlation-15-years-table', 'data')],
+        [Input('interval-auto-load', 'n_intervals')]
+    )
+    def update_correlation_tables(n_intervals):
+        # Fetch the 180-day and 15-year correlation data
+        correlation_180d = CorrelationDataFetcher.fetch_correlation_data("correlation_180_days")
+        correlation_15y = CorrelationDataFetcher.fetch_correlation_data("correlation_15_years")
+
+        # Helper function to apply ticker prefix to the market names
+        def apply_ticker_prefix(df):
+            if not df.empty:
+                # Replace market names with ticker prefixes
+                df['MKT'] = df['market_1'].map(ticker_prefixes)
+                df['market_2'] = df['market_2'].map(ticker_prefixes)
+
+                # Handle duplicate entries by averaging correlation values for duplicates
+                df = df.groupby(['MKT', 'market_2'], as_index=False).agg({'correlation': 'mean'})
+
+                # Pivot the table and round values
+                df = df.pivot(index='MKT', columns='market_2', values='correlation')
+                df = df.round(2)  # Round correlations to two decimal places
+                df = df = (df * 100).astype(int)
+                df.reset_index(inplace=True)
+                df.columns.name = None  # Remove the pivot's columns name
+            return df
+
+        # Apply ticker prefix mapping to both correlation DataFrames
+        correlation_180d = apply_ticker_prefix(correlation_180d)
+        correlation_15y = apply_ticker_prefix(correlation_15y)
+
+        # Convert DataFrames to dictionaries for Dash DataTable
+        correlation_180d_data = correlation_180d.to_dict('records') if not correlation_180d.empty else []
+        correlation_15y_data = correlation_15y.to_dict('records') if not correlation_15y.empty else []
+
+        return correlation_180d_data, correlation_15y_data

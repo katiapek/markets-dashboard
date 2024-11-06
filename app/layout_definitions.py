@@ -1,6 +1,6 @@
 # layout_definitions.py
 import dash
-from dash import dcc, html
+from dash import dcc, html, dash_table
 import dash_bootstrap_components as dbc  # Correct import
 from scripts.config import market_tickers
 # from data_fetchers import SeasonalDataFetcher
@@ -500,6 +500,74 @@ def create_pdh_pdl_pdhl_analysis_section():
     ])
 
 
+def create_correlation_section():
+    """
+    Creates a section for displaying correlation tables for 180 days and 15 years with market names vertically.
+    """
+    return html.Div(children=[
+        html.H3("Market Correlation Analysis",
+                style={'textAlign': 'center', 'color': 'white', 'fontFamily': "'Press Start 2P', monospace"}),
+
+        # 180 Days Correlation Table
+        html.Div([
+            html.H4("180-Day Market Correlation",
+                    style={'textAlign': 'center', 'color': 'white', 'fontFamily': "'Press Start 2P', monospace"}),
+            dash_table.DataTable(
+                id='correlation-180-days-table',
+                style_table={'width': '100%', 'margin': '0 auto', 'backgroundColor': '#1e1e1e', 'overflowX':'auto'},
+                style_data={
+                    'backgroundColor': '#1e1e1e',
+                    'color': '#4CAF50',  # Green text
+                    'fontFamily': "'Press Start 2P', monospace",
+                    'textAlign': 'center',
+                    'fontSize': '8px',
+                },
+                style_data_conditional=[
+                    {'if': {'column_id': 'market_1'}, 'textAlign': 'left', 'whiteSpace': 'nowrap'},
+                ],
+                style_header={
+                    'backgroundColor': '#4CAF50',
+                    'color': 'white',
+                    'fontWeight': 'bold',
+                    'fontFamily': "'Press Start 2P', monospace",
+                    'textAlign': 'center',
+                    'fontSize': '8px',
+                },
+
+            ),
+        ], style={'marginTop': '20px'}),
+
+        # 15 Years Correlation Table
+        html.Div([
+            html.H4("15-Year Market Correlation",
+                    style={'textAlign': 'center', 'color': 'white', 'fontFamily': "'Press Start 2P', monospace"}),
+            dash_table.DataTable(
+                id='correlation-15-years-table',
+                style_table={'width': '100%', 'margin': '0 auto', 'backgroundColor': '#1e1e1e', 'overflowX':'auto'},
+                style_data={
+                    'backgroundColor': '#1e1e1e',
+                    'color': '#4CAF50',  # Green text
+                    'fontFamily': "'Press Start 2P', monospace",
+                    'textAlign': 'center',
+                    'fontSize': '8px',
+                },
+                style_data_conditional=[
+                    {'if': {'column_id': 'market_1'}, 'textAlign': 'left', 'whiteSpace': 'nowrap'},
+                ],
+                style_header={
+                    'backgroundColor': '#4CAF50',
+                    'color': 'white',
+                    'fontWeight': 'bold',
+                    'fontFamily': "'Press Start 2P', monospace",
+                    'textAlign': 'center',
+                    'fontSize': '8px',
+                },
+            ),
+        ], style={'marginTop': '20px'}),
+
+    ], style={'padding': '20px', 'backgroundColor': '#000000'})
+
+
 def create_layout(app):
     """
     Create and set the layout for the Dash application.
@@ -617,6 +685,19 @@ def create_layout(app):
                         dcc.Loading(
                             id='pdh-pdl-pdhl-analysis-loading',
                             children=[html.Div(id='pdh-pdl-pdhl-analysis-output')],
+                            type='default'
+                        )
+                    ],
+                    style={'margin-top': '20px'}
+                ),
+
+                # Create Correlation Tables section
+                html.Div(
+                    children=[
+                        create_correlation_section(),
+                        dcc.Loading(
+                            id='correlation-loading',
+                            children=[html.Div(id='correlation-output')],
                             type='default'
                         )
                     ],

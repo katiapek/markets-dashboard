@@ -1,3 +1,5 @@
+# Fetch_OHLC.py
+
 import yfinance as yf
 from datetime import datetime, timedelta
 import sqlite3
@@ -152,6 +154,75 @@ def compute_and_store_seasonality(market_name, conn):
         print(f"Seasonality data for {market_name} for {years} years stored in the database.")
 
 
+def collect_pct_changes(conn, market_tickers, days=180):
+    """
+    Collects close-to-close percentage changes for all markets over the last specified days.
+    """
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days)
+
+    pct_changes = {}
+
+    for market_name in market_tickers.keys():
+        table_name = market_name.lower().replace(' ', '_') + '_ohlc'
+
+        query = f"""
+        SELECT Date, Close_Close_Pct_Change FROM {table_name}
+        WHERE Date BETWEEN '{start_date.strftime('%Y-%m-%d')}' AND '{end_date.strftime('%Y-%m-%d')}'
+        ORDER BY Date ASC
+        """
+        df = pd.read_sql(query, conn, parse_dates=['Date'])
+
+        # Only store percentage changes
+        pct_changes[market_name] = df.set_index('Date')['Close_Close_Pct_Change']
+
+    # Combine all percentage changes into one DataFrame with markets as columns
+    pct_changes_df = pd.DataFrame(pct_changes)
+    return pct_changes_df
+
+
+def compute_and_store_correlations(conn, market_tickers):
+    """
+    Calculate correlations between markets for 180 days and 15 years.
+    """
+    # Get data for 180 days and 15 years
+    pct_changes_180d = collect_pct_changes(conn, market_tickers, days=180)
+    pct_changes_15y = collect_pct_changes(conn, market_tickers, days=365 * 15)
+
+    # Calculate correlations
+    correlation_180d = pct_changes_180d.corr()
+    correlation_15y = pct_changes_15y.corr()
+
+    # Store in the database
+    store_correlation_in_db(correlation_180d, conn, "correlation_180_days")
+    store_correlation_in_db(correlation_15y, conn, "correlation_15_years")
+    print("Correlation data stored successfully.")
+
+
+def store_correlation_in_db(correlation_df, conn, table_name):
+    # Create the correlation table if it doesn't exist
+    create_table_query = f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        market_1 TEXT,
+        market_2 TEXT,
+        correlation REAL
+    )
+    """
+    conn.execute(create_table_query)
+
+    # Clear existing data in the table
+    conn.execute(f"DELETE FROM {table_name}")
+
+    # Insert new correlation data
+    for market_pair, correlation in correlation_df.stack().items():
+        conn.execute(
+            f"INSERT INTO {table_name} (market_1, market_2, correlation) VALUES (?, ?, ?)",
+            (market_pair[0], market_pair[1], correlation)
+        )
+
+    conn.commit()
+
+
 def main():
     # Connect to the SQLite database
     conn = sqlite3.connect('../data/markets_data.db')
@@ -163,6 +234,8 @@ def main():
 
         # Compute and store seasonal patterns
         compute_and_store_seasonality(market_name, conn)
+
+    compute_and_store_correlations(conn, market_tickers)
 
     # Commit the changes and close the database connection
     conn.commit()
