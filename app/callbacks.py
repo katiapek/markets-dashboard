@@ -2447,7 +2447,7 @@ def register_callbacks(app):
             pdh_distributions.get('open_high', {}),
             pdh_distributions.get('open_low', {}),
             pdh_distributions.get('open_close', {}),
-            pdh_scatters.get('open_low_vs_high', {}),
+            pdh_scatters.get('open_low_vs_high', {}), # HERE SCATTERS
             pdh_scatters.get('open_low_vs_close', {}),
             pdh_high_vs_prev_high_dist,
             # PD-L distribution and scatter plots

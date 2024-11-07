@@ -3,7 +3,7 @@ from datetime import datetime
 import sqlite3
 import pandas as pd
 import os
-from config import market_tickers  # Import market_tickers from config.py
+# from config import market_tickers  # Import market_tickers from config.py
 
 # Path to the database
 db_path = os.getenv('DATABASE_PATH', '/Users/kamil/PycharmProjects/MarketsDashboard/app/data/markets_data.db')
@@ -46,9 +46,10 @@ def main():
     conn = sqlite3.connect(db_path)
 
     # Fetch and save OHLC data for each market from config.py
-    for market_name, ticker in market_tickers.items():
-        print(f"Fetching OHLC data for {market_name}...")
-        fetch_ohlc_data(ticker, market_name, conn)
+    # for market_name, ticker in market_tickers.items():
+    #     print(f"Fetching OHLC data for {market_name}...")
+    #     fetch_ohlc_data(ticker, market_name, conn)
+    fetch_ohlc_data("GF=F", "Feeder Cattle", conn)
 
     # Commit the changes and close the database connection
     conn.commit()

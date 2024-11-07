@@ -35,7 +35,7 @@ def calculate_percentage_changes(df):
     df['PDH_High_Pct_Change'] = ((df['High'] - df['High'].shift(1)) / df['High'].shift(1)) * 100
 
     # Round the percentage change columns to 2 decimal places
-    df = df.round(2)
+    # df = df.round(2)
 
     return df
 
@@ -46,7 +46,8 @@ def fetch_ohlc_for_2024(ticker, market_name, conn):
     end_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')  # Fetch data up to yesterday
 
     # Fetch OHLC data from yfinance
-    data = yf.download(ticker, start=start_date, end=end_date)
+    data = yf.download(ticker, start=start_date, end=end_date, interval="1d")
+
 
     if data.empty:
         print(f"No data fetched for {market_name}.")

@@ -41,7 +41,7 @@ market_tickers = {
     'Coffee': 'KC=F',
 
     'Live Cattle': 'LE=F',
-    'Feeder Cattle': 'HE=F',
+    'Feeder Cattle': 'GF=F',
     'Lean Hog': 'HE=F',
 
 
