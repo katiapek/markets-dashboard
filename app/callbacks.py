@@ -970,7 +970,13 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
 
     # Add optimal stop-loss point for Open-[Low/High] vs Open-Close if applicable
     if best_stop_loss_level is not None:
-        optimal_close_y = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean()
+
+
+        if direction == "Long":
+            optimal_close_y = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean()
+        else:
+            optimal_close_y = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean() * (-1)
+
         scatter_1.add_trace(go.Scatter(
             x=[best_stop_loss_level],
             y=[optimal_close_y],
@@ -1103,23 +1109,32 @@ def optimize_stop_loss_open_to_close(day_data, direction="Long"):
     best_stop_loss_level = None
     max_cumulative_return = -float('inf')
 
-    # Define a broader range that includes both positive and negative stop-loss levels
-    stop_loss_range = np.linspace(-5, 5, 100)
-
     # Choose columns based on direction
     stop_loss_col = 'Open_Low_Pct_Change' if direction == "Long" else 'Open_High_Pct_Change'
     close_pct_col = 'Open_Close_Pct_Change'
 
+    if direction == 'Long':
+        stop_loss_max = 0
+        stop_loss_min = day_data[stop_loss_col].min()
+    else:
+        stop_loss_max = day_data[stop_loss_col].max()
+        stop_loss_min = 0
+
+    # Define the range for stop-loss levels
+    stop_loss_range = np.linspace(stop_loss_min, stop_loss_max, 100)  # Broad range to cover both directions
+
     # Loop through possible stop-loss levels
     for stop_loss_level in stop_loss_range:
         if direction == "Long":
-            trades_with_stop_loss = day_data[day_data[stop_loss_col] >= stop_loss_level]
+            trades_with_stop_loss = day_data[day_data[stop_loss_col] > stop_loss_level]
         else:
-            # For Short, we check if the stop-loss level (negative) is exceeded
-            trades_with_stop_loss = day_data[day_data[stop_loss_col] <= stop_loss_level]
+            trades_with_stop_loss = day_data[day_data[stop_loss_col] < stop_loss_level]
 
-        # Calculate cumulative return based on Open-Close percentage changes
-        cumulative_return = trades_with_stop_loss[close_pct_col].sum()
+        # Calculate cumulative return for Open-Close percentage changes
+        if direction == 'Long':
+            cumulative_return = trades_with_stop_loss[close_pct_col].sum()
+        else:
+            cumulative_return = trades_with_stop_loss[close_pct_col].sum() * (-1)
 
         # Update best stop-loss level if this level gives a higher cumulative return
         if cumulative_return > max_cumulative_return:
@@ -1145,42 +1160,49 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
     best_exit_level = None
     max_net_return = -float('inf')
 
-    # Define range of take-profit levels
-    take_profit_range = np.linspace(0, 10, 100)
 
     # Choose columns based on direction
     exit_col = 'Open_High_Pct_Change' if direction == "Long" else 'Open_Low_Pct_Change'
     stop_loss_col = 'Open_Low_Pct_Change' if direction == "Long" else 'Open_High_Pct_Change'
     close_pct_col = 'Open_Close_Pct_Change'
 
-    # Loop through possible take-profit levels
+    if direction == 'Long':
+        take_profit_max = day_data[exit_col].max()
+        take_profit_min = 0
+    else:
+        take_profit_max = 0
+        take_profit_min = day_data[exit_col].min()
+
+    # Define range of take-profit levels
+    take_profit_range = np.linspace(take_profit_min, take_profit_max, 100)  # Covers both positive and negative values
+
     for exit_level in take_profit_range:
         if direction == "Long":
-            # Filter days where stop-loss is met and exit level is reached
             trades_with_stop_loss_exit = day_data[
-                (day_data[stop_loss_col] >= best_stop_loss_level) &
-                (day_data[exit_col] >= exit_level)
+                (day_data[stop_loss_col] > best_stop_loss_level) &
+                (day_data[exit_col] > exit_level)
             ]
-            # For trades where take-profit is not reached, use Open-Close as final return
             trades_with_no_exit = day_data[
-                (day_data[stop_loss_col] >= best_stop_loss_level) &
+                (day_data[stop_loss_col] > best_stop_loss_level) &
                 (day_data[exit_col] < exit_level)
             ]
         else:
-            # Filter days for Short trades where stop-loss and exit are met
             trades_with_stop_loss_exit = day_data[
-                (day_data[stop_loss_col] <= best_stop_loss_level) &
-                (day_data[exit_col] <= exit_level)
+                (day_data[stop_loss_col] < best_stop_loss_level) &
+                (day_data[exit_col] < exit_level)
             ]
             trades_with_no_exit = day_data[
-                (day_data[stop_loss_col] <= best_stop_loss_level) &
+                (day_data[stop_loss_col] < best_stop_loss_level) &
                 (day_data[exit_col] > exit_level)
             ]
 
         # Calculate net return
         net_return_exit = len(trades_with_stop_loss_exit) * exit_level
         net_return_no_exit = trades_with_no_exit[close_pct_col].sum()
-        total_net_return = net_return_exit + net_return_no_exit
+        if direction == 'Long':
+            total_net_return = net_return_exit + net_return_no_exit
+        else:
+            total_net_return = (net_return_exit + net_return_no_exit) * (-1)
 
         # Update best exit level if it provides a higher net return
         if total_net_return > max_net_return:
