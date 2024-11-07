@@ -864,6 +864,7 @@ def filter_pdh_days(df):
 
     return pdh_days
 
+
 def filter_pdl_days(df):
     """
     Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
@@ -936,18 +937,71 @@ def create_distributions(day_data):
 
 
 
-def create_scatter_plots(pdh_days, best_stop_loss_level=None, best_exit_level=None):
-    scatter_open_low_vs_high = go.Figure()
-    scatter_open_low_vs_high.add_trace(go.Scatter(
-        x=pdh_days['Open_Low_Pct_Change'],
-        y=pdh_days['Open_High_Pct_Change'],
+def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None):
+    # Define columns based on the direction
+    if direction == "Long":
+        x_col_1 = 'Open_Low_Pct_Change'
+        y_col_1 = 'Open_Close_Pct_Change'
+        x_col_2 = 'Open_Low_Pct_Change'
+        y_col_2 = 'Open_High_Pct_Change'
+        xaxis_title_1 = 'Open-Low % Change'
+        xaxis_title_2 = 'Open-Low % Change'
+        yaxis_title_1 = 'Open-Close % Change'
+        yaxis_title_2 = 'Open-High % Change'
+    else:  # Short direction
+        x_col_1 = 'Open_High_Pct_Change'
+        y_col_1 = 'Open_Close_Pct_Change'
+        x_col_2 = 'Open_High_Pct_Change'
+        y_col_2 = 'Open_Low_Pct_Change'
+        xaxis_title_1 = 'Open-High % Change'
+        xaxis_title_2 = 'Open-High % Change'
+        yaxis_title_1 = 'Open-Close % Change'
+        yaxis_title_2 = 'Open-Low % Change'
+
+    # Scatter Plot 1: Relation between Open-[Low/High] vs Open-Close
+    scatter_1 = go.Figure()
+    scatter_1.add_trace(go.Scatter(
+        x=day_data[x_col_1],
+        y=day_data[y_col_1],
         mode='markers',
-        marker=dict(color='blue'),
-        name='Open-Low vs Open-High'
+        marker=dict(color='green'),
+        name=f'{xaxis_title_1} vs {yaxis_title_1}'
     ))
 
+    # Add optimal stop-loss point for Open-[Low/High] vs Open-Close if applicable
+    if best_stop_loss_level is not None:
+        optimal_close_y = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean()
+        scatter_1.add_trace(go.Scatter(
+            x=[best_stop_loss_level],
+            y=[optimal_close_y],
+            mode='markers',
+            marker=dict(color='red', size=10, symbol='x'),
+            name='Optimal Stop-Loss'
+        ))
+
+    scatter_1.update_layout(
+        title=f'{xaxis_title_1} vs {yaxis_title_1}',
+        xaxis_title=xaxis_title_1,
+        yaxis_title=yaxis_title_1,
+        plot_bgcolor='#1e1e1e',
+        paper_bgcolor='#1e1e1e',
+        font=dict(color='white', family="'Press Start 2P', monospace"),
+        showlegend=False,
+    )
+
+    # Scatter Plot 2: Relation between Open-[Low/High] vs Open-[High/Low]
+    scatter_2 = go.Figure()
+    scatter_2.add_trace(go.Scatter(
+        x=day_data[x_col_2],
+        y=day_data[y_col_2],
+        mode='markers',
+        marker=dict(color='blue'),
+        name=f'{xaxis_title_2} vs {yaxis_title_2}'
+    ))
+
+    # Add optimal stop-loss and exit points for Open-[Low/High] vs Open-[High/Low] if applicable
     if best_stop_loss_level is not None and best_exit_level is not None:
-        scatter_open_low_vs_high.add_trace(go.Scatter(
+        scatter_2.add_trace(go.Scatter(
             x=[best_stop_loss_level],
             y=[best_exit_level],
             mode='markers',
@@ -955,39 +1009,10 @@ def create_scatter_plots(pdh_days, best_stop_loss_level=None, best_exit_level=No
             name='Optimal Stop-Loss/Exit'
         ))
 
-    scatter_open_low_vs_high.update_layout(
-        title='Open-Low vs Open-High',
-        xaxis_title='Open-Low % Change',
-        yaxis_title='Open-High % Change',
-        plot_bgcolor='#1e1e1e',
-        paper_bgcolor='#1e1e1e',
-        font=dict(color='white', family="'Press Start 2P', monospace"),
-        showlegend=False,
-    )
-
-    scatter_open_low_vs_close = go.Figure()
-    scatter_open_low_vs_close.add_trace(go.Scatter(
-        x=pdh_days['Open_Low_Pct_Change'],
-        y=pdh_days['Open_Close_Pct_Change'],
-        mode='markers',
-        marker=dict(color='green'),
-        name='Open-Low vs Open-Close'
-    ))
-
-    if best_stop_loss_level is not None:
-        optimal_close_y = pdh_days[pdh_days['Open_Low_Pct_Change'] >= best_stop_loss_level]['Open_Close_Pct_Change'].mean()
-        scatter_open_low_vs_close.add_trace(go.Scatter(
-            x=[best_stop_loss_level],
-            y=[optimal_close_y],
-            mode='markers',
-            marker=dict(color='red', size=10, symbol='x'),
-            name='Optimal Stop-Loss',
-        ))
-
-    scatter_open_low_vs_close.update_layout(
-        title='Open-Low vs Open-Close',
-        xaxis_title='Open-Low % Change',
-        yaxis_title='Open-Close % Change',
+    scatter_2.update_layout(
+        title=f'{xaxis_title_2} vs {yaxis_title_2}',
+        xaxis_title=xaxis_title_2,
+        yaxis_title=yaxis_title_2,
         plot_bgcolor='#1e1e1e',
         paper_bgcolor='#1e1e1e',
         font=dict(color='white', family="'Press Start 2P', monospace"),
@@ -995,8 +1020,8 @@ def create_scatter_plots(pdh_days, best_stop_loss_level=None, best_exit_level=No
     )
 
     return {
-        'open_low_vs_high': scatter_open_low_vs_high,
-        'open_low_vs_close': scatter_open_low_vs_close
+        'scatter_1': scatter_2,
+        'scatter_2': scatter_1
     }
 
 
@@ -1260,21 +1285,21 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     pdh_best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_days_all_years, direction)
     pdh_best_exit_level = optimize_stop_loss_and_exit(pdh_days_all_years, pdh_best_stop_loss_level, direction)
     pdh_distributions = create_distributions(pdh_days_all_years)
-    pdh_scatters = create_scatter_plots(pdh_days_all_years, pdh_best_stop_loss_level, pdh_best_exit_level)
+    pdh_scatters = create_scatter_plots(pdh_days_all_years, direction, pdh_best_stop_loss_level, pdh_best_exit_level)
     pdh_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(pdh_days_all_years, day_type='pdh')
 
     # PD-L Analysis
     pdl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdl_days_all_years, direction)
     pdl_best_exit_level = optimize_stop_loss_and_exit(pdl_days_all_years, pdl_best_stop_loss_level, direction)
     pdl_distributions = create_distributions(pdl_days_all_years)
-    pdl_scatters = create_scatter_plots(pdl_days_all_years, pdl_best_stop_loss_level, pdl_best_exit_level)
+    pdl_scatters = create_scatter_plots(pdl_days_all_years, direction, pdl_best_stop_loss_level, pdl_best_exit_level)
     pdl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdl_days_all_years, day_type='pdl')
 
     # PD-HL Analysis
     pdhl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdhl_days_all_years, direction)
     pdhl_best_exit_level = optimize_stop_loss_and_exit(pdhl_days_all_years, pdhl_best_stop_loss_level, direction)
     pdhl_distributions = create_distributions(pdhl_days_all_years)
-    pdhl_scatters = create_scatter_plots(pdhl_days_all_years, pdhl_best_stop_loss_level, pdhl_best_exit_level)
+    pdhl_scatters = create_scatter_plots(pdhl_days_all_years, direction, pdhl_best_stop_loss_level, pdhl_best_exit_level)
     pdhl_high_vs_prev_high_dist, pdhl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdhl_days_all_years, day_type='pdhl')
 
     # PD-H, PD-L and PD-HL day types
@@ -1284,7 +1309,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     pdh_pdl_pdhl_best_exit_level = optimize_stop_loss_and_exit(pdh_pdl_pdhl_days_all_years, pdh_pdl_pdhl_best_stop_loss_level,
                                                           direction)
     pdh_pdl_pdhl_distributions = create_distributions(pdh_pdl_pdhl_days_all_years)
-    pdh_pdl_pdhl_scatters = create_scatter_plots(pdh_pdl_pdhl_days_all_years, pdh_pdl_pdhl_best_stop_loss_level,
+    pdh_pdl_pdhl_scatters = create_scatter_plots(pdh_pdl_pdhl_days_all_years, direction, pdh_pdl_pdhl_best_stop_loss_level,
                                              pdh_pdl_pdhl_best_exit_level)
     pdh_pdl_pdhl_high_vs_prev_high_dist, pdh_pdl_pdhl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdh_pdl_pdhl_days_all_years,
                                                                                                   day_type='pdhl')
@@ -2447,30 +2472,30 @@ def register_callbacks(app):
             pdh_distributions.get('open_high', {}),
             pdh_distributions.get('open_low', {}),
             pdh_distributions.get('open_close', {}),
-            pdh_scatters.get('open_low_vs_high', {}), # HERE SCATTERS
-            pdh_scatters.get('open_low_vs_close', {}),
+            pdh_scatters.get('scatter_1', {}), # HERE SCATTERS
+            pdh_scatters.get('scatter_2', {}),
             pdh_high_vs_prev_high_dist,
             # PD-L distribution and scatter plots
             pdl_distributions.get('open_high', {}),
             pdl_distributions.get('open_low', {}),
             pdl_distributions.get('open_close', {}),
-            pdl_scatters.get('open_low_vs_high', {}),
-            pdl_scatters.get('open_low_vs_close', {}),
+            pdl_scatters.get('scatter_1', {}),
+            pdl_scatters.get('scatter_2', {}),
             pdl_low_vs_prev_low_dist,
             # PD-HL distribution and scatter plots
             pdhl_distributions.get('open_high', {}),
             pdhl_distributions.get('open_low', {}),
             pdhl_distributions.get('open_close', {}),
-            pdhl_scatters.get('open_low_vs_high', {}),
-            pdhl_scatters.get('open_low_vs_close', {}),
+            pdhl_scatters.get('scatter_1', {}),
+            pdhl_scatters.get('scatter_2', {}),
             pdhl_low_vs_prev_low_dist,
             pdhl_high_vs_prev_high_dist,
             # PD-H, PD-L, PD-HL distribution and scatter plots
             pdh_pdl_pdhl_distributions.get('open_high', {}),
             pdh_pdl_pdhl_distributions.get('open_low', {}),
             pdh_pdl_pdhl_distributions.get('open_close', {}),
-            pdh_pdl_pdhl_scatters.get('open_low_vs_high', {}),
-            pdh_pdl_pdhl_scatters.get('open_low_vs_close', {}),
+            pdh_pdl_pdhl_scatters.get('scatter_1', {}),
+            pdh_pdl_pdhl_scatters.get('scatter_2', {}),
             pdh_pdl_pdhl_low_vs_prev_low_dist,
             pdh_pdl_pdhl_high_vs_prev_high_dist,
         )
