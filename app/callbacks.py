@@ -666,13 +666,17 @@ def update_risk_metrics_summary(risk_metrics, color):
 
 def compute_day_trading_stats(df):
     """
-    Compute regular day trading stats and extended day trading stats for a given DataFrame.
+    Compute regular day trading stats and extended day trading stats for a given DataFrame, both overall and grouped by weekday.
 
     Args:
         df (pd.DataFrame): The OHLC data for the given period.
 
     Returns:
-        tuple: A tuple containing two dictionaries for regular stats and extended stats.
+        tuple: A tuple containing four dictionaries:
+               - Overall regular stats
+               - Overall extended stats
+               - Weekday regular stats
+               - Weekday extended stats
     """
     total_days = len(df)
     d_up = (df['Close'] > df['Open']).sum()
@@ -683,7 +687,7 @@ def compute_day_trading_stats(df):
     pd_hl = ((df['High'] >= df['High'].shift(1)) & (df['Low'] <= df['Low'].shift(1))).sum()
     pd_nhl = ((df['High'] < df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1))).sum()
 
-    # Regular stats dictionary
+    # Overall regular stats
     stats = {
         'Total Days': total_days,
         'D UP': d_up,
@@ -700,16 +704,14 @@ def compute_day_trading_stats(df):
         'PD-nHL %': round((pd_nhl / total_days) * 100, 2)
     }
 
-    # Extended stats calculation
+    # Overall extended stats
     capd_h = ((df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1)) & (df['Close'] > df['High'].shift(1))).sum()
     cbpd_l = ((df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1)) & (df['Close'] < df['Low'].shift(1))).sum()
     capd_hl = ((df['High'] >= df['High'].shift(1)) & (df['Close'] > df['High'].shift(1)) & (df['Low'] <= df['Low'].shift(1))).sum()
     cbpd_hl = ((df['Low'] <= df['Low'].shift(1)) & (df['Close'] < df['Low'].shift(1)) & (df['High'] >= df['High'].shift(1))).sum()
-
     bisi = (df['Low'] > df['High'].shift(2)).sum()
     sibi = (df['High'] < df['Low'].shift(2)).sum()
 
-    # Extended stats dictionary
     stats_1 = {
         'Total Days': total_days,
         'CaPD-H': capd_h,
@@ -726,7 +728,50 @@ def compute_day_trading_stats(df):
         'SIBI %': round((sibi / total_days) * 100, 2)
     }
 
-    return stats, stats_1
+    # Compute stats grouped by weekday
+    df['Weekday'] = df['Date'].dt.day_name()
+
+    # Regular stats by weekday
+    stats_weekdays = {}
+    for weekday, group in df.groupby('Weekday'):
+        weekday_total = len(group)
+        stats_weekdays[weekday] = {
+            'Total Days': weekday_total,
+            'D UP': (group['Close'] > group['Open']).sum(),
+            'D UP %': round((group['Close'] > group['Open']).sum() / weekday_total * 100, 2),
+            'D DN': (group['Close'] < group['Open']).sum(),
+            'D DN %': round((group['Close'] < group['Open']).sum() / weekday_total * 100, 2),
+            'PD-H': ((group['High'] >= group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1))).sum(),
+            'PD-H %': round(((group['High'] >= group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1))).sum() / weekday_total * 100, 2),
+            'PD-L': ((group['Low'] <= group['Low'].shift(1)) & (group['High'] < group['High'].shift(1))).sum(),
+            'PD-L %': round(((group['Low'] <= group['Low'].shift(1)) & (group['High'] < group['High'].shift(1))).sum() / weekday_total * 100, 2),
+            'PD-HL': ((group['High'] >= group['High'].shift(1)) & (group['Low'] <= group['Low'].shift(1))).sum(),
+            'PD-HL %': round(((group['High'] >= group['High'].shift(1)) & (group['Low'] <= group['Low'].shift(1))).sum() / weekday_total * 100, 2),
+            'PD-nHL': ((group['High'] < group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1))).sum(),
+            'PD-nHL %': round(((group['High'] < group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1))).sum() / weekday_total * 100, 2),
+        }
+
+    # Extended stats by weekday
+    stats_1_weekdays = {}
+    for weekday, group in df.groupby('Weekday'):
+        weekday_total = len(group)
+        stats_1_weekdays[weekday] = {
+            'Total Days': weekday_total,
+            'CaPD-H': ((group['High'] >= group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1)) & (group['Close'] > group['High'].shift(1))).sum(),
+            'CaPD-H %': round(((group['High'] >= group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1)) & (group['Close'] > group['High'].shift(1))).sum() / weekday_total * 100, 2),
+            'CbPD-L': ((group['Low'] <= group['Low'].shift(1)) & (group['High'] < group['High'].shift(1)) & (group['Close'] < group['Low'].shift(1))).sum(),
+            'CbPD-L %': round(((group['Low'] <= group['Low'].shift(1)) & (group['High'] < group['High'].shift(1)) & (group['Close'] < group['Low'].shift(1))).sum() / weekday_total * 100, 2),
+            'CaPD-HL': ((group['High'] >= group['High'].shift(1)) & (group['Close'] > group['High'].shift(1)) & (group['Low'] <= group['Low'].shift(1))).sum(),
+            'CaPD-HL %': round(((group['High'] >= group['High'].shift(1)) & (group['Close'] > group['High'].shift(1)) & (group['Low'] <= group['Low'].shift(1))).sum() / weekday_total * 100, 2),
+            'CbPD-HL': ((group['Low'] <= group['Low'].shift(1)) & (group['Close'] < group['Low'].shift(1)) & (group['High'] >= group['High'].shift(1))).sum(),
+            'CbPD-HL %': round(((group['Low'] <= group['Low'].shift(1)) & (group['Close'] < group['Low'].shift(1)) & (group['High'] >= group['High'].shift(1))).sum() / weekday_total * 100, 2),
+            'BISI': (group['Low'] > group['High'].shift(2)).sum(),
+            'BISI %': round((group['Low'] > group['High'].shift(2)).sum() / weekday_total * 100, 2),
+            'SIBI': (group['High'] < group['Low'].shift(2)).sum(),
+            'SIBI %': round((group['High'] < group['Low'].shift(2)).sum() / weekday_total * 100, 2),
+        }
+
+    return stats, stats_1, stats_weekdays, stats_1_weekdays
 
 
 def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, group_by='year'):
@@ -739,7 +784,7 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, gro
         group_by (str): Whether to group by 'year' (only grouping by year is allowed for now).
 
     Returns:
-        pd.DataFrame: DataFrame containing the metrics for each year within the date range.
+        tuple: Contains yearly stats DataFrames, extended stats DataFrames, weekday stats DataFrames.
     """
     # Ensure 'Date' is datetime and remove duplicates
     ohlc_data['Date'] = pd.to_datetime(ohlc_data['Date'])
@@ -755,9 +800,11 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, gro
         (ohlc_data['Date'].dt.strftime('%m-%d') <= end_month_day)
         ].copy()
 
-    # Initialize an empty list for stats
-    stats_list = []
-    stats_1_list = []
+    # Add weekday column for grouping
+    filtered_data['Weekday'] = filtered_data['Date'].dt.day_name()
+
+    # Initialize lists to store yearly and weekday stats
+    stats_list, stats_1_list, stats_weekdays_list, stats_1_weekdays_list = [], [], [], []
 
     # Get list of unique years within the filtered range
     years = filtered_data['Date'].dt.year.unique()
@@ -766,21 +813,40 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, gro
     for year in sorted(years):
         df_year = filtered_data[filtered_data['Date'].dt.year == year].copy()
         if len(df_year) > 1:  # Need at least two days to compute previous day's data
-            stats, stats_1 = compute_day_trading_stats(df_year)
+            # Compute the yearly statistics only once
+            stats, stats_1, stats_weekdays, stats_1_weekdays = compute_day_trading_stats(df_year)
+
+            # Add 'Year' to each yearly stats dictionary
             stats['Year'] = year
             stats_1['Year'] = year
             stats_list.append(stats)
             stats_1_list.append(stats_1)
 
-    # If no data was found, return an empty DataFrame
-    if not stats_list or not stats_1_list:
-        return pd.DataFrame(), pd.DataFrame()
+            # For each weekday, group data and assign stats from stats_weekdays and stats_1_weekdays
+            for weekday in df_year['Weekday'].unique():
+                weekday_data = df_year[df_year['Weekday'] == weekday]
+                if len(weekday_data) > 0:
+                    # Extract weekday-specific stats
+                    weekday_stats = stats_weekdays.get(weekday, {}).copy()
+                    weekday_stats_1 = stats_1_weekdays.get(weekday, {}).copy()
 
-    # Create DataFrame from the list of dictionaries
+                    # Add 'Year' and 'Weekday' to the stats for proper identification
+                    weekday_stats.update({'Year': year, 'Weekday': weekday})
+                    weekday_stats_1.update({'Year': year, 'Weekday': weekday})
+                    stats_weekdays_list.append(weekday_stats)
+                    stats_1_weekdays_list.append(weekday_stats_1)
+
+    # If no data was found, return empty DataFrames
+    if not stats_list or not stats_1_list:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+    # Create DataFrames from the lists of dictionaries
     stats_df = pd.DataFrame(stats_list)
     stats_1_df = pd.DataFrame(stats_1_list)
+    stats_weekdays_df = pd.DataFrame(stats_weekdays_list)
+    stats_1_weekdays_df = pd.DataFrame(stats_1_weekdays_list)
 
-    # Add a total row
+    # Add a total row for yearly stats
     total_days = stats_df['Total Days'].sum()
     total_row = {
         'Year': 'Total',
@@ -798,7 +864,6 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, gro
         'PD-nHL': stats_df['PD-nHL'].sum(),
         'PD-nHL %': round((stats_df['PD-nHL'].sum() / total_days) * 100, 2),
     }
-    # Add the total row to the DataFrame
     stats_df = pd.concat([stats_df, pd.DataFrame([total_row])], ignore_index=True)
 
     total_1_days = stats_1_df['Total Days'].sum()
@@ -818,10 +883,41 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, gro
         'SIBI': stats_1_df['SIBI'].sum(),
         'SIBI %': round((stats_1_df['SIBI'].sum() / total_1_days) * 100, 2),
     }
-    # Add the total row to the DataFrame
     stats_1_df = pd.concat([stats_1_df, pd.DataFrame([total_1_row])], ignore_index=True)
 
-    return stats_df, stats_1_df
+    # Group Weekdays stats by Weekdays
+    # Convert lists of dictionaries to DataFrames
+    stats_weekdays_df = pd.DataFrame(stats_weekdays_list)
+    stats_1_weekdays_df = pd.DataFrame(stats_1_weekdays_list)
+
+    # Aggregate by 'Weekday' to get a summary for each weekday across all years
+    weekday_summary_df = stats_weekdays_df.groupby('Weekday').sum()
+    weekday_summary_1_df = stats_1_weekdays_df.groupby('Weekday').sum()
+
+    # Calculate percentages for each weekday summary
+    for col in ['D UP', 'D DN', 'PD-H', 'PD-L', 'PD-HL', 'PD-nHL']:
+        weekday_summary_df[f"{col} %"] = (weekday_summary_df[col] / weekday_summary_df['Total Days'] * 100).round(2)
+
+    for col in ['CaPD-H', 'CbPD-L', 'CaPD-HL', 'CbPD-HL', 'BISI', 'SIBI']:
+        weekday_summary_1_df[f"{col} %"] = (weekday_summary_1_df[col] / weekday_summary_1_df['Total Days'] * 100).round(
+            2)
+
+    # Reset index to have 'Weekday' as a column rather than the index
+    weekday_summary_df.reset_index(inplace=True)
+    weekday_summary_1_df.reset_index(inplace=True)
+
+    # Define the correct order for weekdays
+    weekday_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    # Sort by the defined weekday order
+    weekday_summary_df['Weekday'] = pd.Categorical(weekday_summary_df['Weekday'], categories=weekday_order,
+                                                   ordered=True)
+    weekday_summary_df.sort_values('Weekday', inplace=True)
+
+    weekday_summary_1_df['Weekday'] = pd.Categorical(weekday_summary_1_df['Weekday'], categories=weekday_order,
+                                                     ordered=True)
+    weekday_summary_1_df.sort_values('Weekday', inplace=True)
+
+    return stats_df, stats_1_df, weekday_summary_df, weekday_summary_1_df
 
 
 def calculate_points_change(direction, open_price, close_price):
@@ -1350,7 +1446,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     summary_30 = calculate_summary_statistics(analysis_results[:30])
 
     # Day trading stats by year
-    day_trading_stats, day_trading_stats_1 = compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, group_by='year')
+    day_trading_stats, day_trading_stats_1, day_trading_stats_weekday, day_trading_stats_1_weekday  = compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, group_by='year')
 
     # Return analysis results and PD-H analysis data
     return {
@@ -1363,6 +1459,8 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         '30_year_summary': summary_30,
         'day_trading_stats': day_trading_stats,
         'day_trading_stats_1': day_trading_stats_1,
+        'day_trading_stats_weekday': day_trading_stats_weekday,
+        'day_trading_stats_1_weekday': day_trading_stats_1_weekday,
         'pdh_distributions': pdh_distributions,
         'pdh_scatters': pdh_scatters,
         'pdh_high_vs_prev_high_dist': pdh_high_vs_prev_high_dist,
@@ -2308,6 +2406,8 @@ def register_callbacks(app):
             Output('risk-metrics-summary-30-stoploss', 'children'),
             Output('day-trading-stats-table', 'data'),
             Output('day-trading-stats-1-table', 'data'),
+            Output('day-trading-stats-weekday-table', 'data'),
+            Output('day-trading-stats-1-weekday-table', 'data'),
             Output('pdh-open-high-dist', 'figure'),
             Output('pdh-open-low-dist', 'figure'),
             Output('pdh-open-close-dist', 'figure'),
@@ -2437,6 +2537,8 @@ def register_callbacks(app):
         # Compute day trading stats by year
         stats_df = analysis_results['day_trading_stats']
         stats_1_df = analysis_results['day_trading_stats_1']
+        stats_weekday_df = analysis_results['day_trading_stats_weekday']
+        stats_1_weekday_df = analysis_results['day_trading_stats_1_weekday']
 
         # Separate the 'Total' row and the numeric years for sorting
         total_row = stats_df[stats_df['Year'] == 'Total']
@@ -2444,7 +2546,6 @@ def register_callbacks(app):
 
         total_1_row = stats_1_df[stats_1_df['Year'] == 'Total']
         stats_1_df = stats_1_df[stats_1_df['Year'] != 'Total']
-
 
         # Ensure the 'Year' column is integer type for sorting
         stats_df = stats_df.copy()  # Explicitly create a copy to avoid SettingWithCopyWarning
@@ -2466,10 +2567,10 @@ def register_callbacks(app):
         # Convert the DataFrame to a dictionary for Dash DataTable
         day_trading_stats = stats_df.to_dict('records')
         day_trading_stats_1 = stats_1_df.to_dict('records')
+        day_trading_stats_weekday = stats_weekday_df.to_dict('records')
+        day_trading_stats_1_weekday = stats_1_weekday_df.to_dict('records')
 
 
-
-        # Remove the weekday-related calculations and return only the relevant outputs:
         return (
             yearly_data,  # Unoptimized data for the yearly analysis table
             f"15-Year Summary: Win Rate: {summary_15['win_rate']:.2f}%, Points Gained: {summary_15['total_points_gained']}, "
@@ -2490,6 +2591,8 @@ def register_callbacks(app):
             stop_loss_metrics_summary_30,
             day_trading_stats,  # Day trading stats
             day_trading_stats_1,
+            day_trading_stats_weekday,  # Day trading stats
+            day_trading_stats_1_weekday,
             # PD-H distribution and scatter plots
             pdh_distributions.get('open_high', {}),
             pdh_distributions.get('open_low', {}),
