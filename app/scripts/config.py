@@ -9,11 +9,13 @@ market_tickers = {
     'Ultra 10Y Note': 'TN=F',
     'US Treasury Bond': 'ZB=F',
 
+    'VIX': '^VIX',
     'SP 500': 'ES=F',
     'Nasdaq 100': 'NQ=F',
     'Russell 2000': 'RTY=F',
     'Dow Jones': 'YM=F',
 
+    'US Dollar Index': 'DX-Y.NYB',
     'Euro FX': '6E=F',
     'Australian Dollar': '6A=F',
     'New Zealand Dollar': '6N=F',
@@ -48,7 +50,7 @@ market_tickers = {
     'Gold': 'GC=F',
     'Silver': 'SI=F',
     'Copper': 'HG=F',
-    'Platinum': 'PL=F',
+    # 'Platinum': 'PL=F',
 
 
 }
@@ -62,11 +64,13 @@ market_codes = {
     'Ultra 10Y Note': '043607',
     'US Treasury Bond': '020601',
 
+    'VIX': '1170E1',
     'SP 500': '13874A',
     'Nasdaq 100': '209742',
     'Russell 2000': '239742',
     'Dow Jones': '124603',
 
+    'US Dollar Index': '098662',
     'Euro FX': '099741',
     'Australian Dollar': '232741',
     'New Zealand Dollar': '112741',
