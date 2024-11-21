@@ -1010,14 +1010,34 @@ def create_distributions(day_data):
 
         # Create histogram with std lines
         distributions[key] = go.Figure(data=[go.Histogram(x=metric_data, nbinsx=50)])
-        distributions[key].add_vline(x=mean_metric - std_metric, line_dash="dash", line_color="blue",
-                                     annotation_text="-1 STD")
-        distributions[key].add_vline(x=mean_metric + std_metric, line_dash="dash", line_color="blue",
-                                     annotation_text="+1 STD")
-        distributions[key].add_vline(x=mean_metric - 2 * std_metric, line_dash="dash", line_color="red",
-                                     annotation_text="-2 STD")
-        distributions[key].add_vline(x=mean_metric + 2 * std_metric, line_dash="dash", line_color="red",
-                                     annotation_text="+2 STD")
+        if key == 'open_high':
+
+            distributions[key].add_vline(x=mean_metric + std_metric, line_dash="dash", line_color="CornflowerBlue")
+
+            # Add vertical text annotation along the line
+            distributions[key].add_annotation(
+                x=mean_metric + std_metric,  # Position along the x-axis
+                y=1,  # Position at the top of the plot area
+                yref='paper',  # Use plot area for y positioning
+                text=f"{round(mean_metric + std_metric,2)}",  # Annotation text
+                showarrow=False,
+                textangle=-90,  # Rotate text to make it vertical
+                font=dict(color="CornflowerBlue", size=12),  # Same color as the line
+                xanchor="center",  # Center text horizontally on the line
+                yanchor="bottom"  # Align the text at the bottom of the plot area
+            )
+
+            distributions[key].add_vline(x=mean_metric + 2 * std_metric, line_dash="dash", line_color="red")
+        elif key == 'open_low':
+            distributions[key].add_vline(x=mean_metric - std_metric, line_dash="dash", line_color="blue")
+
+            distributions[key].add_vline(x=mean_metric - 2 * std_metric, line_dash="dash", line_color="red")
+
+        else:
+            distributions[key].add_vline(x=mean_metric - std_metric, line_dash="dash", line_color="blue")
+            distributions[key].add_vline(x=mean_metric + std_metric, line_dash="dash", line_color="blue")
+            distributions[key].add_vline(x=mean_metric - 2 * std_metric, line_dash="dash", line_color="red")
+            distributions[key].add_vline(x=mean_metric + 2 * std_metric, line_dash="dash", line_color="red")
 
         # Update layout for styling
         distributions[key].update_layout(
@@ -1030,7 +1050,6 @@ def create_distributions(day_data):
         )
 
     return distributions
-
 
 
 def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None):
@@ -1141,28 +1160,38 @@ def create_high_low_vs_prev_distribution(day_data, day_type="pdh"):
     if day_type == "pdh":
         high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
         fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
-        add_std_lines(fig_high, high_pct_changes, title='PD-H: High vs Previous Day High')
+        add_std_lines(fig_high, high_pct_changes, title='PD-H: High vs Previous Day High', day_type=day_type)
         return fig_high
 
     elif day_type == "pdl":
         low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
         fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
-        add_std_lines(fig_low, low_pct_changes, title='PD-L: Low vs Previous Day Low')
+        add_std_lines(fig_low, low_pct_changes, title='PD-L: Low vs Previous Day Low', day_type=day_type)
         return fig_low
 
     elif day_type == "pdhl":
         high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
         fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
-        add_std_lines(fig_high, high_pct_changes, title='PD-HL: High vs Previous Day High')
+        add_std_lines(fig_high, high_pct_changes, title='PD-HL: High vs Previous Day High', day_type='pdh')
 
         low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
         fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
-        add_std_lines(fig_low, low_pct_changes, title='PD-HL: Low vs Previous Day Low')
+        add_std_lines(fig_low, low_pct_changes, title='PD-HL: Low vs Previous Day Low', day_type='pdl')
+
+        return fig_high, fig_low
+    else:
+        high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
+        fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
+        add_std_lines(fig_high, high_pct_changes, title='PD-HL: High vs Previous Day High', day_type=day_type)
+
+        low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
+        fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
+        add_std_lines(fig_low, low_pct_changes, title='PD-HL: Low vs Previous Day Low', day_type=day_type)
 
         return fig_high, fig_low
 
 
-def add_std_lines(fig, data, title=""):
+def add_std_lines(fig, data, title="", day_type='pdh'):
     """
     Add standard deviation lines to a given figure.
 
@@ -1170,14 +1199,22 @@ def add_std_lines(fig, data, title=""):
         fig (go.Figure): The plotly figure to update.
         data (pd.Series): Data to calculate mean and standard deviation.
         title (str): Title for the figure.
+        day_type (str): Type of day for analysis - 'pdh', 'pdl', or 'pdhl'.
     """
     mean_val = data.mean()
     std_val = data.std()
 
-    fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="blue", annotation_text="-1 STD")
-    fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="blue", annotation_text="+1 STD")
-    fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="red", annotation_text="-2 STD")
-    fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="red", annotation_text="+2 STD")
+    if day_type == 'pdh':
+        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="blue", annotation_text="+1 STD")
+        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="red", annotation_text="+2 STD")
+    elif day_type == 'pdl':
+        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="blue", annotation_text="-1 STD")
+        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="red", annotation_text="+2 STD")
+    else:
+        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="blue", annotation_text="-1 STD")
+        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="blue", annotation_text="+1 STD")
+        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="red", annotation_text="-2 STD")
+        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="red", annotation_text="+2 STD")
 
     fig.update_layout(
         title=title,
@@ -1430,7 +1467,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     pdh_pdl_pdhl_scatters = create_scatter_plots(pdh_pdl_pdhl_days_all_years, direction, pdh_pdl_pdhl_best_stop_loss_level,
                                              pdh_pdl_pdhl_best_exit_level)
     pdh_pdl_pdhl_high_vs_prev_high_dist, pdh_pdl_pdhl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdh_pdl_pdhl_days_all_years,
-                                                                                                  day_type='pdhl')
+                                                                                                  day_type='pdh_pdl_pdhl')
 
     # Calculate optimal stop-loss and exit for 15 and 30 years
     optimal_results_15y = calculate_optimal_exit_and_stop_loss(analysis_results[:15])
@@ -1645,7 +1682,8 @@ def calculate_summary_statistics(analysis_results):
         'optimal_points_gained': optimal_calculations['points_gained']
     }
 
-def create_distribution_chart(yearly_data):
+
+def create_distribution_chart(yearly_data, title="Distribution of Returns"):
     """
     Create a distribution chart for the returns over a given range of years using Plotly's default binning.
 
@@ -1669,7 +1707,7 @@ def create_distribution_chart(yearly_data):
     ))
 
     fig.update_layout(
-        # title='Distribution of Returns',
+        title=title,
         xaxis_title='Return (%)',
         yaxis_title='Frequency',
         plot_bgcolor='#1e1e1e',
@@ -2505,10 +2543,10 @@ def register_callbacks(app):
         pdh_pdl_pdhl_high_vs_prev_high_dist = analysis_results['pdh_pdl_pdhl_high_vs_prev_high_dist']
 
         # Distribution Charts for 15 and 30 years
-        distribution_chart_15 = create_distribution_chart(yearly_data[:15])
-        optimal_distribution_chart_15 = create_distribution_chart(optimal_trades_results_15y)
-        distribution_chart_30 = create_distribution_chart(yearly_data[:30])
-        optimal_distribution_chart_30 = create_distribution_chart(optimal_trades_results_30y)
+        distribution_chart_15 = create_distribution_chart(yearly_data[:15], "15-Year Distribution")
+        optimal_distribution_chart_15 = create_distribution_chart(optimal_trades_results_15y, "15-Year Optimal Distribution")
+        distribution_chart_30 = create_distribution_chart(yearly_data[:30], "30-Year Distribution")
+        optimal_distribution_chart_30 = create_distribution_chart(optimal_trades_results_30y, "30-Year Optimal Distribution")
 
         # Cumulative return charts for 15 and 30 years
         fig_15y, fig_30y, daily_returns_15, daily_returns_30, daily_returns_15_stoploss, daily_returns_30_stoploss, cum_returns_no_stop_15, cum_returns_stop_15, cum_returns_no_stop_30, cum_returns_stop_30 = create_cumulative_return_charts(

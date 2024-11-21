@@ -151,26 +151,29 @@ def create_analysis_section():
         html.Div([
             # Regular distribution chart for 15 years
             html.Div([
-                dcc.Graph(id='distribution-chart-15', config={'displayModeBar': False}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+
+                dcc.Graph(id='distribution-chart-15', config={'displayModeBar': False}, style={'padding': '0', 'margin': '0'}),
+            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
 
             # Optimal distribution chart for 15 years
             html.Div([
+
                 dcc.Graph(id='distribution-chart-optimal-15', config={'displayModeBar': False}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
         ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center'}),
 
         # Same structure for the 30 years below
         html.Div([
             html.Div([
+
                 dcc.Graph(id='distribution-chart-30', config={'displayModeBar': False}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
 
             html.Div([
-                dcc.Graph(id='distribution-chart-optimal-30', config={'displayModeBar': False}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
-        ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center'}),
 
+                dcc.Graph(id='distribution-chart-optimal-30', config={'displayModeBar': False}),
+            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
+        ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center'}),
 
         html.Div([
             # 15-year cumulative returns and metrics
