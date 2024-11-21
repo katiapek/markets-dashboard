@@ -390,6 +390,105 @@ def create_day_trading_stats_1_weekday_section():
     ])
 
 
+def create_dup_analysis_section():
+    """
+    Creates a section for D-UP day analysis including distributions and scatter plots.
+
+    Returns:
+        html.Div: The layout containing input fields and result placeholders for PD-H day analysis.
+    """
+    return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
+                           'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
+                    children=[
+        html.H3("D-UP Day Analysis", style={'textAlign': 'center'}),
+
+        # Distribution Plots
+        html.Div([
+            html.Div([
+                dcc.Graph(id='dup-open-high-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='dup-open-low-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+        ], style={'display': 'flex'}),
+
+        # High vs Previous High Distribution
+        html.Div([
+            html.Div([
+                dcc.Graph(id='dup-open-close-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='dup-high-vs-prev-high-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+        ]),
+
+        # Scatter Plots
+        html.Div([
+            html.Div([
+                dcc.Graph(id='dup-open-low-vs-close-scatter'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='dup-open-low-vs-high-scatter'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+        ], style={'display': 'flex'}),
+
+    ])
+
+def create_ddown_analysis_section():
+    """
+    Creates a section for D-UP day analysis including distributions and scatter plots.
+
+    Returns:
+        html.Div: The layout containing input fields and result placeholders for PD-H day analysis.
+    """
+    return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
+                           'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
+                    children=[
+        html.H3("D-DOWN Day Analysis", style={'textAlign': 'center'}),
+
+        # Distribution Plots
+        html.Div([
+            html.Div([
+                dcc.Graph(id='ddown-open-high-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='ddown-open-low-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+        ], style={'display': 'flex'}),
+
+        # High vs Previous High Distribution
+        html.Div([
+            html.Div([
+                dcc.Graph(id='ddown-open-close-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='ddown-high-vs-prev-high-dist'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+        ]),
+
+        # Scatter Plots
+        html.Div([
+            html.Div([
+                dcc.Graph(id='ddown-open-low-vs-close-scatter'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+            html.Div([
+                dcc.Graph(id='ddown-open-low-vs-high-scatter'),
+            ], style={'width': '50%', 'display': 'inline-block'}),
+
+        ], style={'display': 'flex'}),
+
+    ])
+
+
 def create_pdh_analysis_section():
     """
     Creates a section for PD-H day analysis including distributions and scatter plots.
@@ -768,6 +867,32 @@ def create_layout(app):
                         dcc.Loading(
                             id='day-trading-stats-1-weekday',
                             children=[html.Div(id='day-trading-stats-1-weekday-output')],
+                            type='default'
+                        )
+                    ],
+                    style={'margin-top': '20px'}
+                ),
+
+                # Create D-UP analysis section
+                html.Div(
+                    children=[
+                        create_dup_analysis_section(),
+                        dcc.Loading(
+                            id='dup-analysis-loading',
+                            children=[html.Div(id='dup-analysis-output')],
+                            type='default'
+                        )
+                    ],
+                    style={'margin-top': '20px'}
+                ),
+
+                # Create D-DOWN analysis section
+                html.Div(
+                    children=[
+                        create_ddown_analysis_section(),
+                        dcc.Loading(
+                            id='ddown-analysis-loading',
+                            children=[html.Div(id='ddown-analysis-output')],
                             type='default'
                         )
                     ],

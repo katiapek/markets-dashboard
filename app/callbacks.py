@@ -943,6 +943,39 @@ def calculate_points_change(direction, open_price, close_price):
     return points_change, percentage_change
 
 
+def filter_dup_days(df):
+    """
+    Filters the dataframe to return only D-UP days (where today's Close is above or equal to today's Open)
+
+    Args:
+        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+
+    Returns:
+        pd.DataFrame: A dataframe filtered for D-UP days.
+    """
+    df.loc[:, 'D_UP'] = (df['Close'] > df['Open'])
+    # Filter for D_UP days
+    dup_days = df.loc[df['D_UP']].copy()
+
+    return dup_days
+
+
+def filter_ddown_days(df):
+    """
+    Filters the dataframe to return only D-UP days (where today's Close is above or equal to today's Open)
+
+    Args:
+        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+
+    Returns:
+        pd.DataFrame: A dataframe filtered for D-UP days.
+    """
+    df.loc[:, 'D_DOWN'] = (df['Close'] < df['Open'])
+    # Filter for D_DOWN days
+    ddown_days = df.loc[df['D_DOWN']].copy()
+
+    return ddown_days
+
 def filter_pdh_days(df):
     """
     Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
@@ -1381,7 +1414,9 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     # Get unique years from the OHLC data
     unique_years = ohlc_data['Date'].dt.year.unique()
 
-    # Concatenated DataFrames for PD-H, PD-L, and PD-HL day types
+    # Concatenated DataFrames for D-UP, D-DOWN, PD-H, PD-L, and PD-HL day types
+    dup_days_all_years = pd.DataFrame()
+    ddown_days_all_years = pd.DataFrame()
     pdh_days_all_years = pd.DataFrame()
     pdl_days_all_years = pd.DataFrame()
     pdhl_days_all_years = pd.DataFrame()
@@ -1407,7 +1442,9 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         if filtered_yearly_data.empty:
             continue
 
-        # Aggregate filtered data for PD-H, PD-L, and PD-HL analysis across all years
+        # Aggregate filtered data for D-UP, D-DOWN, PD-H, PD-L, and PD-HL analysis across all years
+        dup_days_all_years = pd.concat([dup_days_all_years, filter_dup_days(filtered_yearly_data)], ignore_index=True)
+        ddown_days_all_years = pd.concat([ddown_days_all_years, filter_ddown_days(filtered_yearly_data)], ignore_index=True)
         pdh_days_all_years = pd.concat([pdh_days_all_years, filter_pdh_days(filtered_yearly_data)], ignore_index=True)
         pdl_days_all_years = pd.concat([pdl_days_all_years, filter_pdl_days(filtered_yearly_data)], ignore_index=True)
         pdhl_days_all_years = pd.concat([pdhl_days_all_years, filter_pdhl_days(filtered_yearly_data)], ignore_index=True)
@@ -1436,6 +1473,20 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     # Sort analysis results by year
     analysis_results = sorted(analysis_results, key=lambda x: x['Year'], reverse=True)
 
+    # D-UP Analysis
+    dup_best_stop_loss_level = optimize_stop_loss_open_to_close(dup_days_all_years, direction)
+    dup_best_exit_level = optimize_stop_loss_and_exit(dup_days_all_years, dup_best_stop_loss_level, direction)
+    dup_distributions = create_distributions(dup_days_all_years)
+    dup_scatters = create_scatter_plots(dup_days_all_years, direction, dup_best_stop_loss_level, dup_best_exit_level)
+    dup_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(dup_days_all_years, day_type='pdh')
+
+    # D-DOWN Analysis
+    ddown_best_stop_loss_level = optimize_stop_loss_open_to_close(ddown_days_all_years, direction)
+    ddown_best_exit_level = optimize_stop_loss_and_exit(ddown_days_all_years, ddown_best_stop_loss_level, direction)
+    ddown_distributions = create_distributions(ddown_days_all_years)
+    ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level)
+    ddown_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(ddown_days_all_years, day_type='pdl')
+
     # PD-H Analysis
     pdh_best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_days_all_years, direction)
     pdh_best_exit_level = optimize_stop_loss_and_exit(pdh_days_all_years, pdh_best_stop_loss_level, direction)
@@ -1460,6 +1511,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     # PD-H, PD-L and PD-HL day types
     pdh_pdl_pdhl_days_all_years = pd.concat([pdh_days_all_years, pdl_days_all_years, pdhl_days_all_years],
                                             ignore_index=True)
+
     pdh_pdl_pdhl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_pdl_pdhl_days_all_years, direction)
     pdh_pdl_pdhl_best_exit_level = optimize_stop_loss_and_exit(pdh_pdl_pdhl_days_all_years, pdh_pdl_pdhl_best_stop_loss_level,
                                                           direction)
@@ -1498,6 +1550,12 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         'day_trading_stats_1': day_trading_stats_1,
         'day_trading_stats_weekday': day_trading_stats_weekday,
         'day_trading_stats_1_weekday': day_trading_stats_1_weekday,
+        'dup_distributions': dup_distributions,
+        'dup_scatters': dup_scatters,
+        'dup_high_vs_prev_high_dist': dup_high_vs_prev_high_dist,
+        'ddown_distributions': ddown_distributions,
+        'ddown_scatters': ddown_scatters,
+        'ddown_high_vs_prev_high_dist': ddown_high_vs_prev_high_dist,
         'pdh_distributions': pdh_distributions,
         'pdh_scatters': pdh_scatters,
         'pdh_high_vs_prev_high_dist': pdh_high_vs_prev_high_dist,
@@ -2446,6 +2504,18 @@ def register_callbacks(app):
             Output('day-trading-stats-1-table', 'data'),
             Output('day-trading-stats-weekday-table', 'data'),
             Output('day-trading-stats-1-weekday-table', 'data'),
+            Output('dup-open-high-dist', 'figure'),
+            Output('dup-open-low-dist', 'figure'),
+            Output('dup-open-close-dist', 'figure'),
+            Output('dup-open-low-vs-high-scatter', 'figure'),
+            Output('dup-open-low-vs-close-scatter', 'figure'),
+            Output('dup-high-vs-prev-high-dist', 'figure'),
+            Output('ddown-open-high-dist', 'figure'),
+            Output('ddown-open-low-dist', 'figure'),
+            Output('ddown-open-close-dist', 'figure'),
+            Output('ddown-open-low-vs-high-scatter', 'figure'),
+            Output('ddown-open-low-vs-close-scatter', 'figure'),
+            Output('ddown-high-vs-prev-high-dist', 'figure'),
             Output('pdh-open-high-dist', 'figure'),
             Output('pdh-open-low-dist', 'figure'),
             Output('pdh-open-close-dist', 'figure'),
@@ -2519,6 +2589,16 @@ def register_callbacks(app):
         # Simulate trades with optimal S/L and exit for 15 and 30 years
         optimal_trades_results_15y = analysis_results['optimal_trades_results_15y']
         optimal_trades_results_30y = analysis_results['optimal_trades_results_30y']
+
+        # D-UP stats
+        dup_distributions = analysis_results['dup_distributions']
+        dup_scatters = analysis_results['dup_scatters']
+        dup_high_vs_prev_high_dist = analysis_results['dup_high_vs_prev_high_dist']
+
+        # D-DOWN stats
+        ddown_distributions = analysis_results['ddown_distributions']
+        ddown_scatters = analysis_results['ddown_scatters']
+        ddown_high_vs_prev_high_dist = analysis_results['ddown_high_vs_prev_high_dist']
 
         # PD-H stats
         pdh_distributions = analysis_results['pdh_distributions']
@@ -2631,6 +2711,20 @@ def register_callbacks(app):
             day_trading_stats_1,
             day_trading_stats_weekday,  # Day trading stats
             day_trading_stats_1_weekday,
+            # D-UP distribution and scatter plots
+            dup_distributions.get('open_high', {}),
+            dup_distributions.get('open_low', {}),
+            dup_distributions.get('open_close', {}),
+            dup_scatters.get('scatter_1', {}),  # HERE SCATTERS
+            dup_scatters.get('scatter_2', {}),
+            dup_high_vs_prev_high_dist,
+            # D-DOWN distribution and scatter plots
+            ddown_distributions.get('open_high', {}),
+            ddown_distributions.get('open_low', {}),
+            ddown_distributions.get('open_close', {}),
+            ddown_scatters.get('scatter_1', {}),  # HERE SCATTERS
+            ddown_scatters.get('scatter_2', {}),
+            ddown_high_vs_prev_high_dist,
             # PD-H distribution and scatter plots
             pdh_distributions.get('open_high', {}),
             pdh_distributions.get('open_low', {}),
