@@ -1041,36 +1041,44 @@ def create_distributions(day_data):
         mean_metric = metric_data.mean()
         std_metric = metric_data.std()
 
+        plus_one_std = mean_metric + std_metric
+        plus_two_std = mean_metric + 2 * std_metric
+        minus_one_std = mean_metric - std_metric
+        minus_two_std = mean_metric - 2 * std_metric
+
         # Create histogram with std lines
         distributions[key] = go.Figure(data=[go.Histogram(x=metric_data, nbinsx=50)])
+
+        print(f"TYPE: {type(distributions[key])}")
+
         if key == 'open_high':
 
-            distributions[key].add_vline(x=mean_metric + std_metric, line_dash="dash", line_color="CornflowerBlue")
+            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
 
-            # Add vertical text annotation along the line
-            distributions[key].add_annotation(
-                x=mean_metric + std_metric,  # Position along the x-axis
-                y=1,  # Position at the top of the plot area
-                yref='paper',  # Use plot area for y positioning
-                text=f"{round(mean_metric + std_metric,2)}",  # Annotation text
-                showarrow=False,
-                textangle=-90,  # Rotate text to make it vertical
-                font=dict(color="CornflowerBlue", size=12),  # Same color as the line
-                xanchor="center",  # Center text horizontally on the line
-                yanchor="bottom"  # Align the text at the bottom of the plot area
-            )
+            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="red")
+            add_distribution_annotation(distributions[key], plus_two_std, "red")
 
-            distributions[key].add_vline(x=mean_metric + 2 * std_metric, line_dash="dash", line_color="red")
         elif key == 'open_low':
-            distributions[key].add_vline(x=mean_metric - std_metric, line_dash="dash", line_color="blue")
+            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="blue")
+            add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
 
-            distributions[key].add_vline(x=mean_metric - 2 * std_metric, line_dash="dash", line_color="red")
+            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="red")
+            add_distribution_annotation(distributions[key], minus_two_std, "red")
 
         else:
-            distributions[key].add_vline(x=mean_metric - std_metric, line_dash="dash", line_color="blue")
-            distributions[key].add_vline(x=mean_metric + std_metric, line_dash="dash", line_color="blue")
-            distributions[key].add_vline(x=mean_metric - 2 * std_metric, line_dash="dash", line_color="red")
-            distributions[key].add_vline(x=mean_metric + 2 * std_metric, line_dash="dash", line_color="red")
+            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="blue")
+            add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
+
+            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="blue")
+            add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
+
+            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="red")
+            add_distribution_annotation(distributions[key], minus_two_std, "red")
+
+            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="red")
+            add_distribution_annotation(distributions[key], plus_two_std, "red")
+
 
         # Update layout for styling
         distributions[key].update_layout(
@@ -1238,16 +1246,24 @@ def add_std_lines(fig, data, title="", day_type='pdh'):
     std_val = data.std()
 
     if day_type == 'pdh':
-        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="blue", annotation_text="+1 STD")
-        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="red", annotation_text="+2 STD")
+        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="blue")
+        add_distribution_annotation(fig, mean_val + std_val, "CornflowerBlue")
+        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="red")
+        add_distribution_annotation(fig, mean_val + 2 * std_val, "red")
     elif day_type == 'pdl':
-        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="blue", annotation_text="-1 STD")
-        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="red", annotation_text="+2 STD")
+        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="blue")
+        add_distribution_annotation(fig, mean_val - std_val, "CornflowerBlue")
+        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="red")
+        add_distribution_annotation(fig, mean_val - 2 * std_val, "red")
     else:
-        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="blue", annotation_text="-1 STD")
-        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="blue", annotation_text="+1 STD")
-        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="red", annotation_text="-2 STD")
-        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="red", annotation_text="+2 STD")
+        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="blue")
+        add_distribution_annotation(fig, mean_val - std_val, "CornflowerBlue")
+        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="blue")
+        add_distribution_annotation(fig, mean_val + std_val, "CornflowerBlue")
+        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="red")
+        add_distribution_annotation(fig, mean_val - 2 * std_val, "red")
+        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="red")
+        add_distribution_annotation(fig, mean_val + 2 * std_val, "red")
 
     fig.update_layout(
         title=title,
@@ -1485,7 +1501,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     ddown_best_exit_level = optimize_stop_loss_and_exit(ddown_days_all_years, ddown_best_stop_loss_level, direction)
     ddown_distributions = create_distributions(ddown_days_all_years)
     ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level)
-    ddown_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(ddown_days_all_years, day_type='pdl')
+    ddown_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(ddown_days_all_years, day_type='pdh')
 
     # PD-H Analysis
     pdh_best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_days_all_years, direction)
@@ -1797,6 +1813,22 @@ def create_optimal_distribution_chart(optimal_trades_results):
 
     return fig
 
+
+def add_distribution_annotation(key, std, color):
+
+    key.add_annotation(
+        x=std,  # Position along the x-axis
+        y=1,  # Position at the top of the plot area
+        yref='paper',  # Use plot area for y positioning
+        text=f"{round(std, 2)}",  # Annotation text
+        showarrow=False,
+        textangle=-45,  # Rotate text to make it vertical
+        font=dict(color=color, size=9),  # Same color as the line
+        xanchor="center",  # Center text horizontally on the line
+        yanchor="bottom"  # Align the text at the bottom of the plot area
+    )
+
+    return key
 
 def register_callbacks(app):
 
