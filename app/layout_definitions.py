@@ -121,6 +121,8 @@ def create_analysis_section():
         html.Div(children=[
             html.Label("Yearly Analysis", style={'margin-bottom': '5px'}),
             dash.dash_table.DataTable(id='yearly-analysis-table',
+                                      editable=False,
+                                      cell_selectable=False,
                                       columns=[
                                           {'name': 'Year', 'id': 'Year'},
                                           {'name': 'Max Drawdown (Points)', 'id': 'Max Drawdown (Points)'},
@@ -178,14 +180,14 @@ def create_analysis_section():
         html.Div([
             # 15-year cumulative returns and metrics
             html.Div([
-                dcc.Graph(id='cumulative-return-chart-15'),
+                dcc.Graph(id='cumulative-return-chart-15', config={'displayModeBar': False}),
                 html.Div(id='risk-metrics-summary-15'),
                 html.Div(id='risk-metrics-summary-15-stoploss'),
             ], style={'display': 'inline-block', 'width': '48%'}),
 
             # 30-year cumulative returns and metrics
             html.Div([
-                dcc.Graph(id='cumulative-return-chart-30'),
+                dcc.Graph(id='cumulative-return-chart-30', config={'displayModeBar': False}),
                 html.Div(id='risk-metrics-summary-30'),
                 html.Div(id='risk-metrics-summary-30-stoploss'),
             ], style={'display': 'inline-block', 'width': '48%'}),
@@ -204,6 +206,8 @@ def create_day_trading_stats_section():
         html.H3("Day Trading Stats", style={'textAlign': 'center'}),
         dash.dash_table.DataTable(
             id='day-trading-stats-table',
+            editable=False,
+            cell_selectable=False,
             columns=[
                 {'name': 'Year', 'id': 'Year'},
                 {'name': 'Total Days', 'id': 'Total Days'},
@@ -253,6 +257,8 @@ def create_day_trading_stats_weekday_section():
         html.H3("Day Trading Stats Weekdays", style={'textAlign': 'center'}),
         dash.dash_table.DataTable(
             id='day-trading-stats-weekday-table',
+            editable=False,
+            cell_selectable=False,
             columns=[
                 {'name': 'Weekday', 'id': 'Weekday'},
                 {'name': 'Total Days', 'id': 'Total Days'},
@@ -302,7 +308,8 @@ def create_day_trading_stats_1_section():
         html.H3("Day Trading Stats - continuation", style={'textAlign': 'center'}),
         dash.dash_table.DataTable(
             id='day-trading-stats-1-table',
-
+            editable=False,
+            cell_selectable=False,
             columns=[
                 {'name': 'Year', 'id': 'Year'},
                 {'name': 'Total Days', 'id': 'Total Days'},
@@ -352,7 +359,8 @@ def create_day_trading_stats_1_weekday_section():
         html.H3("Day Trading Stats - continuation - Weekday", style={'textAlign': 'center'}),
         dash.dash_table.DataTable(
             id='day-trading-stats-1-weekday-table',
-
+            editable=False,
+            cell_selectable=False,
             columns=[
                 {'name': 'Weekday', 'id': 'Weekday'},
                 {'name': 'Total Days', 'id': 'Total Days'},
@@ -405,22 +413,22 @@ def create_dup_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='dup-open-high-dist'),
+                dcc.Graph(id='dup-open-high-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='dup-open-low-dist'),
+                dcc.Graph(id='dup-open-low-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # High vs Previous High Distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='dup-open-close-dist'),
+                dcc.Graph(id='dup-open-close-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='dup-high-vs-prev-high-dist'),
+                dcc.Graph(id='dup-high-vs-prev-high-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -428,11 +436,11 @@ def create_dup_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='dup-open-low-vs-close-scatter'),
+                dcc.Graph(id='dup-open-low-vs-close-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='dup-open-low-vs-high-scatter'),
+                dcc.Graph(id='dup-open-low-vs-high-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ], style={'display': 'flex'}),
@@ -454,22 +462,22 @@ def create_ddown_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='ddown-open-high-dist'),
+                dcc.Graph(id='ddown-open-high-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='ddown-open-low-dist'),
+                dcc.Graph(id='ddown-open-low-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # High vs Previous High Distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='ddown-open-close-dist'),
+                dcc.Graph(id='ddown-open-close-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='ddown-high-vs-prev-high-dist'),
+                dcc.Graph(id='ddown-high-vs-prev-high-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -477,11 +485,11 @@ def create_ddown_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='ddown-open-low-vs-close-scatter'),
+                dcc.Graph(id='ddown-open-low-vs-close-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='ddown-open-low-vs-high-scatter'),
+                dcc.Graph(id='ddown-open-low-vs-high-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ], style={'display': 'flex'}),
@@ -504,22 +512,22 @@ def create_pdh_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-open-high-dist'),
+                dcc.Graph(id='pdh-open-high-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-open-low-dist'),
+                dcc.Graph(id='pdh-open-low-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # High vs Previous High Distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-open-close-dist'),
+                dcc.Graph(id='pdh-open-close-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-high-vs-prev-high-dist'),
+                dcc.Graph(id='pdh-high-vs-prev-high-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -527,11 +535,11 @@ def create_pdh_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-open-low-vs-close-scatter'),
+                dcc.Graph(id='pdh-open-low-vs-close-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-open-low-vs-high-scatter'),
+                dcc.Graph(id='pdh-open-low-vs-high-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ], style={'display': 'flex'}),
@@ -553,22 +561,22 @@ def create_pdl_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdl-open-high-dist'),
+                dcc.Graph(id='pdl-open-high-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdl-open-low-dist'),
+                dcc.Graph(id='pdl-open-low-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # High vs Previous High Distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdl-open-close-dist'),
+                dcc.Graph(id='pdl-open-close-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdl-low-vs-prev-low-dist'),
+                dcc.Graph(id='pdl-low-vs-prev-low-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -576,11 +584,11 @@ def create_pdl_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdl-open-low-vs-close-scatter'),
+                dcc.Graph(id='pdl-open-low-vs-close-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdl-open-low-vs-high-scatter'),
+                dcc.Graph(id='pdl-open-low-vs-high-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
 
@@ -603,18 +611,18 @@ def create_pdhl_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdhl-open-high-dist'),
+                dcc.Graph(id='pdhl-open-high-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdhl-open-low-dist'),
+                dcc.Graph(id='pdhl-open-low-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # Open-Close distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdhl-open-close-dist'),
+                dcc.Graph(id='pdhl-open-close-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'block', 'margin': '0 auto'}),
         ]),
 
@@ -622,11 +630,11 @@ def create_pdhl_analysis_section():
         # Low vs Prev Day Low and High vs Prev Day High distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdhl-low-vs-prev-low-dist'),
+                dcc.Graph(id='pdhl-low-vs-prev-low-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdhl-high-vs-prev-high-dist'),
+                dcc.Graph(id='pdhl-high-vs-prev-high-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -635,11 +643,11 @@ def create_pdhl_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdhl-open-low-vs-close-scatter'),
+                dcc.Graph(id='pdhl-open-low-vs-close-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdhl-open-low-vs-high-scatter'),
+                dcc.Graph(id='pdhl-open-low-vs-high-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
 
@@ -662,18 +670,18 @@ def create_pdh_pdl_pdhl_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-high-dist'),
+                dcc.Graph(id='pdh-pdl-pdhl-open-high-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-low-dist'),
+                dcc.Graph(id='pdh-pdl-pdhl-open-low-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # Open-Close distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-close-dist'),
+                dcc.Graph(id='pdh-pdl-pdhl-open-close-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'block', 'margin': '0 auto'}),
         ]),
 
@@ -681,11 +689,11 @@ def create_pdh_pdl_pdhl_analysis_section():
         # Low vs Prev Day Low and High vs Prev Day High distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-low-vs-prev-low-dist'),
+                dcc.Graph(id='pdh-pdl-pdhl-low-vs-prev-low-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-high-vs-prev-high-dist'),
+                dcc.Graph(id='pdh-pdl-pdhl-high-vs-prev-high-dist', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -694,11 +702,11 @@ def create_pdh_pdl_pdhl_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-close-scatter'),
+                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-close-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-high-scatter'),
+                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-high-scatter', config={'displayModeBar': False}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
 
@@ -721,6 +729,13 @@ def create_correlation_section():
                     style={'textAlign': 'center', 'color': 'white', 'fontFamily': "'Press Start 2P', monospace"}),
             dash_table.DataTable(
                 id='correlation-180-days-table',
+                editable=False,
+                cell_selectable=False,
+                columns=[
+                    {'name': 'MKT', 'id': 'MKT'},  # First column
+                    {'name': 'Example 1', 'id': 'Example 1'},
+                    {'name': 'Example 2', 'id': 'Example 2'},
+                ],
                 style_table={'width': '100%', 'margin': '0 auto', 'backgroundColor': '#1e1e1e', 'overflowX': 'auto'},
                 style_data={
                     'backgroundColor': '#1e1e1e',
@@ -731,7 +746,7 @@ def create_correlation_section():
                 },
                 style_data_conditional=[
                     {
-                        'if': {'column_id': 'market_1'},  # First column styling
+                        'if': {'column_id': 'MKT'},  # First column styling
                         'backgroundColor': '#4CAF50',  # Same background as header
                         'color': 'white',  # Same text color as header
                         'fontWeight': 'bold',  # Optional: make it bold like header
@@ -756,6 +771,13 @@ def create_correlation_section():
                     style={'textAlign': 'center', 'color': 'white', 'fontFamily': "'Press Start 2P', monospace"}),
             dash_table.DataTable(
                 id='correlation-15-years-table',
+                editable=False,
+                cell_selectable=False,
+                columns=[
+                    {'name': 'MKT', 'id': 'MKT'},  # First column
+                    {'name': 'Example 1', 'id': 'Example 1'},
+                    {'name': 'Example 2', 'id': 'Example 2'},
+                ],
                 style_table={'width': '100%', 'margin': '0 auto', 'backgroundColor': '#1e1e1e', 'overflowX': 'auto'},
                 style_data={
                     'backgroundColor': '#1e1e1e',
@@ -766,7 +788,7 @@ def create_correlation_section():
                 },
                 style_data_conditional=[
                     {
-                        'if': {'column_id': 'market_1'},  # First column styling
+                        'if': {'column_id': 'MKT'},  # First column styling
                         'backgroundColor': '#4CAF50',  # Same background as header
                         'color': 'white',  # Same text color as header
                         'fontWeight': 'bold',  # Optional: make it bold like header
@@ -782,10 +804,11 @@ def create_correlation_section():
                     'textAlign': 'center',
                     'fontSize': '8px',
                 },
+
             ),
         ], style={'marginTop': '20px'}),
 
-    ], style={'padding': '20px', 'backgroundColor': '#000000'})
+    ], style={'padding': '20px', 'backgroundColor': '#1e1e1e'})
 
 
 

@@ -2977,8 +2977,12 @@ def register_callbacks(app):
         )
 
     @app.callback(
-        [Output('correlation-180-days-table', 'data'),
-         Output('correlation-15-years-table', 'data')],
+        [
+            Output('correlation-180-days-table', 'data'),
+            Output('correlation-180-days-table', 'columns'),
+            Output('correlation-15-years-table', 'data'),
+            Output('correlation-15-years-table', 'columns'),
+        ],
         [Input('interval-auto-load', 'n_intervals')]
     )
     def update_correlation_tables(n_intervals):
@@ -2986,30 +2990,26 @@ def register_callbacks(app):
         correlation_180d = CorrelationDataFetcher.fetch_correlation_data("correlation_180_days")
         correlation_15y = CorrelationDataFetcher.fetch_correlation_data("correlation_15_years")
 
-        # Helper function to apply ticker prefix to the market names
         def apply_ticker_prefix(df):
             if not df.empty:
-                # Replace market names with ticker prefixes
                 df['MKT'] = df['market_1'].map(ticker_prefixes)
                 df['market_2'] = df['market_2'].map(ticker_prefixes)
-
-                # Handle duplicate entries by averaging correlation values for duplicates
                 df = df.groupby(['MKT', 'market_2'], as_index=False).agg({'correlation': 'mean'})
-
-                # Pivot the table and round values
-                df = df.pivot(index='MKT', columns='market_2', values='correlation')
-                df = df.round(2)  # Round correlations to two decimal places
-                df = (df * 100).astype(int)
+                df = df.pivot(index='MKT', columns='market_2', values='correlation').round(2) * 100
+                df = df.astype(int)
                 df.reset_index(inplace=True)
-                df.columns.name = None  # Remove the pivot's columns name
+                df.columns.name = None
             return df
 
-        # Apply ticker prefix mapping to both correlation DataFrames
         correlation_180d = apply_ticker_prefix(correlation_180d)
         correlation_15y = apply_ticker_prefix(correlation_15y)
 
-        # Convert DataFrames to dictionaries for Dash DataTable
         correlation_180d_data = correlation_180d.to_dict('records') if not correlation_180d.empty else []
         correlation_15y_data = correlation_15y.to_dict('records') if not correlation_15y.empty else []
 
-        return correlation_180d_data, correlation_15y_data
+        # Dynamically define columns
+        correlation_180d_columns = [{'name': col, 'id': col} for col in correlation_180d.columns]
+        correlation_15y_columns = [{'name': col, 'id': col} for col in correlation_15y.columns]
+
+        return correlation_180d_data, correlation_180d_columns, correlation_15y_data, correlation_15y_columns
+
