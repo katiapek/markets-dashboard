@@ -721,7 +721,7 @@ def create_correlation_section():
                     style={'textAlign': 'center', 'color': 'white', 'fontFamily': "'Press Start 2P', monospace"}),
             dash_table.DataTable(
                 id='correlation-180-days-table',
-                style_table={'width': '100%', 'margin': '0 auto', 'backgroundColor': '#1e1e1e', 'overflowX':'auto'},
+                style_table={'width': '100%', 'margin': '0 auto', 'backgroundColor': '#1e1e1e', 'overflowX': 'auto'},
                 style_data={
                     'backgroundColor': '#1e1e1e',
                     'color': '#4CAF50',  # Green text
@@ -730,7 +730,14 @@ def create_correlation_section():
                     'fontSize': '8px',
                 },
                 style_data_conditional=[
-                    {'if': {'column_id': 'market_1'}, 'textAlign': 'left', 'whiteSpace': 'nowrap'},
+                    {
+                        'if': {'column_id': 'market_1'},  # First column styling
+                        'backgroundColor': '#4CAF50',  # Same background as header
+                        'color': 'white',  # Same text color as header
+                        'fontWeight': 'bold',  # Optional: make it bold like header
+                        'textAlign': 'left',
+                        'whiteSpace': 'nowrap'
+                    },
                 ],
                 style_header={
                     'backgroundColor': '#4CAF50',
@@ -740,7 +747,6 @@ def create_correlation_section():
                     'textAlign': 'center',
                     'fontSize': '8px',
                 },
-
             ),
         ], style={'marginTop': '20px'}),
 
@@ -750,7 +756,7 @@ def create_correlation_section():
                     style={'textAlign': 'center', 'color': 'white', 'fontFamily': "'Press Start 2P', monospace"}),
             dash_table.DataTable(
                 id='correlation-15-years-table',
-                style_table={'width': '100%', 'margin': '0 auto', 'backgroundColor': '#1e1e1e', 'overflowX':'auto'},
+                style_table={'width': '100%', 'margin': '0 auto', 'backgroundColor': '#1e1e1e', 'overflowX': 'auto'},
                 style_data={
                     'backgroundColor': '#1e1e1e',
                     'color': '#4CAF50',  # Green text
@@ -759,7 +765,14 @@ def create_correlation_section():
                     'fontSize': '8px',
                 },
                 style_data_conditional=[
-                    {'if': {'column_id': 'market_1'}, 'textAlign': 'left', 'whiteSpace': 'nowrap'},
+                    {
+                        'if': {'column_id': 'market_1'},  # First column styling
+                        'backgroundColor': '#4CAF50',  # Same background as header
+                        'color': 'white',  # Same text color as header
+                        'fontWeight': 'bold',  # Optional: make it bold like header
+                        'textAlign': 'left',
+                        'whiteSpace': 'nowrap'
+                    },
                 ],
                 style_header={
                     'backgroundColor': '#4CAF50',
@@ -773,6 +786,7 @@ def create_correlation_section():
         ], style={'marginTop': '20px'}),
 
     ], style={'padding': '20px', 'backgroundColor': '#000000'})
+
 
 
 def create_layout(app):

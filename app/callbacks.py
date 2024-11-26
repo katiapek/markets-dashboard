@@ -1,14 +1,12 @@
 # callbacks.py
 from dash import Input, Output, State, ctx, html, dcc
 # from dash.dash_table.Format import Format, FormatTemplate
-import dash
-import numpy as np
+# import dash
+# import numpy as np
 from datetime import timedelta
 import plotly.graph_objs as go
 import plotly.subplots as sp
-import plotly.express as px
-import numpy as np
-import plotly.graph_objects as go
+# import plotly.express as px
 import pandas as pd  # Import pandas for data manipulation
 from layout_definitions import format_market_name
 from data_fetchers import (
@@ -24,8 +22,7 @@ from data_fetchers import (
 )
 from scripts.config import market_tickers
 import matplotlib.pyplot as plt
-import plotly.express as px
-from sklearn.linear_model import LinearRegression
+# from sklearn.linear_model import LinearRegression
 
 
 # Constants for trace colors and default values
@@ -34,14 +31,12 @@ DEFAULT_YEAR = 2024
 
 COLORS = {
     'open_interest': 'orange',
-    'comm_long': 'red',
-    'comm_short': 'pink',
-    'noncomm_long': 'blue',
-    'noncomm_short': 'lightblue',
-    'other_long': 'green',
-    'other_short': 'lightgreen',
-    'seasonality_15y': '#ff7e67',
-    'seasonality_35y': '#347474',
+    'comm_long': 'Red',
+    'comm_short': 'Salmon',
+    'noncomm_long': 'Blue',
+    'noncomm_short': 'CornflowerBlue',
+    'other_long': 'Green',
+    'other_short': 'Lightgreen',
 }
 
 # Define color scheme for seasonality traces
@@ -51,8 +46,17 @@ SEASONALITY_COLORS = {
     35: '#1F77B4'   # Color for 35 Years
 }
 
-# Create a dictionary to map market names to the first part of their ticker (up to the "=")
-ticker_prefixes = {name: ticker.split('=')[0] for name, ticker in market_tickers.items()}
+# Create a dictionary to map market names to the first part of their ticker
+# Special handling for cases like 'DX-Y.NYB' and '^VIX'
+ticker_prefixes = {}
+for name, ticker in market_tickers.items():
+    if ticker == 'DX-Y.NYB':
+        ticker_prefixes[name] = 'DXY'
+    elif ticker == '^VIX':
+        ticker_prefixes[name] = 'VIX'
+    else:
+        ticker_prefixes[name] = ticker.split('=')[0]
+
 
 
 def add_trace(fig, x, y, name, row, col, mode='lines', line_color=None, secondary_y=False, chart_type='line',
@@ -953,9 +957,10 @@ def filter_dup_days(df):
     Returns:
         pd.DataFrame: A dataframe filtered for D-UP days.
     """
-    df.loc[:, 'D_UP'] = (df['Close'] > df['Open'])
+    df_copy = df.copy()
+    df_copy.loc[:, 'D_UP'] = (df_copy['Close'] > df_copy['Open'])
     # Filter for D_UP days
-    dup_days = df.loc[df['D_UP']].copy()
+    dup_days = df_copy.loc[df_copy['D_UP']].copy()
 
     return dup_days
 
@@ -970,9 +975,10 @@ def filter_ddown_days(df):
     Returns:
         pd.DataFrame: A dataframe filtered for D-UP days.
     """
-    df.loc[:, 'D_DOWN'] = (df['Close'] < df['Open'])
+    df_copy = df.copy()
+    df_copy.loc[:, 'D_DOWN'] = (df_copy['Close'] < df_copy['Open'])
     # Filter for D_DOWN days
-    ddown_days = df.loc[df['D_DOWN']].copy()
+    ddown_days = df_copy.loc[df_copy['D_DOWN']].copy()
 
     return ddown_days
 
@@ -987,9 +993,11 @@ def filter_pdh_days(df):
     Returns:
         pd.DataFrame: A dataframe filtered for PD-H days.
     """
-    df.loc[:, 'PD_H'] = (df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1))
+    df_copy = df.copy()
+
+    df_copy.loc[:, 'PD_H'] = (df_copy['High'] >= df_copy['High'].shift(1)) & (df_copy['Low'] > df_copy['Low'].shift(1))
     # Filter for PD-H days
-    pdh_days = df.loc[df['PD_H']].copy()
+    pdh_days = df_copy.loc[df_copy['PD_H']].copy()
 
     return pdh_days
 
@@ -1005,9 +1013,11 @@ def filter_pdl_days(df):
     Returns:
         pd.DataFrame: A dataframe filtered for PD-H days.
     """
-    df.loc[:, 'PD_L'] = (df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1))
+    df_copy = df.copy()
+
+    df_copy.loc[:, 'PD_L'] = (df_copy['Low'] <= df_copy['Low'].shift(1)) & (df_copy['High'] < df_copy['High'].shift(1))
     # Filter for PD-L days
-    pdl_days = df.loc[df['PD_L']].copy()
+    pdl_days = df_copy.loc[df_copy['PD_L']].copy()
 
     return pdl_days
 
@@ -1022,9 +1032,11 @@ def filter_pdhl_days(df):
     Returns:
         pd.DataFrame: A dataframe filtered for PD-H days.
     """
-    df.loc[:, 'PD_HL'] = (df['Low'] <= df['Low'].shift(1)) & (df['High'] >= df['High'].shift(1))
+    df_copy = df.copy()
+
+    df_copy.loc[:, 'PD_HL'] = (df_copy['Low'] <= df_copy['Low'].shift(1)) & (df_copy['High'] >= df_copy['High'].shift(1))
     # Filter for PD-HL days
-    pdhl_days = df.loc[df['PD_HL']].copy()
+    pdhl_days = df_copy.loc[df_copy['PD_HL']].copy()
 
     return pdhl_days
 
@@ -1049,35 +1061,33 @@ def create_distributions(day_data):
         # Create histogram with std lines
         distributions[key] = go.Figure(data=[go.Histogram(x=metric_data, nbinsx=50)])
 
-        print(f"TYPE: {type(distributions[key])}")
-
         if key == 'open_high':
 
             distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
             add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
 
-            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="red")
-            add_distribution_annotation(distributions[key], plus_two_std, "red")
+            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
 
         elif key == 'open_low':
-            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="blue")
+            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
             add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
 
-            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="red")
-            add_distribution_annotation(distributions[key], minus_two_std, "red")
+            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], minus_two_std, "Salmon")
 
         else:
-            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="blue")
+            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
             add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
 
-            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="blue")
+            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
             add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
 
-            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="red")
-            add_distribution_annotation(distributions[key], minus_two_std, "red")
+            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], minus_two_std, "Salmon")
 
-            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="red")
-            add_distribution_annotation(distributions[key], plus_two_std, "red")
+            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
 
 
         # Update layout for styling
@@ -1092,8 +1102,24 @@ def create_distributions(day_data):
 
     return distributions
 
+from sklearn.cluster import KMeans
+import numpy as np
+import plotly.graph_objects as go
 
-def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None):
+def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None, expected_return=None, n_clusters=3):
+    """
+    Create scatter plots with clustering for better visualization.
+
+    Args:
+        day_data (pd.DataFrame): DataFrame with daily data.
+        direction (str): "Long" or "Short" for the trade direction.
+        best_stop_loss_level (float): Optimal stop-loss level.
+        best_exit_level (float): Optimal take-profit level.
+        n_clusters (int): Number of clusters for K-Means clustering.
+
+    Returns:
+        dict: Dictionary containing the two scatter plots with clustering.
+    """
     # Define columns based on the direction
     if direction == "Long":
         x_col_1 = 'Open_Low_Pct_Change'
@@ -1114,77 +1140,215 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
         yaxis_title_1 = 'Open-Close % Change'
         yaxis_title_2 = 'Open-Low % Change'
 
+    def add_scatter_with_clustering(fig, x, y, xaxis_title, yaxis_title, title):
+        # Perform K-Means clustering
+        data = np.column_stack((x, y))
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42).fit(data)
+        labels = kmeans.labels_
+
+        # Add clustered points to the plot
+        for cluster_id in range(n_clusters):
+            cluster_points = data[labels == cluster_id]
+            fig.add_trace(go.Scatter(
+                x=cluster_points[:, 0],
+                y=cluster_points[:, 1],
+                mode='markers',
+                marker=dict(size=7),
+                name=f'Cluster {cluster_id + 1}'
+            ))
+
+        # Add layout settings
+        fig.update_layout(
+            title=title,
+            xaxis_title=xaxis_title,
+            yaxis_title=yaxis_title,
+            plot_bgcolor='#1e1e1e',
+            paper_bgcolor='#1e1e1e',
+            font=dict(color='white', family="'Press Start 2P', monospace"),
+            showlegend=False  # Hide the legend
+        )
+        return fig
+
     # Scatter Plot 1: Relation between Open-[Low/High] vs Open-Close
     scatter_1 = go.Figure()
-    scatter_1.add_trace(go.Scatter(
-        x=day_data[x_col_1],
-        y=day_data[y_col_1],
-        mode='markers',
-        marker=dict(color='green'),
-        name=f'{xaxis_title_1} vs {yaxis_title_1}'
-    ))
-
-    # Add optimal stop-loss point for Open-[Low/High] vs Open-Close if applicable
-    if best_stop_loss_level is not None:
-
-
-        if direction == "Long":
-            optimal_close_y = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean()
-        else:
-            optimal_close_y = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean() * (-1)
-
-        scatter_1.add_trace(go.Scatter(
-            x=[best_stop_loss_level],
-            y=[optimal_close_y],
-            mode='markers',
-            marker=dict(color='red', size=10, symbol='x'),
-            name='Optimal Stop-Loss'
-        ))
-
-    scatter_1.update_layout(
-        title=f'{xaxis_title_1} vs {yaxis_title_1}',
-        xaxis_title=xaxis_title_1,
-        yaxis_title=yaxis_title_1,
-        plot_bgcolor='#1e1e1e',
-        paper_bgcolor='#1e1e1e',
-        font=dict(color='white', family="'Press Start 2P', monospace"),
-        showlegend=False,
+    scatter_1 = add_scatter_with_clustering(
+        scatter_1,
+        day_data[x_col_1],
+        day_data[y_col_1],
+        xaxis_title_1,
+        yaxis_title_1,
+        f'{xaxis_title_1} vs {yaxis_title_1} (Clustering)'
     )
+
+    # Add optimal stop-loss level as a vertical line
+    if best_stop_loss_level is not None:
+        scatter_1.add_vline(
+            x=best_stop_loss_level,
+            line_dash="dash",
+            line_color="Salmon",
+            # annotation_text=f"Stop Loss: {best_stop_loss_level:.2f}",
+            # annotation_position="top left"
+        )
+        add_distribution_annotation(scatter_1, best_stop_loss_level, "Salmon")
+
+        # Calculation of expected return if stop-loss has not been triggered.
+        # if direction == "Long":
+        #     expected_return = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean()
+        # else:
+        #     expected_return = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean()
+        expected_return = day_data[y_col_1].mean()
+
+        # Add optimal exit level as a horizontal line
+        scatter_1.add_hline(
+            y=expected_return,
+            line_dash="dash",
+            line_color="Aquamarine",
+            # annotation_text=f"Exit: {expected_return:.2f}",
+            # annotation_position="top right"
+        )
+        add_distribution_annotation(scatter_1, expected_return, "Aquamarine", direction="Horizontal")
+
 
     # Scatter Plot 2: Relation between Open-[Low/High] vs Open-[High/Low]
     scatter_2 = go.Figure()
-    scatter_2.add_trace(go.Scatter(
-        x=day_data[x_col_2],
-        y=day_data[y_col_2],
-        mode='markers',
-        marker=dict(color='blue'),
-        name=f'{xaxis_title_2} vs {yaxis_title_2}'
-    ))
-
-    # Add optimal stop-loss and exit points for Open-[Low/High] vs Open-[High/Low] if applicable
-    if best_stop_loss_level is not None and best_exit_level is not None:
-        scatter_2.add_trace(go.Scatter(
-            x=[best_stop_loss_level],
-            y=[best_exit_level],
-            mode='markers',
-            marker=dict(color='red', size=10, symbol='x'),
-            name='Optimal Stop-Loss/Exit'
-        ))
-
-    scatter_2.update_layout(
-        title=f'{xaxis_title_2} vs {yaxis_title_2}',
-        xaxis_title=xaxis_title_2,
-        yaxis_title=yaxis_title_2,
-        plot_bgcolor='#1e1e1e',
-        paper_bgcolor='#1e1e1e',
-        font=dict(color='white', family="'Press Start 2P', monospace"),
-        showlegend=False,
+    scatter_2 = add_scatter_with_clustering(
+        scatter_2,
+        day_data[x_col_2],
+        day_data[y_col_2],
+        xaxis_title_2,
+        yaxis_title_2,
+        f'{xaxis_title_2} vs {yaxis_title_2} (Clustering)'
     )
+
+    # Add optimal stop-loss and exit levels as lines for Scatter Plot 2
+    if best_stop_loss_level is not None and best_exit_level is not None:
+        scatter_2.add_vline(
+            x=best_stop_loss_level,
+            line_dash="dash",
+            line_color="Salmon",
+            # annotation_text=f"Stop Loss: {best_stop_loss_level:.2f}",
+            # annotation_position="top left"
+        )
+
+        add_distribution_annotation(scatter_2, best_stop_loss_level, "Salmon")
+
+        scatter_2.add_hline(
+            y=best_exit_level,
+            line_dash="dash",
+            line_color="CornflowerBlue",
+            # annotation_text=f"Exit: {best_exit_level:.2f}",
+            # annotation_position="top right"
+        )
+        add_distribution_annotation(scatter_2, best_exit_level, "CornflowerBlue", direction="Horizontal")
+
+        scatter_2.add_hline(
+            y=expected_return,
+            line_dash="dash",
+            line_color="Aquamarine",
+            # annotation_text=f"Exit: {optimal_close_y:.2f}",
+            # annotation_position="top right"
+        )
+        add_distribution_annotation(scatter_2, expected_return, "Aquamarine", direction="Horizontal")
 
     return {
         'scatter_1': scatter_2,
         'scatter_2': scatter_1
     }
+
+
+
+# def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None):
+#     # Define columns based on the direction
+#     if direction == "Long":
+#         x_col_1 = 'Open_Low_Pct_Change'
+#         y_col_1 = 'Open_Close_Pct_Change'
+#         x_col_2 = 'Open_Low_Pct_Change'
+#         y_col_2 = 'Open_High_Pct_Change'
+#         xaxis_title_1 = 'Open-Low % Change'
+#         xaxis_title_2 = 'Open-Low % Change'
+#         yaxis_title_1 = 'Open-Close % Change'
+#         yaxis_title_2 = 'Open-High % Change'
+#     else:  # Short direction
+#         x_col_1 = 'Open_High_Pct_Change'
+#         y_col_1 = 'Open_Close_Pct_Change'
+#         x_col_2 = 'Open_High_Pct_Change'
+#         y_col_2 = 'Open_Low_Pct_Change'
+#         xaxis_title_1 = 'Open-High % Change'
+#         xaxis_title_2 = 'Open-High % Change'
+#         yaxis_title_1 = 'Open-Close % Change'
+#         yaxis_title_2 = 'Open-Low % Change'
+#
+#     # Scatter Plot 1: Relation between Open-[Low/High] vs Open-Close
+#     scatter_1 = go.Figure()
+#     scatter_1.add_trace(go.Scatter(
+#         x=day_data[x_col_1],
+#         y=day_data[y_col_1],
+#         mode='markers',
+#         marker=dict(color='green'),
+#         name=f'{xaxis_title_1} vs {yaxis_title_1}'
+#     ))
+#
+#     # Add optimal stop-loss point for Open-[Low/High] vs Open-Close if applicable
+#     if best_stop_loss_level is not None:
+#
+#
+#         if direction == "Long":
+#             optimal_close_y = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean()
+#         else:
+#             optimal_close_y = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean() * (-1)
+#
+#         scatter_1.add_trace(go.Scatter(
+#             x=[best_stop_loss_level],
+#             y=[optimal_close_y],
+#             mode='markers',
+#             marker=dict(color='red', size=10, symbol='x'),
+#             name='Optimal Stop-Loss'
+#         ))
+#
+#     scatter_1.update_layout(
+#         title=f'{xaxis_title_1} vs {yaxis_title_1}',
+#         xaxis_title=xaxis_title_1,
+#         yaxis_title=yaxis_title_1,
+#         plot_bgcolor='#1e1e1e',
+#         paper_bgcolor='#1e1e1e',
+#         font=dict(color='white', family="'Press Start 2P', monospace"),
+#         showlegend=False,
+#     )
+#
+#     # Scatter Plot 2: Relation between Open-[Low/High] vs Open-[High/Low]
+#     scatter_2 = go.Figure()
+#     scatter_2.add_trace(go.Scatter(
+#         x=day_data[x_col_2],
+#         y=day_data[y_col_2],
+#         mode='markers',
+#         marker=dict(color='blue'),
+#         name=f'{xaxis_title_2} vs {yaxis_title_2}'
+#     ))
+#
+#     # Add optimal stop-loss and exit points for Open-[Low/High] vs Open-[High/Low] if applicable
+#     if best_stop_loss_level is not None and best_exit_level is not None:
+#         scatter_2.add_trace(go.Scatter(
+#             x=[best_stop_loss_level],
+#             y=[best_exit_level],
+#             mode='markers',
+#             marker=dict(color='red', size=10, symbol='x'),
+#             name='Optimal Stop-Loss/Exit'
+#         ))
+#
+#     scatter_2.update_layout(
+#         title=f'{xaxis_title_2} vs {yaxis_title_2}',
+#         xaxis_title=xaxis_title_2,
+#         yaxis_title=yaxis_title_2,
+#         plot_bgcolor='#1e1e1e',
+#         paper_bgcolor='#1e1e1e',
+#         font=dict(color='white', family="'Press Start 2P', monospace"),
+#         showlegend=False,
+#     )
+#
+#     return {
+#         'scatter_1': scatter_2,
+#         'scatter_2': scatter_1
+#     }
 
 
 def create_high_low_vs_prev_distribution(day_data, day_type="pdh"):
@@ -1246,24 +1410,24 @@ def add_std_lines(fig, data, title="", day_type='pdh'):
     std_val = data.std()
 
     if day_type == 'pdh':
-        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="blue")
+        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="CornflowerBlue")
         add_distribution_annotation(fig, mean_val + std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="red")
-        add_distribution_annotation(fig, mean_val + 2 * std_val, "red")
+        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, mean_val + 2 * std_val, "Salmon")
     elif day_type == 'pdl':
-        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="blue")
+        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="CornflowerBlue")
         add_distribution_annotation(fig, mean_val - std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="red")
-        add_distribution_annotation(fig, mean_val - 2 * std_val, "red")
+        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, mean_val - 2 * std_val, "Salmon")
     else:
-        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="blue")
+        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="CornflowerBlue")
         add_distribution_annotation(fig, mean_val - std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="blue")
+        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="CornflowerBlue")
         add_distribution_annotation(fig, mean_val + std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="red")
-        add_distribution_annotation(fig, mean_val - 2 * std_val, "red")
-        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="red")
-        add_distribution_annotation(fig, mean_val + 2 * std_val, "red")
+        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, mean_val - 2 * std_val, "Salmon")
+        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, mean_val + 2 * std_val, "Salmon")
 
     fig.update_layout(
         title=title,
@@ -1341,7 +1505,8 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
     """
     best_exit_level = None
     max_net_return = -float('inf')
-
+    trades_with_stop_loss_exit = None
+    trades_with_no_exit = None
 
     # Choose columns based on direction
     exit_col = 'Open_High_Pct_Change' if direction == "Long" else 'Open_Low_Pct_Change'
@@ -1391,8 +1556,17 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
             max_net_return = total_net_return
             best_exit_level = exit_level
 
-    return best_exit_level
+        # Calculate expected return
+    total_trades = len(trades_with_stop_loss_exit) + len(trades_with_no_exit)
+    if total_trades > 0:
+        expected_return = max_net_return / total_trades
+    else:
+        expected_return = 0  # No trades scenario
 
+    if direction == "Short":
+        expected_return = -expected_return
+
+    return best_exit_level, expected_return
 
 
 # Function to get the market name based on its index
@@ -1491,37 +1665,37 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
 
     # D-UP Analysis
     dup_best_stop_loss_level = optimize_stop_loss_open_to_close(dup_days_all_years, direction)
-    dup_best_exit_level = optimize_stop_loss_and_exit(dup_days_all_years, dup_best_stop_loss_level, direction)
+    dup_best_exit_level, dup_expected_return = optimize_stop_loss_and_exit(dup_days_all_years, dup_best_stop_loss_level, direction)
     dup_distributions = create_distributions(dup_days_all_years)
-    dup_scatters = create_scatter_plots(dup_days_all_years, direction, dup_best_stop_loss_level, dup_best_exit_level)
+    dup_scatters = create_scatter_plots(dup_days_all_years, direction, dup_best_stop_loss_level, dup_best_exit_level, dup_expected_return)
     dup_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(dup_days_all_years, day_type='pdh')
 
     # D-DOWN Analysis
     ddown_best_stop_loss_level = optimize_stop_loss_open_to_close(ddown_days_all_years, direction)
-    ddown_best_exit_level = optimize_stop_loss_and_exit(ddown_days_all_years, ddown_best_stop_loss_level, direction)
+    ddown_best_exit_level, ddown_expected_return = optimize_stop_loss_and_exit(ddown_days_all_years, ddown_best_stop_loss_level, direction)
     ddown_distributions = create_distributions(ddown_days_all_years)
-    ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level)
+    ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level, ddown_expected_return)
     ddown_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(ddown_days_all_years, day_type='pdh')
 
     # PD-H Analysis
     pdh_best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_days_all_years, direction)
-    pdh_best_exit_level = optimize_stop_loss_and_exit(pdh_days_all_years, pdh_best_stop_loss_level, direction)
+    pdh_best_exit_level, pdh_expected_return = optimize_stop_loss_and_exit(pdh_days_all_years, pdh_best_stop_loss_level, direction)
     pdh_distributions = create_distributions(pdh_days_all_years)
-    pdh_scatters = create_scatter_plots(pdh_days_all_years, direction, pdh_best_stop_loss_level, pdh_best_exit_level)
+    pdh_scatters = create_scatter_plots(pdh_days_all_years, direction, pdh_best_stop_loss_level, pdh_best_exit_level, pdh_expected_return)
     pdh_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(pdh_days_all_years, day_type='pdh')
 
     # PD-L Analysis
     pdl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdl_days_all_years, direction)
-    pdl_best_exit_level = optimize_stop_loss_and_exit(pdl_days_all_years, pdl_best_stop_loss_level, direction)
+    pdl_best_exit_level, pdl_expected_return = optimize_stop_loss_and_exit(pdl_days_all_years, pdl_best_stop_loss_level, direction)
     pdl_distributions = create_distributions(pdl_days_all_years)
-    pdl_scatters = create_scatter_plots(pdl_days_all_years, direction, pdl_best_stop_loss_level, pdl_best_exit_level)
+    pdl_scatters = create_scatter_plots(pdl_days_all_years, direction, pdl_best_stop_loss_level, pdl_best_exit_level, pdl_expected_return)
     pdl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdl_days_all_years, day_type='pdl')
 
     # PD-HL Analysis
     pdhl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdhl_days_all_years, direction)
-    pdhl_best_exit_level = optimize_stop_loss_and_exit(pdhl_days_all_years, pdhl_best_stop_loss_level, direction)
+    pdhl_best_exit_level, pdhl_expected_return = optimize_stop_loss_and_exit(pdhl_days_all_years, pdhl_best_stop_loss_level, direction)
     pdhl_distributions = create_distributions(pdhl_days_all_years)
-    pdhl_scatters = create_scatter_plots(pdhl_days_all_years, direction, pdhl_best_stop_loss_level, pdhl_best_exit_level)
+    pdhl_scatters = create_scatter_plots(pdhl_days_all_years, direction, pdhl_best_stop_loss_level, pdhl_best_exit_level, pdhl_expected_return)
     pdhl_high_vs_prev_high_dist, pdhl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdhl_days_all_years, day_type='pdhl')
 
     # PD-H, PD-L and PD-HL day types
@@ -1529,11 +1703,11 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
                                             ignore_index=True)
 
     pdh_pdl_pdhl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_pdl_pdhl_days_all_years, direction)
-    pdh_pdl_pdhl_best_exit_level = optimize_stop_loss_and_exit(pdh_pdl_pdhl_days_all_years, pdh_pdl_pdhl_best_stop_loss_level,
+    pdh_pdl_pdhl_best_exit_level, pdh_pdl_pdhl_expected_return = optimize_stop_loss_and_exit(pdh_pdl_pdhl_days_all_years, pdh_pdl_pdhl_best_stop_loss_level,
                                                           direction)
     pdh_pdl_pdhl_distributions = create_distributions(pdh_pdl_pdhl_days_all_years)
     pdh_pdl_pdhl_scatters = create_scatter_plots(pdh_pdl_pdhl_days_all_years, direction, pdh_pdl_pdhl_best_stop_loss_level,
-                                             pdh_pdl_pdhl_best_exit_level)
+                                             pdh_pdl_pdhl_best_exit_level, pdh_pdl_pdhl_expected_return)
     pdh_pdl_pdhl_high_vs_prev_high_dist, pdh_pdl_pdhl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdh_pdl_pdhl_days_all_years,
                                                                                                   day_type='pdh_pdl_pdhl')
 
@@ -1814,19 +1988,32 @@ def create_optimal_distribution_chart(optimal_trades_results):
     return fig
 
 
-def add_distribution_annotation(key, std, color):
+def add_distribution_annotation(key, std, color, direction="Vertical"):
 
-    key.add_annotation(
-        x=std,  # Position along the x-axis
-        y=1,  # Position at the top of the plot area
-        yref='paper',  # Use plot area for y positioning
-        text=f"{round(std, 2)}",  # Annotation text
-        showarrow=False,
-        textangle=-45,  # Rotate text to make it vertical
-        font=dict(color=color, size=9),  # Same color as the line
-        xanchor="center",  # Center text horizontally on the line
-        yanchor="bottom"  # Align the text at the bottom of the plot area
-    )
+    if direction == "Vertical":
+        key.add_annotation(
+            x=std,  # Position along the x-axis
+            y=1,  # Position at the top of the plot area
+            yref='paper',  # Use plot area for y positioning
+            text=f"{round(std, 2)}",  # Annotation text
+            showarrow=False,
+            textangle=-45,  # Rotate text to make it vertical
+            font=dict(color=color, size=9),  # Same color as the line
+            xanchor="center",  # Center text horizontally on the line
+            yanchor="bottom"  # Align the text at the bottom of the plot area
+        )
+    else:
+        key.add_annotation(
+            x=1,  # Position along the x-axis
+            y=std,
+            xref='paper',  # Use plot area for y positioning
+            text=f"{round(std, 2)}",  # Annotation text
+            showarrow=False,
+            textangle=0,  # Rotate text to make it vertical
+            font=dict(color=color, size=9),  # Same color as the line
+            xanchor="center",  # Center text horizontally on the line
+            yanchor="bottom"  # Align the text at the bottom of the plot area
+        )
 
     return key
 
@@ -2812,7 +2999,7 @@ def register_callbacks(app):
                 # Pivot the table and round values
                 df = df.pivot(index='MKT', columns='market_2', values='correlation')
                 df = df.round(2)  # Round correlations to two decimal places
-                df = df = (df * 100).astype(int)
+                df = (df * 100).astype(int)
                 df.reset_index(inplace=True)
                 df.columns.name = None  # Remove the pivot's columns name
             return df
