@@ -91,7 +91,6 @@ class SeasonalDataFetcher(BaseDataFetcher):
 
             # Convert 'Date' column to datetime format explicitly
             df['Date'] = pd.to_datetime(df['Date'], format="%Y-%m-%d")
-            print(df[['Day_of_Year', 'Date']].head())
 
             # Sort by the new Date column
             df.sort_values(by='Date', inplace=True)
@@ -582,7 +581,7 @@ class Index26WDataFetcher(BaseDataFetcher):
 
         else:
             raise ValueError(f"Unknown report type: {report_type}")
-        print(f"TABLE: {table_name} COLUMNS: {columns}")
+        # print(f"TABLE: {table_name} COLUMNS: {columns}")
         query = f"""
         SELECT {columns}
         FROM {table_name}

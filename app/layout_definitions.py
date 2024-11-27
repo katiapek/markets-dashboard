@@ -413,22 +413,22 @@ def create_dup_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='dup-open-high-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='dup-open-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='dup-open-low-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='dup-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # High vs Previous High Distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='dup-open-close-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='dup-open-close-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='dup-high-vs-prev-high-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='dup-high-vs-prev-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -436,11 +436,11 @@ def create_dup_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='dup-open-low-vs-close-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='dup-open-low-vs-close-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='dup-open-low-vs-high-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='dup-open-low-vs-high-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ], style={'display': 'flex'}),
@@ -462,22 +462,22 @@ def create_ddown_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='ddown-open-high-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='ddown-open-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='ddown-open-low-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='ddown-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # High vs Previous High Distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='ddown-open-close-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='ddown-open-close-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='ddown-high-vs-prev-high-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='ddown-high-vs-prev-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -485,11 +485,11 @@ def create_ddown_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='ddown-open-low-vs-close-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='ddown-open-low-vs-close-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='ddown-open-low-vs-high-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='ddown-open-low-vs-high-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ], style={'display': 'flex'}),
@@ -512,22 +512,22 @@ def create_pdh_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-open-high-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-open-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-open-low-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # High vs Previous High Distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-open-close-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-open-close-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-high-vs-prev-high-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-high-vs-prev-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -535,11 +535,11 @@ def create_pdh_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-open-low-vs-close-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-open-low-vs-close-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-open-low-vs-high-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-open-low-vs-high-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ], style={'display': 'flex'}),
@@ -561,22 +561,22 @@ def create_pdl_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdl-open-high-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdl-open-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdl-open-low-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdl-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # High vs Previous High Distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdl-open-close-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdl-open-close-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdl-low-vs-prev-low-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdl-low-vs-prev-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -584,11 +584,11 @@ def create_pdl_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdl-open-low-vs-close-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='pdl-open-low-vs-close-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdl-open-low-vs-high-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='pdl-open-low-vs-high-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
 
@@ -611,18 +611,18 @@ def create_pdhl_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdhl-open-high-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdhl-open-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdhl-open-low-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdhl-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # Open-Close distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdhl-open-close-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdhl-open-close-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'block', 'margin': '0 auto'}),
         ]),
 
@@ -630,11 +630,11 @@ def create_pdhl_analysis_section():
         # Low vs Prev Day Low and High vs Prev Day High distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdhl-low-vs-prev-low-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdhl-low-vs-prev-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdhl-high-vs-prev-high-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdhl-high-vs-prev-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -643,11 +643,11 @@ def create_pdhl_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdhl-open-low-vs-close-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='pdhl-open-low-vs-close-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdhl-open-low-vs-high-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='pdhl-open-low-vs-high-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
 
@@ -670,18 +670,18 @@ def create_pdh_pdl_pdhl_analysis_section():
         # Distribution Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-high-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-pdl-pdhl-open-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-low-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-pdl-pdhl-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
         ], style={'display': 'flex'}),
 
         # Open-Close distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-close-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-pdl-pdhl-open-close-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'block', 'margin': '0 auto'}),
         ]),
 
@@ -689,11 +689,11 @@ def create_pdh_pdl_pdhl_analysis_section():
         # Low vs Prev Day Low and High vs Prev Day High distribution
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-low-vs-prev-low-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-pdl-pdhl-low-vs-prev-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-high-vs-prev-high-dist', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-pdl-pdhl-high-vs-prev-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
         ]),
@@ -702,11 +702,11 @@ def create_pdh_pdl_pdhl_analysis_section():
         # Scatter Plots
         html.Div([
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-close-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-close-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
             html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-high-scatter', config={'displayModeBar': False}),
+                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-high-scatter', config={'displayModeBar': False, 'staticPlot': True}),
             ], style={'width': '50%', 'display': 'inline-block'}),
 
 

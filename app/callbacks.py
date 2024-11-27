@@ -1,10 +1,11 @@
 # callbacks.py
-from dash import Input, Output, State, ctx, html, dcc
+from dash import Input, Output, State, ctx, html  # , dcc
 # from dash.dash_table.Format import Format, FormatTemplate
 # import dash
-# import numpy as np
 from datetime import timedelta
+import numpy as np
 import plotly.graph_objs as go
+# import plotly.graph_objects as go
 import plotly.subplots as sp
 # import plotly.express as px
 import pandas as pd  # Import pandas for data manipulation
@@ -23,6 +24,8 @@ from data_fetchers import (
 from scripts.config import market_tickers
 import matplotlib.pyplot as plt
 # from sklearn.linear_model import LinearRegression
+from sklearn.cluster import KMeans
+
 
 
 # Constants for trace colors and default values
@@ -111,92 +114,77 @@ def update_yaxis(fig, row, col, title, y_min=None, y_max=None, secondary_y=False
 def add_shape(fig, x0, x1, y0, y1, row, col, color='gray', dash='dash'):
     fig.add_shape(type='line', x0=x0, x1=x1, y0=y0, y1=y1, line=dict(color=color, dash=dash), row=row, col=col)
 
-def compare_portfolios(start_month, start_day, end_month, end_day, direction, ohlc_data, number_of_years_to_combine):
+def add_distribution_annotation(key, std, color, direction="Vertical"):
+
+    if direction == "Vertical":
+        key.add_annotation(
+            x=std,  # Position along the x-axis
+            y=1,  # Position at the top of the plot area
+            yref='paper',  # Use plot area for y positioning
+            text=f"{round(std, 2)}",  # Annotation text
+            showarrow=False,
+            textangle=-45,  # Rotate text to make it vertical
+            font=dict(color=color, size=9),  # Same color as the line
+            xanchor="center",  # Center text horizontally on the line
+            yanchor="bottom"  # Align the text at the bottom of the plot area
+        )
+    else:
+        key.add_annotation(
+            x=1,  # Position along the x-axis
+            y=std,
+            xref='paper',  # Use plot area for y positioning
+            text=f"{round(std, 2)}",  # Annotation text
+            showarrow=False,
+            textangle=0,  # Rotate text to make it vertical
+            font=dict(color=color, size=9),  # Same color as the line
+            xanchor="center",  # Center text horizontally on the line
+            yanchor="bottom"  # Align the text at the bottom of the plot area
+        )
+
+    return key
+
+def add_std_lines(fig, data, title="", day_type='pdh'):
     """
-    Function to compare no stop-loss vs stop-loss and optimal exit portfolios over a 15 or 30 year period.
-    Parameters:
-        - start_month: int, start month for the trade window
-        - start_day: int, start day for the trade window
-        - end_month: int, end month for the trade window
-        - end_day: int, end day for the trade window
-        - direction: str, 'Long' or 'Short'
-        - ohlc_data: pd.DataFrame, historical OHLC data
-        - number_of_years_to_combine: int, number of years (15 or 30)
-    Returns:
-        - two line charts comparing daily gain/loss % with and without stop-loss/optimal exit
-        - risk metrics for comparison
+    Add standard deviation lines to a given figure.
+
+    Args:
+        fig (go.Figure): The plotly figure to update.
+        data (pd.Series): Data to calculate mean and standard deviation.
+        title (str): Title for the figure.
+        day_type (str): Type of day for analysis - 'pdh', 'pdl', or 'pdhl'.
     """
-    combined_no_stop_loss = pd.DataFrame()
-    combined_with_stop_loss = pd.DataFrame()
+    mean_val = data.mean()
+    std_val = data.std()
 
-    # Get unique years
-    unique_years = sorted(ohlc_data['Date'].dt.year.unique())[-number_of_years_to_combine:]
+    if day_type == 'pdh':
+        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, mean_val + std_val, "CornflowerBlue")
+        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, mean_val + 2 * std_val, "Salmon")
+    elif day_type == 'pdl':
+        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, mean_val - std_val, "CornflowerBlue")
+        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, mean_val - 2 * std_val, "Salmon")
+    else:
+        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, mean_val - std_val, "CornflowerBlue")
+        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, mean_val + std_val, "CornflowerBlue")
+        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, mean_val - 2 * std_val, "Salmon")
+        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, mean_val + 2 * std_val, "Salmon")
 
-    for year in unique_years:
-        # Slice OHLC data for the year
-        yearly_data = ohlc_data[ohlc_data['Date'].dt.year == year]
-        start_data = find_nearest_date(yearly_data, f"{year}-{start_month:02d}-{start_day:02d}")
-        end_data = find_nearest_date(yearly_data, f"{year}-{end_month:02d}-{end_day:02d}")
-
-        if start_data is None or end_data is None:
-            continue
-
-        # Get the sliced data for this year between start and end dates
-        sliced_year_data = yearly_data[
-            (yearly_data['Date'] >= start_data['Date']) & (yearly_data['Date'] <= end_data['Date'])]
-
-        # Append sliced data to combined data for no stop loss
-        combined_no_stop_loss = pd.concat([combined_no_stop_loss, sliced_year_data], ignore_index=True)
-
-        # Simulate stop loss and optimal exit for this slice
-        points_change, percentage_change = simulate_optimal_trades(sliced_year_data, direction)
-
-        # Combine with stop-loss data
-        sliced_year_data['Gain/Loss (%)'] = percentage_change
-        combined_with_stop_loss = pd.concat([combined_with_stop_loss, sliced_year_data], ignore_index=True)
-
-    # Sort by Date to create a continuous portfolio
-    combined_no_stop_loss.sort_values(by='Date', inplace=True)
-    combined_with_stop_loss.sort_values(by='Date', inplace=True)
-
-    # Calculate daily returns for both portfolios
-    combined_no_stop_loss['Daily Return (%)'] = combined_no_stop_loss['Close'].pct_change() * 100
-    combined_with_stop_loss['Daily Return (%)'] = combined_with_stop_loss['Gain/Loss (%)']
-
-    # Calculate cumulative returns
-    combined_no_stop_loss['Cumulative Return'] = (1 + combined_no_stop_loss['Daily Return (%)'] / 100).cumprod() - 1
-    combined_with_stop_loss['Cumulative Return'] = (1 + combined_with_stop_loss['Daily Return (%)'] / 100).cumprod() - 1
-
-    # Calculate Sharpe ratio
-    sharpe_no_stop_loss = calculate_sharpe_ratio(combined_no_stop_loss['Daily Return (%)'])
-    sharpe_with_stop_loss = calculate_sharpe_ratio(combined_with_stop_loss['Daily Return (%)'])
-
-    # Plotting the results
-    plt.figure(figsize=(12, 6))
-
-    plt.subplot(1, 2, 1)
-    plt.plot(combined_no_stop_loss['Date'], combined_no_stop_loss['Cumulative Return'], label="No Stop Loss",
-             color='blue')
-    plt.plot(combined_with_stop_loss['Date'], combined_with_stop_loss['Cumulative Return'], label="With Stop Loss",
-             color='green')
-    plt.title(f"Cumulative Returns over {number_of_years_to_combine} years")
-    plt.legend()
-
-    plt.subplot(1, 2, 2)
-    plt.plot(combined_no_stop_loss['Date'], combined_no_stop_loss['Daily Return (%)'], label="No Stop Loss",
-             color='blue')
-    plt.plot(combined_with_stop_loss['Date'], combined_with_stop_loss['Daily Return (%)'], label="With Stop Loss",
-             color='green')
-    plt.title(f"Daily Returns over {number_of_years_to_combine} years")
-    plt.legend()
-
-    plt.show()
-
-    # Return risk metrics
-    return {
-        "Sharpe Ratio (No Stop Loss)": sharpe_no_stop_loss,
-        "Sharpe Ratio (With Stop Loss)": sharpe_with_stop_loss
-    }
+    fig.update_layout(
+        title=title,
+        xaxis_title='Percentage Change',
+        yaxis_title='Frequency',
+        plot_bgcolor='#1e1e1e',
+        paper_bgcolor='#1e1e1e',
+        font=dict(color='white', family="'Press Start 2P', monospace"),
+        bargap=0.1
+    )
 
 
 def calculate_sharpe_ratio(daily_returns):
@@ -274,287 +262,27 @@ def calculate_volatility(daily_returns):
     return volatility
 
 
-
-def find_nearest_date(data, target_date, max_delta=3):
+def calculate_points_change(direction, open_price, close_price):
     """
-    Find the nearest available date within a range of ±max_delta days from the target date.
+    Calculate the points and percentage change based on trade direction (Long/Short).
 
     Args:
-        data (pd.DataFrame): The OHLC data with a 'Date' column.
-        target_date (str): The target date in "YYYY-MM-DD" format.
-        max_delta (int): The maximum number of days to search before or after the target date.
+        direction (str): Trade direction ('Long' or 'Short').
+        open_price (float): Opening price for the period.
+        close_price (float): Closing price for the period.
 
     Returns:
-        pd.Series or None: The row with the nearest date found, or None if no data is found within the range.
+        tuple: points_change (float), percentage_change (float)
     """
-    target_date = pd.to_datetime(target_date)
-
-    # Search within the given range (±max_delta days)
-    for delta in range(max_delta + 1):
-        # Try going backward and forward from the target date
-        for sign in [-1, 1]:
-            search_date = target_date + timedelta(days=sign * delta)
-            nearest_data = data[data['Date'] == search_date]
-
-            if not nearest_data.empty:
-                return nearest_data.iloc[0]  # Return the first matching row
-
-    return None  # No matching data found within the range
-
-
-def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month, end_day, optimal_results, direction):
-    """
-    Simulates trades with stop-loss and exit strategy applied, using the optimal results.
-    Args:
-        analysis_results (list): Yearly analysis results.
-        ohlc_data (pd.DataFrame): OHLC data for the market.
-        start_month, start_day, end_month, end_day (int): Date range for the analysis.
-        optimal_results (dict): Optimal stop-loss and exit strategy values.
-        direction (str): Direction of the trade ('Long' or 'Short').
-    Returns:
-        list: List of simulated trade results with stop-loss and exit applied.
-    """
-
-    # Initialize list to store results
-    optimal_trades_results = []
-
-    # Iterate through the analysis results
-    for result in analysis_results:
-        year = result['Year']
-
-        # Fetch the 'Open' and 'Close' prices from the original OHLC data for the year
-        start_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
-                                       f"{year}-{start_month:02d}-{start_day:02d}")
-        end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
-                                     f"{year}-{end_month:02d}-{end_day:02d}")
-
-
-        if start_data is None or end_data is None:
-            # Skip if no valid start or end data for the year
-            continue
-
-        open_price = pd.to_numeric(start_data['Open'], errors='coerce')
-        close_price = pd.to_numeric(end_data['Close'], errors='coerce')
-
-        if pd.isnull(open_price) or pd.isnull(close_price):
-            # Skip if the conversion to numeric failed
-            continue
-
-        max_drawdown = result['Max Drawdown (%)']
-        max_gain = result['Max Gain (%)']
-
-        # Ensure optimal stop-loss and exit are not None
-        stop_loss_threshold = optimal_results.get('optimal_stop_loss')
-        exit_threshold = optimal_results.get('optimal_exit')
-
-        if stop_loss_threshold is None or exit_threshold is None:
-            # If stop loss or exit is missing, skip the year
-            continue
-
-        if max_drawdown >= stop_loss_threshold:
-            # If the stop loss is hit, calculate the loss
-            points_change = -stop_loss_threshold * open_price / 100
-        elif max_gain >= exit_threshold:
-            # If the exit is hit, calculate the gain
-            points_change = exit_threshold * open_price / 100
-        else:
-            # If neither stop loss nor exit is hit, calculate the normal close-to-open change
-            if direction == 'Long':
-                points_change = close_price - open_price
-            else:
-                points_change = open_price - close_price
-
+    # Calculate points change and percentage change for Long/Short direction
+    if direction == 'Long':
+        points_change = close_price - open_price
+        percentage_change = (points_change / open_price) * 100
+    else:  # Short direction
+        points_change = open_price - close_price
         percentage_change = (points_change / open_price) * 100
 
-        # Append the result
-        optimal_trades_results.append({
-            'Year': year,
-            'Max Drawdown (Points)': result['Max Drawdown (Points)'],
-            'Max Drawdown (%)': result['Max Drawdown (%)'],
-            'Max Gain (Points)': result['Max Gain (Points)'],
-            'Max Gain (%)': result['Max Gain (%)'],
-            'Closing Points': round(points_change, 4),
-            'Closing Percentage': round(percentage_change, 1)
-        })
-
-    return optimal_trades_results
-
-
-def update_cumulative_chart_layout(fig, title):
-    """
-    Update the layout of a cumulative return chart to match the style of the distribution charts.
-    Args:
-        fig: The Plotly figure object.
-        title: The title for the chart.
-    """
-    fig.update_layout(
-        title=title,
-        xaxis_title='Date',
-        yaxis_title='Cumulative Return (%)',
-        plot_bgcolor='#1e1e1e',  # Same dark background as distribution charts
-        paper_bgcolor='#1e1e1e',  # Same dark paper background
-        font=dict(
-            color='white',  # White text color
-            family="'Press Start 2P', monospace"  # Same font as distribution charts
-        ),
-        legend=dict(
-            orientation="h",  # Horizontal legend
-            yanchor="bottom",
-            y=1.02,  # Adjust position
-            xanchor="right",
-            x=1,
-            font=dict(size=10)
-        ),
-        hovermode='x unified',  # Unified hover mode
-        hoverlabel=dict(
-            font=dict(family="'Press Start 2P', monospace"),
-            bgcolor='#1e1e1e',
-            bordercolor='white',
-            font_color='white'
-        ),
-        xaxis=dict(
-            showgrid=False  # Remove vertical grid lines
-        ),
-        yaxis=dict(
-            showgrid=True,  # Keep horizontal grid lines
-            zeroline=False  # Optionally remove the zero line if you don't need it
-        )
-    )
-
-
-def create_cumulative_return_charts(start_month, start_day, end_month, end_day, direction, ohlc_data, num_years,
-                                    optimal_results_15y, optimal_results_30y):
-    """
-    Function to create cumulative return charts for both scenarios (with and without stop-loss/optimal exit)
-    over the specified number of years (15 or 30 years). It handles 15 and 30 years independently.
-    """
-
-    # Initialize two separate DataFrames for 15-year and 30-year data
-    combined_data_15y = pd.DataFrame()
-    combined_data_30y = pd.DataFrame()
-
-    current_year = pd.Timestamp.now().year
-
-    # Process 15-year and 30-year periods separately to avoid overlap
-    for year_offset in range(30):  # We process 30 years total, but separate them by num_years
-        year = current_year - year_offset
-
-        # Get the nearest start and end dates for the current year
-        start_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
-                                       f"{year}-{start_month:02d}-{start_day:02d}")
-        end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
-                                     f"{year}-{end_month:02d}-{end_day:02d}")
-
-        if start_data is None or end_data is None:
-            continue
-
-        # Filter OHLC data for the specific date range
-        yearly_data = ohlc_data[(ohlc_data['Date'] >= start_data['Date']) & (ohlc_data['Date'] <= end_data['Date'])]
-
-        if year_offset < 15:
-            # Ensure we only add to the 15-year dataset if we're processing the first 15 years
-            combined_data_15y = pd.concat([combined_data_15y, yearly_data], ignore_index=True)
-        if year_offset < 30:
-            # Add the same data to the 30-year dataset (without overwriting)
-            combined_data_30y = pd.concat([combined_data_30y, yearly_data], ignore_index=True)
-
-    # Sort the dataframes by date to ensure proper calculations
-    combined_data_15y.drop_duplicates(subset=['Date'], inplace=True)  # Remove duplicates, if any
-    combined_data_30y.drop_duplicates(subset=['Date'], inplace=True)  # Remove duplicates, if any
-
-    combined_data_15y.sort_values('Date', inplace=True)
-    combined_data_30y.sort_values('Date', inplace=True)
-
-    # Calculate daily returns for no stop-loss for both periods
-    combined_data_15y['No_Stop_Returns'] = combined_data_15y['Close_Close_Pct_Change'].fillna(0)
-    combined_data_30y['No_Stop_Returns'] = combined_data_30y['Close_Close_Pct_Change'].fillna(0)
-
-    # Invert returns for short trades
-    if direction == 'Short':
-        combined_data_15y['No_Stop_Returns'] *= -1
-        combined_data_30y['No_Stop_Returns'] *= -1
-
-    # Initialize columns for stop-loss/optimal exit returns
-    combined_data_15y['Stop_Loss_Returns'] = pd.Series(dtype=float)
-    combined_data_30y['Stop_Loss_Returns'] = pd.Series(dtype=float)
-
-    # Process each year in the 15-year data for stop-loss/exit strategy
-    for year in combined_data_15y['Date'].dt.year.unique():
-        yearly_data_15y = combined_data_15y[combined_data_15y['Date'].dt.year == year]
-
-        # Apply stop-loss/exit for 15-year data slice
-        stop_loss_returns_15y = calculate_stop_loss_return(yearly_data_15y, optimal_results_15y, direction)
-
-        # Ensure lengths match
-        if len(stop_loss_returns_15y) == len(yearly_data_15y):
-            # Align indices and store stop-loss/exit returns
-            combined_data_15y.loc[yearly_data_15y.index, 'Stop_Loss_Returns'] = stop_loss_returns_15y.values
-        else:
-            print(
-                f"Warning: Mismatch in lengths for year {year}. Yearly data length: {len(yearly_data_15y)}, Stop-loss return length: {len(stop_loss_returns_15y)}")
-
-    # Process each year in the 30-year data for stop-loss/exit strategy
-    for year in combined_data_30y['Date'].dt.year.unique():
-        yearly_data_30y = combined_data_30y[combined_data_30y['Date'].dt.year == year]
-
-        # Apply stop-loss/exit for 30-year data slice
-        stop_loss_returns_30y = calculate_stop_loss_return(yearly_data_30y, optimal_results_30y, direction)
-
-        # Ensure lengths match
-        if len(stop_loss_returns_30y) == len(yearly_data_30y):
-            # Align indices and store stop-loss/exit returns
-            combined_data_30y.loc[yearly_data_30y.index, 'Stop_Loss_Returns'] = stop_loss_returns_30y.values
-        else:
-            print(
-                f"Warning: Mismatch in lengths for year {year}. Yearly data length: {len(yearly_data_30y)}, Stop-loss return length: {len(stop_loss_returns_30y)}")
-    # Invert returns for short trades
-    # if direction == 'Short':
-    #    combined_data_15y['Stop_Loss_Returns'] *= -1
-    #    combined_data_30y['Stop_Loss_Returns'] *= -1
-
-    # Calculate cumulative returns for both no stop-loss and with stop-loss/optimal exit strategies
-    combined_data_15y['Cumulative_No_Stop'] = combined_data_15y['No_Stop_Returns'].cumsum()
-    combined_data_15y['Cumulative_Stop_Loss'] = combined_data_15y['Stop_Loss_Returns'].cumsum()
-
-    combined_data_30y['Cumulative_No_Stop'] = combined_data_30y['No_Stop_Returns'].cumsum()
-    combined_data_30y['Cumulative_Stop_Loss'] = combined_data_30y['Stop_Loss_Returns'].cumsum()
-
-    # Plotting for the 15-year data
-    fig_15y = go.Figure()
-    fig_15y.add_trace(
-        go.Scatter(x=combined_data_15y['Date'], y=combined_data_15y['Cumulative_No_Stop'], mode='lines',
-                   name='No Stop-Loss (15 Years)')
-    )
-    fig_15y.add_trace(
-        go.Scatter(x=combined_data_15y['Date'], y=combined_data_15y['Cumulative_Stop_Loss'], mode='lines',
-                   name='With Stop-Loss/Optimal Exit (15 Years)')
-    )
-
-    # Plotting for the 30-year data
-    fig_30y = go.Figure()
-    fig_30y.add_trace(
-        go.Scatter(x=combined_data_30y['Date'], y=combined_data_30y['Cumulative_No_Stop'], mode='lines',
-                   name='No Stop-Loss (30 Years)')
-    )
-    fig_30y.add_trace(
-        go.Scatter(x=combined_data_30y['Date'], y=combined_data_30y['Cumulative_Stop_Loss'], mode='lines',
-                   name='With Stop-Loss/Optimal Exit (30 Years)')
-    )
-
-    # For 15-year chart
-    update_cumulative_chart_layout(fig_15y, 'Cumulative Returns Over 15 Years')
-
-    # For 30-year chart
-    update_cumulative_chart_layout(fig_30y, 'Cumulative Returns Over 30 Years')
-
-    # Return the necessary data for plotting
-    return (fig_15y, fig_30y,
-            combined_data_15y['No_Stop_Returns'], combined_data_30y['No_Stop_Returns'],
-            combined_data_15y['Stop_Loss_Returns'], combined_data_30y['Stop_Loss_Returns'],
-            combined_data_15y['Cumulative_No_Stop'], combined_data_15y['Cumulative_Stop_Loss'],  # Cumulative returns
-            combined_data_30y['Cumulative_No_Stop'], combined_data_30y['Cumulative_Stop_Loss']  # Cumulative returns
-            )
-
+    return points_change, percentage_change
 
 def calculate_stop_loss_return(yearly_data, optimal_results, direction):
     """
@@ -649,24 +377,260 @@ def calculate_risk_metrics(daily_returns, cumulative_returns):
     }
 
 
-def update_risk_metrics_summary(risk_metrics, color):
+def calculate_max_drawdown(df, open_price, close_price, direction):
     """
-    Format the risk metrics with the given color.
-    Args:
-        risk_metrics: A dictionary containing risk metrics.
-        color: The color for styling the text.
-    Returns:
-        A formatted HTML string with colored metrics.
+    Calculate the maximum drawdown in points and percentage.
     """
-    return html.Div([
-        html.P(f"Sharpe Ratio: {risk_metrics['Sharpe Ratio']:.2f}, "
-               f"Sortino Ratio: {risk_metrics['Sortino Ratio']:.2f},"
-               f" Max Drawdown: {risk_metrics['Max Drawdown']:.2f}%, "
-               f"Calmar Ratio: {risk_metrics['Calmar Ratio']:.4f}, "
-               f"Volatility: {risk_metrics['Volatility']:.2f}%, "
-               f"Expected Return: {risk_metrics['Annualized Expected Return']:.2f}%", style={'color': color})
-    ])
+    if direction == 'Long':
+        # Convert 'Low' column to numeric and find the minimum price
+        min_price = pd.to_numeric(df['Low'], errors='coerce').min()
+        drawdown_points = open_price - min_price
+    else:
+        # Convert 'High' column to numeric and find the maximum price
+        max_price = pd.to_numeric(df['High'], errors='coerce').max()
+        drawdown_points = max_price - open_price
 
+    # Ensure open_price is numeric
+    open_price = pd.to_numeric(open_price, errors='coerce')
+
+    drawdown_percentage = (drawdown_points / open_price) * 100
+    return {'points': drawdown_points, 'percentage': drawdown_percentage}
+
+def calculate_max_gain(df, open_price, close_price, direction):
+    """
+    Calculate the maximum gain in points and percentage.
+    """
+    if direction == 'Long':
+        # Convert 'High' column to numeric and find the maximum price
+        max_price = pd.to_numeric(df['High'], errors='coerce').max()
+        gain_points = max_price - open_price
+    else:
+        # Convert 'Low' column to numeric and find the minimum price
+        min_price = pd.to_numeric(df['Low'], errors='coerce').min()
+        gain_points = open_price - min_price
+
+    # Ensure open_price is numeric
+    open_price = pd.to_numeric(open_price, errors='coerce')
+
+    gain_percentage = (gain_points / open_price) * 100
+    return {'points': gain_points, 'percentage': gain_percentage}
+
+def calculate_optimal_exit_and_stop_loss(analysis_results):
+    """
+    Calculate the optimal stop loss and exit based on historical max drawdowns and gains.
+    Args:
+        analysis_results (list): List of yearly analysis results with max drawdown and max gain values.
+    Returns:
+        dict: A dictionary containing the optimal stop loss, optimal exit, win rate, and points gained.
+    """
+    total_years = len(analysis_results)
+    if total_years == 0:
+        return {
+            'optimal_stop_loss': 0,
+            'optimal_exit': 0,
+            'win_rate': 0,
+            'points_gained': 0
+        }
+
+    # Determine the maximum observed drawdown and gain across all years
+    max_observed_drawdown = max(result['Max Drawdown (%)'] for result in analysis_results)
+    max_observed_gain = max(result['Max Gain (%)'] for result in analysis_results)
+
+    # Stop loss and exit thresholds to test (1% through max observed drawdown/gain)
+    stop_loss_thresholds = [i for i in range(1, int(max_observed_drawdown) + 1)]
+    exit_thresholds = [i for i in range(1, int(max_observed_gain) + 1)]
+
+    # Store results for each stop loss and exit combination
+    best_combination = {
+        'stop_loss': None,
+        'exit': None,
+        'win_rate': 0,
+        'points_gained': float('-inf')
+    }
+
+    # Iterate over stop loss thresholds
+    for stop_loss in stop_loss_thresholds:
+        # Iterate over exit thresholds
+        for exit_level in exit_thresholds:
+            wins = 0
+            total_points = 0
+
+            # Simulate each year with the given stop loss and exit combination
+            for result in analysis_results:
+                max_drawdown = result['Max Drawdown (%)']
+                max_drawdown_points = result['Max Drawdown (Points)']
+                max_gain = result['Max Gain (%)']
+                max_gain_points = result['Max Gain (Points)']
+                closing_points = result['Closing Points']
+
+                # Apply stop loss (percentage-based)
+                if max_drawdown >= stop_loss:
+                    # Loss proportional to the stop loss in points
+                    total_points += (-stop_loss / max_drawdown) * max_drawdown_points
+                elif max_gain >= exit_level:
+                    # Gain proportional to the exit level in points
+                    total_points += (exit_level / max_gain) * max_gain_points
+                    wins += 1  # Count this as a win because the exit level was hit
+                elif closing_points > 0:
+                    # Positive closing points mean a win
+                    total_points += closing_points
+                    wins += 1  # Count this as a win because closing points are positive
+                else:
+                    # Negative closing points, take the loss
+                    total_points += closing_points
+
+            # Calculate win rate for this stop loss and exit level
+            win_rate = (wins / total_years) * 100
+
+            # If this combination yields better points, update the best combination
+            if total_points > best_combination['points_gained']:
+                best_combination = {
+                    'stop_loss': stop_loss,
+                    'exit': exit_level,
+                    'win_rate': win_rate,
+                    'points_gained': total_points
+                }
+
+
+    # Return the best combination of stop loss and exit
+    return {
+        'optimal_stop_loss': best_combination['stop_loss'],
+        'optimal_exit': best_combination['exit'],
+        'win_rate': best_combination['win_rate'],
+        'points_gained': round(best_combination['points_gained'],4)
+    }
+
+def calculate_summary_statistics(analysis_results):
+    total_years = len(analysis_results)
+    if total_years == 0:
+        return {
+            'win_rate': 0,
+            'total_points_gained': 0,
+            'total_percent_gained': 0,
+            'optimal_stop_loss': 0,
+            'optimal_exit': 0,
+            'optimal_win_rate' : 0,
+            'optimal_points_gained': 0,
+        }
+
+
+    # Filter wins and losses
+    wins = [result for result in analysis_results if result['Closing Points'] > 0]
+    losses = [result for result in analysis_results if result['Closing Points'] <= 0]
+
+    # Calculate win rate
+    win_rate = (len(wins) / total_years) * 100
+
+    # Calculate total points and percent gained
+    total_points_gained = sum(result['Closing Points'] for result in wins)
+    total_percent_gained = sum(result['Closing Percentage'] for result in wins)
+
+    # Calculate optimal stop loss and exit
+    max_drawdowns = [result['Max Drawdown (Points)'] for result in analysis_results]
+    max_profits = [result['Max Gain (Points)'] for result in analysis_results]
+
+    # optimal_stop_loss = round(sum(max_drawdowns) / total_years, 4)
+    # optimal_exit = round(sum(max_profits) / total_years,4)
+
+    optimal_calculations = calculate_optimal_exit_and_stop_loss(analysis_results)
+
+    return {
+        'win_rate': win_rate,
+        'total_points_gained': round(total_points_gained,4),
+        'total_percent_gained': total_percent_gained,
+        'optimal_stop_loss': optimal_calculations['optimal_stop_loss'],
+        'optimal_exit': optimal_calculations['optimal_exit'],
+        'optimal_win_rate': optimal_calculations['win_rate'],
+        'optimal_points_gained': optimal_calculations['points_gained']
+    }
+
+
+def compare_portfolios(start_month, start_day, end_month, end_day, direction, ohlc_data, number_of_years_to_combine):
+    """
+    Function to compare no stop-loss vs stop-loss and optimal exit portfolios over a 15 or 30 year period.
+    Parameters:
+        - start_month: int, start month for the trade window
+        - start_day: int, start day for the trade window
+        - end_month: int, end month for the trade window
+        - end_day: int, end day for the trade window
+        - direction: str, 'Long' or 'Short'
+        - ohlc_data: pd.DataFrame, historical OHLC data
+        - number_of_years_to_combine: int, number of years (15 or 30)
+    Returns:
+        - two line charts comparing daily gain/loss % with and without stop-loss/optimal exit
+        - risk metrics for comparison
+    """
+    combined_no_stop_loss = pd.DataFrame()
+    combined_with_stop_loss = pd.DataFrame()
+
+    # Get unique years
+    unique_years = sorted(ohlc_data['Date'].dt.year.unique())[-number_of_years_to_combine:]
+
+    for year in unique_years:
+        # Slice OHLC data for the year
+        yearly_data = ohlc_data[ohlc_data['Date'].dt.year == year]
+        start_data = find_nearest_date(yearly_data, f"{year}-{start_month:02d}-{start_day:02d}")
+        end_data = find_nearest_date(yearly_data, f"{year}-{end_month:02d}-{end_day:02d}")
+
+        if start_data is None or end_data is None:
+            continue
+
+        # Get the sliced data for this year between start and end dates
+        sliced_year_data = yearly_data[
+            (yearly_data['Date'] >= start_data['Date']) & (yearly_data['Date'] <= end_data['Date'])]
+
+        # Append sliced data to combined data for no stop loss
+        combined_no_stop_loss = pd.concat([combined_no_stop_loss, sliced_year_data], ignore_index=True)
+
+        # Simulate stop loss and optimal exit for this slice
+        points_change, percentage_change = simulate_optimal_trades(sliced_year_data, direction)
+
+        # Combine with stop-loss data
+        sliced_year_data['Gain/Loss (%)'] = percentage_change
+        combined_with_stop_loss = pd.concat([combined_with_stop_loss, sliced_year_data], ignore_index=True)
+
+    # Sort by Date to create a continuous portfolio
+    combined_no_stop_loss.sort_values(by='Date', inplace=True)
+    combined_with_stop_loss.sort_values(by='Date', inplace=True)
+
+    # Calculate daily returns for both portfolios
+    combined_no_stop_loss['Daily Return (%)'] = combined_no_stop_loss['Close'].pct_change() * 100
+    combined_with_stop_loss['Daily Return (%)'] = combined_with_stop_loss['Gain/Loss (%)']
+
+    # Calculate cumulative returns
+    combined_no_stop_loss['Cumulative Return'] = (1 + combined_no_stop_loss['Daily Return (%)'] / 100).cumprod() - 1
+    combined_with_stop_loss['Cumulative Return'] = (1 + combined_with_stop_loss['Daily Return (%)'] / 100).cumprod() - 1
+
+    # Calculate Sharpe ratio
+    sharpe_no_stop_loss = calculate_sharpe_ratio(combined_no_stop_loss['Daily Return (%)'])
+    sharpe_with_stop_loss = calculate_sharpe_ratio(combined_with_stop_loss['Daily Return (%)'])
+
+    # Plotting the results
+    plt.figure(figsize=(12, 6))
+
+    plt.subplot(1, 2, 1)
+    plt.plot(combined_no_stop_loss['Date'], combined_no_stop_loss['Cumulative Return'], label="No Stop Loss",
+             color='blue')
+    plt.plot(combined_with_stop_loss['Date'], combined_with_stop_loss['Cumulative Return'], label="With Stop Loss",
+             color='green')
+    plt.title(f"Cumulative Returns over {number_of_years_to_combine} years")
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.plot(combined_no_stop_loss['Date'], combined_no_stop_loss['Daily Return (%)'], label="No Stop Loss",
+             color='blue')
+    plt.plot(combined_with_stop_loss['Date'], combined_with_stop_loss['Daily Return (%)'], label="With Stop Loss",
+             color='green')
+    plt.title(f"Daily Returns over {number_of_years_to_combine} years")
+    plt.legend()
+
+    plt.show()
+
+    # Return risk metrics
+    return {
+        "Sharpe Ratio (No Stop Loss)": sharpe_no_stop_loss,
+        "Sharpe Ratio (With Stop Loss)": sharpe_with_stop_loss
+    }
 
 def compute_day_trading_stats(df):
     """
@@ -847,8 +811,6 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, gro
     # Create DataFrames from the lists of dictionaries
     stats_df = pd.DataFrame(stats_list)
     stats_1_df = pd.DataFrame(stats_1_list)
-    stats_weekdays_df = pd.DataFrame(stats_weekdays_list)
-    stats_1_weekdays_df = pd.DataFrame(stats_1_weekdays_list)
 
     # Add a total row for yearly stats
     total_days = stats_df['Total Days'].sum()
@@ -924,189 +886,140 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, gro
     return stats_df, stats_1_df, weekday_summary_df, weekday_summary_1_df
 
 
-def calculate_points_change(direction, open_price, close_price):
+def create_cumulative_return_charts(start_month, start_day, end_month, end_day, direction, ohlc_data, num_years,
+                                    optimal_results_15y, optimal_results_30y):
     """
-    Calculate the points and percentage change based on trade direction (Long/Short).
-
-    Args:
-        direction (str): Trade direction ('Long' or 'Short').
-        open_price (float): Opening price for the period.
-        close_price (float): Closing price for the period.
-
-    Returns:
-        tuple: points_change (float), percentage_change (float)
+    Function to create cumulative return charts for both scenarios (with and without stop-loss/optimal exit)
+    over the specified number of years (15 or 30 years). It handles 15 and 30 years independently.
     """
-    # Calculate points change and percentage change for Long/Short direction
-    if direction == 'Long':
-        points_change = close_price - open_price
-        percentage_change = (points_change / open_price) * 100
-    else:  # Short direction
-        points_change = open_price - close_price
-        percentage_change = (points_change / open_price) * 100
 
-    return points_change, percentage_change
+    # Initialize two separate DataFrames for 15-year and 30-year data
+    combined_data_15y = pd.DataFrame()
+    combined_data_30y = pd.DataFrame()
 
+    current_year = pd.Timestamp.now().year
 
-def filter_dup_days(df):
-    """
-    Filters the dataframe to return only D-UP days (where today's Close is above or equal to today's Open)
+    # Process 15-year and 30-year periods separately to avoid overlap
+    for year_offset in range(30):  # We process 30 years total, but separate them by num_years
+        year = current_year - year_offset
 
-    Args:
-        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+        # Get the nearest start and end dates for the current year
+        start_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
+                                       f"{year}-{start_month:02d}-{start_day:02d}")
+        end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
+                                     f"{year}-{end_month:02d}-{end_day:02d}")
 
-    Returns:
-        pd.DataFrame: A dataframe filtered for D-UP days.
-    """
-    df_copy = df.copy()
-    df_copy.loc[:, 'D_UP'] = (df_copy['Close'] > df_copy['Open'])
-    # Filter for D_UP days
-    dup_days = df_copy.loc[df_copy['D_UP']].copy()
+        if start_data is None or end_data is None:
+            continue
 
-    return dup_days
+        # Filter OHLC data for the specific date range
+        yearly_data = ohlc_data[(ohlc_data['Date'] >= start_data['Date']) & (ohlc_data['Date'] <= end_data['Date'])]
 
+        if year_offset < 15:
+            # Ensure we only add to the 15-year dataset if we're processing the first 15 years
+            combined_data_15y = pd.concat([combined_data_15y, yearly_data], ignore_index=True)
+        if year_offset < 30:
+            # Add the same data to the 30-year dataset (without overwriting)
+            combined_data_30y = pd.concat([combined_data_30y, yearly_data], ignore_index=True)
 
-def filter_ddown_days(df):
-    """
-    Filters the dataframe to return only D-UP days (where today's Close is above or equal to today's Open)
+    # Sort the dataframes by date to ensure proper calculations
+    combined_data_15y.drop_duplicates(subset=['Date'], inplace=True)  # Remove duplicates, if any
+    combined_data_30y.drop_duplicates(subset=['Date'], inplace=True)  # Remove duplicates, if any
 
-    Args:
-        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+    combined_data_15y.sort_values('Date', inplace=True)
+    combined_data_30y.sort_values('Date', inplace=True)
 
-    Returns:
-        pd.DataFrame: A dataframe filtered for D-UP days.
-    """
-    df_copy = df.copy()
-    df_copy.loc[:, 'D_DOWN'] = (df_copy['Close'] < df_copy['Open'])
-    # Filter for D_DOWN days
-    ddown_days = df_copy.loc[df_copy['D_DOWN']].copy()
+    # Calculate daily returns for no stop-loss for both periods
+    combined_data_15y['No_Stop_Returns'] = combined_data_15y['Close_Close_Pct_Change'].fillna(0)
+    combined_data_30y['No_Stop_Returns'] = combined_data_30y['Close_Close_Pct_Change'].fillna(0)
 
-    return ddown_days
+    # Invert returns for short trades
+    if direction == 'Short':
+        combined_data_15y['No_Stop_Returns'] *= -1
+        combined_data_30y['No_Stop_Returns'] *= -1
 
-def filter_pdh_days(df):
-    """
-    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
-    and today's Low is greater than yesterday's Low).
+    # Initialize columns for stop-loss/optimal exit returns
+    combined_data_15y['Stop_Loss_Returns'] = pd.Series(dtype=float)
+    combined_data_30y['Stop_Loss_Returns'] = pd.Series(dtype=float)
 
-    Args:
-        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+    # Process each year in the 15-year data for stop-loss/exit strategy
+    for year in combined_data_15y['Date'].dt.year.unique():
+        yearly_data_15y = combined_data_15y[combined_data_15y['Date'].dt.year == year]
 
-    Returns:
-        pd.DataFrame: A dataframe filtered for PD-H days.
-    """
-    df_copy = df.copy()
+        # Apply stop-loss/exit for 15-year data slice
+        stop_loss_returns_15y = calculate_stop_loss_return(yearly_data_15y, optimal_results_15y, direction)
 
-    df_copy.loc[:, 'PD_H'] = (df_copy['High'] >= df_copy['High'].shift(1)) & (df_copy['Low'] > df_copy['Low'].shift(1))
-    # Filter for PD-H days
-    pdh_days = df_copy.loc[df_copy['PD_H']].copy()
-
-    return pdh_days
-
-
-def filter_pdl_days(df):
-    """
-    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
-    and today's Low is greater than yesterday's Low).
-
-    Args:
-        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
-
-    Returns:
-        pd.DataFrame: A dataframe filtered for PD-H days.
-    """
-    df_copy = df.copy()
-
-    df_copy.loc[:, 'PD_L'] = (df_copy['Low'] <= df_copy['Low'].shift(1)) & (df_copy['High'] < df_copy['High'].shift(1))
-    # Filter for PD-L days
-    pdl_days = df_copy.loc[df_copy['PD_L']].copy()
-
-    return pdl_days
-
-def filter_pdhl_days(df):
-    """
-    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
-    and today's Low is greater than yesterday's Low).
-
-    Args:
-        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
-
-    Returns:
-        pd.DataFrame: A dataframe filtered for PD-H days.
-    """
-    df_copy = df.copy()
-
-    df_copy.loc[:, 'PD_HL'] = (df_copy['Low'] <= df_copy['Low'].shift(1)) & (df_copy['High'] >= df_copy['High'].shift(1))
-    # Filter for PD-HL days
-    pdhl_days = df_copy.loc[df_copy['PD_HL']].copy()
-
-    return pdhl_days
-
-
-def create_distributions(day_data):
-    distributions = {}
-    open_high_col = f"Open_High_Pct_Change"
-    open_low_col = f"Open_Low_Pct_Change"
-    open_close_col = f"Open_Close_Pct_Change"
-
-    # Calculate distributions for each metric
-    for key, col in zip(['open_high', 'open_low', 'open_close'], [open_high_col, open_low_col, open_close_col]):
-        metric_data = day_data[col].dropna()
-        mean_metric = metric_data.mean()
-        std_metric = metric_data.std()
-
-        plus_one_std = mean_metric + std_metric
-        plus_two_std = mean_metric + 2 * std_metric
-        minus_one_std = mean_metric - std_metric
-        minus_two_std = mean_metric - 2 * std_metric
-
-        # Create histogram with std lines
-        distributions[key] = go.Figure(data=[go.Histogram(x=metric_data, nbinsx=50)])
-
-        if key == 'open_high':
-
-            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
-            add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
-
-            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
-            add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
-
-        elif key == 'open_low':
-            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
-            add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
-
-            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="Salmon")
-            add_distribution_annotation(distributions[key], minus_two_std, "Salmon")
-
+        # Ensure lengths match
+        if len(stop_loss_returns_15y) == len(yearly_data_15y):
+            # Align indices and store stop-loss/exit returns
+            combined_data_15y.loc[yearly_data_15y.index, 'Stop_Loss_Returns'] = stop_loss_returns_15y.values
         else:
-            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
-            add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
+            print(
+                f"Warning: Mismatch in lengths for year {year}. Yearly data length: {len(yearly_data_15y)}, Stop-loss return length: {len(stop_loss_returns_15y)}")
 
-            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
-            add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
+    # Process each year in the 30-year data for stop-loss/exit strategy
+    for year in combined_data_30y['Date'].dt.year.unique():
+        yearly_data_30y = combined_data_30y[combined_data_30y['Date'].dt.year == year]
 
-            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="Salmon")
-            add_distribution_annotation(distributions[key], minus_two_std, "Salmon")
+        # Apply stop-loss/exit for 30-year data slice
+        stop_loss_returns_30y = calculate_stop_loss_return(yearly_data_30y, optimal_results_30y, direction)
 
-            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
-            add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
+        # Ensure lengths match
+        if len(stop_loss_returns_30y) == len(yearly_data_30y):
+            # Align indices and store stop-loss/exit returns
+            combined_data_30y.loc[yearly_data_30y.index, 'Stop_Loss_Returns'] = stop_loss_returns_30y.values
+        else:
+            print(
+                f"Warning: Mismatch in lengths for year {year}. Yearly data length: {len(yearly_data_30y)}, Stop-loss return length: {len(stop_loss_returns_30y)}")
+    # Invert returns for short trades
+    # if direction == 'Short':
+    #    combined_data_15y['Stop_Loss_Returns'] *= -1
+    #    combined_data_30y['Stop_Loss_Returns'] *= -1
 
+    # Calculate cumulative returns for both no stop-loss and with stop-loss/optimal exit strategies
+    combined_data_15y['Cumulative_No_Stop'] = combined_data_15y['No_Stop_Returns'].cumsum()
+    combined_data_15y['Cumulative_Stop_Loss'] = combined_data_15y['Stop_Loss_Returns'].cumsum()
 
-        # Update layout for styling
-        distributions[key].update_layout(
-            xaxis_title=f"{col.replace('_Pct_Change', '').replace('_', ' ')} % Change",
-            yaxis_title='Frequency',
-            plot_bgcolor='#1e1e1e',
-            paper_bgcolor='#1e1e1e',
-            font=dict(color='white', family="'Press Start 2P', monospace"),
-            bargap=0.1
-        )
+    combined_data_30y['Cumulative_No_Stop'] = combined_data_30y['No_Stop_Returns'].cumsum()
+    combined_data_30y['Cumulative_Stop_Loss'] = combined_data_30y['Stop_Loss_Returns'].cumsum()
 
-    return distributions
+    # Plotting for the 15-year data
+    fig_15y = go.Figure()
+    fig_15y.add_trace(
+        go.Scatter(x=combined_data_15y['Date'], y=combined_data_15y['Cumulative_No_Stop'], mode='lines',
+                   name='No Stop-Loss (15 Years)')
+    )
+    fig_15y.add_trace(
+        go.Scatter(x=combined_data_15y['Date'], y=combined_data_15y['Cumulative_Stop_Loss'], mode='lines',
+                   name='With Stop-Loss/Optimal Exit (15 Years)')
+    )
 
-from sklearn.cluster import KMeans
-import numpy as np
-import plotly.graph_objects as go
+    # Plotting for the 30-year data
+    fig_30y = go.Figure()
+    fig_30y.add_trace(
+        go.Scatter(x=combined_data_30y['Date'], y=combined_data_30y['Cumulative_No_Stop'], mode='lines',
+                   name='No Stop-Loss (30 Years)')
+    )
+    fig_30y.add_trace(
+        go.Scatter(x=combined_data_30y['Date'], y=combined_data_30y['Cumulative_Stop_Loss'], mode='lines',
+                   name='With Stop-Loss/Optimal Exit (30 Years)')
+    )
 
-def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None, expected_return=None, n_clusters=3):
+    # For 15-year chart
+    update_cumulative_chart_layout(fig_15y, 'Cumulative Returns Over 15 Years')
+
+    # For 30-year chart
+    update_cumulative_chart_layout(fig_30y, 'Cumulative Returns Over 30 Years')
+
+    # Return the necessary data for plotting
+    return (fig_15y, fig_30y,
+            combined_data_15y['No_Stop_Returns'], combined_data_30y['No_Stop_Returns'],
+            combined_data_15y['Stop_Loss_Returns'], combined_data_30y['Stop_Loss_Returns'],
+            combined_data_15y['Cumulative_No_Stop'], combined_data_15y['Cumulative_Stop_Loss'],  # Cumulative returns
+            combined_data_30y['Cumulative_No_Stop'], combined_data_30y['Cumulative_Stop_Loss']  # Cumulative returns
+            )
+
+def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None, expected_return=None, add_distribution_annotations=True, n_clusters=3):
     """
     Create scatter plots with clustering for better visualization.
 
@@ -1181,7 +1094,7 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
     )
 
     # Add optimal stop-loss level as a vertical line
-    if best_stop_loss_level is not None:
+    if best_stop_loss_level is not None and add_distribution_annotations:
         scatter_1.add_vline(
             x=best_stop_loss_level,
             line_dash="dash",
@@ -1221,7 +1134,7 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
     )
 
     # Add optimal stop-loss and exit levels as lines for Scatter Plot 2
-    if best_stop_loss_level is not None and best_exit_level is not None:
+    if best_stop_loss_level is not None and best_exit_level is not None and add_distribution_annotations:
         scatter_2.add_vline(
             x=best_stop_loss_level,
             line_dash="dash",
@@ -1396,42 +1309,115 @@ def create_high_low_vs_prev_distribution(day_data, day_type="pdh"):
         return fig_high, fig_low
 
 
-def add_std_lines(fig, data, title="", day_type='pdh'):
+def create_distributions(day_data):
+    distributions = {}
+    open_high_col = f"Open_High_Pct_Change"
+    open_low_col = f"Open_Low_Pct_Change"
+    open_close_col = f"Open_Close_Pct_Change"
+
+    # Calculate distributions for each metric
+    for key, col in zip(['open_high', 'open_low', 'open_close'], [open_high_col, open_low_col, open_close_col]):
+        metric_data = day_data[col].dropna()
+        mean_metric = metric_data.mean()
+        std_metric = metric_data.std()
+
+        plus_one_std = mean_metric + std_metric
+        plus_two_std = mean_metric + 2 * std_metric
+        minus_one_std = mean_metric - std_metric
+        minus_two_std = mean_metric - 2 * std_metric
+
+        # Create histogram with std lines
+        distributions[key] = go.Figure(data=[go.Histogram(x=metric_data, nbinsx=50)])
+
+        if key == 'open_high':
+
+            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
+
+            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
+
+        elif key == 'open_low':
+            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
+
+            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], minus_two_std, "Salmon")
+
+        else:
+            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
+
+            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
+
+            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], minus_two_std, "Salmon")
+
+            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
+
+
+        # Update layout for styling
+        distributions[key].update_layout(
+            xaxis_title=f"{col.replace('_Pct_Change', '').replace('_', ' ')} % Change",
+            yaxis_title='Frequency',
+            plot_bgcolor='#1e1e1e',
+            paper_bgcolor='#1e1e1e',
+            font=dict(color='white', family="'Press Start 2P', monospace"),
+            bargap=0.1
+        )
+
+    return distributions
+
+
+def create_distribution_chart(yearly_data, title="Distribution of Returns"):
     """
-    Add standard deviation lines to a given figure.
+    Create a distribution chart for the returns over a given range of years using Plotly's default binning.
 
     Args:
-        fig (go.Figure): The plotly figure to update.
-        data (pd.Series): Data to calculate mean and standard deviation.
-        title (str): Title for the figure.
-        day_type (str): Type of day for analysis - 'pdh', 'pdl', or 'pdhl'.
-    """
-    mean_val = data.mean()
-    std_val = data.std()
+        yearly_data (list[dict]): List of dictionaries containing yearly analysis data.
 
-    if day_type == 'pdh':
-        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, mean_val + std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, mean_val + 2 * std_val, "Salmon")
-    elif day_type == 'pdl':
-        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, mean_val - std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, mean_val - 2 * std_val, "Salmon")
-    else:
-        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, mean_val - std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, mean_val + std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, mean_val - 2 * std_val, "Salmon")
-        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, mean_val + 2 * std_val, "Salmon")
+    Returns:
+        go.Figure: A Plotly figure representing the distribution of returns.
+    """
+    # Extract the percentage changes from the yearly data
+    returns = [res['Closing Percentage'] for res in yearly_data]
+
+    # Create a histogram to show the distribution of returns
+    fig = go.Figure()
+
+    fig.add_trace(go.Histogram(
+        x=returns,
+        # nbinsx=20, # Let Plotly decide on the best binning based on the data, but we can specify the number of bins.
+        marker_color='#4CAF50',
+        opacity=0.75
+    ))
 
     fig.update_layout(
         title=title,
-        xaxis_title='Percentage Change',
+        xaxis_title='Return (%)',
+        yaxis_title='Frequency',
+        plot_bgcolor='#1e1e1e',
+        paper_bgcolor='#1e1e1e',
+        font=dict(color='white', family="'Press Start 2P', monospace"),
+        bargap=0.1  # Adjusts the gap between bars for better visibility
+    )
+
+    return fig
+
+def create_optimal_distribution_chart(optimal_trades_results):
+    # Use the same approach as the existing distribution chart
+    fig = go.Figure()
+
+    fig.add_trace(go.Histogram(
+        x=optimal_trades_results,
+        marker_color='#FF5733',  # Use a different color for this chart
+        opacity=0.75
+    ))
+
+    fig.update_layout(
+        xaxis_title='Return (%)',
         yaxis_title='Frequency',
         plot_bgcolor='#1e1e1e',
         paper_bgcolor='#1e1e1e',
@@ -1439,6 +1425,144 @@ def add_std_lines(fig, data, title="", day_type='pdh'):
         bargap=0.1
     )
 
+    return fig
+
+def filter_dup_days(df):
+    """
+    Filters the dataframe to return only D-UP days (where today's Close is above or equal to today's Open)
+
+    Args:
+        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+
+    Returns:
+        pd.DataFrame: A dataframe filtered for D-UP days.
+    """
+    df_copy = df.copy()
+    df_copy.loc[:, 'D_UP'] = (df_copy['Close'] > df_copy['Open'])
+    # Filter for D_UP days
+    dup_days = df_copy.loc[df_copy['D_UP']].copy()
+
+    return dup_days
+
+
+def filter_ddown_days(df):
+    """
+    Filters the dataframe to return only D-UP days (where today's Close is above or equal to today's Open)
+
+    Args:
+        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+
+    Returns:
+        pd.DataFrame: A dataframe filtered for D-UP days.
+    """
+    df_copy = df.copy()
+    df_copy.loc[:, 'D_DOWN'] = (df_copy['Close'] < df_copy['Open'])
+    # Filter for D_DOWN days
+    ddown_days = df_copy.loc[df_copy['D_DOWN']].copy()
+
+    return ddown_days
+
+def filter_pdh_days(df):
+    """
+    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
+    and today's Low is greater than yesterday's Low).
+
+    Args:
+        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+
+    Returns:
+        pd.DataFrame: A dataframe filtered for PD-H days.
+    """
+    df_copy = df.copy()
+
+    df_copy.loc[:, 'PD_H'] = (df_copy['High'] >= df_copy['High'].shift(1)) & (df_copy['Low'] > df_copy['Low'].shift(1))
+    # Filter for PD-H days
+    pdh_days = df_copy.loc[df_copy['PD_H']].copy()
+
+    return pdh_days
+
+
+def filter_pdl_days(df):
+    """
+    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
+    and today's Low is greater than yesterday's Low).
+
+    Args:
+        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+
+    Returns:
+        pd.DataFrame: A dataframe filtered for PD-H days.
+    """
+    df_copy = df.copy()
+
+    df_copy.loc[:, 'PD_L'] = (df_copy['Low'] <= df_copy['Low'].shift(1)) & (df_copy['High'] < df_copy['High'].shift(1))
+    # Filter for PD-L days
+    pdl_days = df_copy.loc[df_copy['PD_L']].copy()
+
+    return pdl_days
+
+def filter_pdhl_days(df):
+    """
+    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
+    and today's Low is greater than yesterday's Low).
+
+    Args:
+        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+
+    Returns:
+        pd.DataFrame: A dataframe filtered for PD-H days.
+    """
+    df_copy = df.copy()
+
+    df_copy.loc[:, 'PD_HL'] = (df_copy['Low'] <= df_copy['Low'].shift(1)) & (df_copy['High'] >= df_copy['High'].shift(1))
+    # Filter for PD-HL days
+    pdhl_days = df_copy.loc[df_copy['PD_HL']].copy()
+
+    return pdhl_days
+
+
+def find_nearest_date(data, target_date, max_delta=3):
+    """
+    Find the nearest available date within a range of ±max_delta days from the target date.
+
+    Args:
+        data (pd.DataFrame): The OHLC data with a 'Date' column.
+        target_date (str): The target date in "YYYY-MM-DD" format.
+        max_delta (int): The maximum number of days to search before or after the target date.
+
+    Returns:
+        pd.Series or None: The row with the nearest date found, or None if no data is found within the range.
+    """
+    target_date = pd.to_datetime(target_date)
+
+    # Search within the given range (±max_delta days)
+    for delta in range(max_delta + 1):
+        # Try going backward and forward from the target date
+        for sign in [-1, 1]:
+            search_date = target_date + timedelta(days=sign * delta)
+            nearest_data = data[data['Date'] == search_date]
+
+            if not nearest_data.empty:
+                return nearest_data.iloc[0]  # Return the first matching row
+
+    return None  # No matching data found within the range
+
+
+def get_market_by_index(index, market_tickers):
+    """
+    Retrieve the market name by its index in the original order.
+
+    Args:
+        index (int): The index of the market.
+        market_tickers (dict): The dictionary of market tickers.
+
+    Returns:
+        str: The market name corresponding to the given index.
+    """
+    markets = list(market_tickers.keys())  # Keep the original order from config.py
+    if 0 <= index < len(markets):
+        return markets[index]
+    return DEFAULT_MARKET  # Default market if index is out of bounds
 
 def optimize_stop_loss_open_to_close(day_data, direction="Long"):
     """
@@ -1569,23 +1693,6 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
     return best_exit_level, expected_return
 
 
-# Function to get the market name based on its index
-def get_market_by_index(index, market_tickers):
-    """
-    Retrieve the market name by its index in the original order.
-
-    Args:
-        index (int): The index of the market.
-        market_tickers (dict): The dictionary of market tickers.
-
-    Returns:
-        str: The market name corresponding to the given index.
-    """
-    markets = list(market_tickers.keys())  # Keep the original order from config.py
-    if 0 <= index < len(markets):
-        return markets[index]
-    return DEFAULT_MARKET  # Default market if index is out of bounds
-
 def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     """
     Perform analysis on OHLC data for a given market, start/end date range, and direction (Long/Short),
@@ -1667,14 +1774,22 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     dup_best_stop_loss_level = optimize_stop_loss_open_to_close(dup_days_all_years, direction)
     dup_best_exit_level, dup_expected_return = optimize_stop_loss_and_exit(dup_days_all_years, dup_best_stop_loss_level, direction)
     dup_distributions = create_distributions(dup_days_all_years)
-    dup_scatters = create_scatter_plots(dup_days_all_years, direction, dup_best_stop_loss_level, dup_best_exit_level, dup_expected_return)
+    if direction == 'Short':
+        dup_scatters = create_scatter_plots(dup_days_all_years, direction, dup_best_stop_loss_level,
+                                            dup_best_exit_level, dup_expected_return, add_distribution_annotations=False)
+    else:
+        dup_scatters = create_scatter_plots(dup_days_all_years, direction, dup_best_stop_loss_level,
+                                            dup_best_exit_level, dup_expected_return)
     dup_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(dup_days_all_years, day_type='pdh')
 
     # D-DOWN Analysis
     ddown_best_stop_loss_level = optimize_stop_loss_open_to_close(ddown_days_all_years, direction)
     ddown_best_exit_level, ddown_expected_return = optimize_stop_loss_and_exit(ddown_days_all_years, ddown_best_stop_loss_level, direction)
     ddown_distributions = create_distributions(ddown_days_all_years)
-    ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level, ddown_expected_return)
+    if direction == 'Long':
+        ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level, ddown_expected_return, add_distribution_annotations=False)
+    else:
+        ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level, ddown_expected_return)
     ddown_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(ddown_days_all_years, day_type='pdh')
 
     # PD-H Analysis
@@ -1763,259 +1878,169 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     }
 
 
-def calculate_max_drawdown(df, open_price, close_price, direction):
+def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month, end_day, optimal_results, direction):
     """
-    Calculate the maximum drawdown in points and percentage.
-    """
-    if direction == 'Long':
-        # Convert 'Low' column to numeric and find the minimum price
-        min_price = pd.to_numeric(df['Low'], errors='coerce').min()
-        drawdown_points = open_price - min_price
-    else:
-        # Convert 'High' column to numeric and find the maximum price
-        max_price = pd.to_numeric(df['High'], errors='coerce').max()
-        drawdown_points = max_price - open_price
-
-    # Ensure open_price is numeric
-    open_price = pd.to_numeric(open_price, errors='coerce')
-
-    drawdown_percentage = (drawdown_points / open_price) * 100
-    return {'points': drawdown_points, 'percentage': drawdown_percentage}
-
-def calculate_max_gain(df, open_price, close_price, direction):
-    """
-    Calculate the maximum gain in points and percentage.
-    """
-    if direction == 'Long':
-        # Convert 'High' column to numeric and find the maximum price
-        max_price = pd.to_numeric(df['High'], errors='coerce').max()
-        gain_points = max_price - open_price
-    else:
-        # Convert 'Low' column to numeric and find the minimum price
-        min_price = pd.to_numeric(df['Low'], errors='coerce').min()
-        gain_points = open_price - min_price
-
-    # Ensure open_price is numeric
-    open_price = pd.to_numeric(open_price, errors='coerce')
-
-    gain_percentage = (gain_points / open_price) * 100
-    return {'points': gain_points, 'percentage': gain_percentage}
-
-def calculate_optimal_exit_and_stop_loss(analysis_results):
-    """
-    Calculate the optimal stop loss and exit based on historical max drawdowns and gains.
+    Simulates trades with stop-loss and exit strategy applied, using the optimal results.
     Args:
-        analysis_results (list): List of yearly analysis results with max drawdown and max gain values.
+        analysis_results (list): Yearly analysis results.
+        ohlc_data (pd.DataFrame): OHLC data for the market.
+        start_month, start_day, end_month, end_day (int): Date range for the analysis.
+        optimal_results (dict): Optimal stop-loss and exit strategy values.
+        direction (str): Direction of the trade ('Long' or 'Short').
     Returns:
-        dict: A dictionary containing the optimal stop loss, optimal exit, win rate, and points gained.
+        list: List of simulated trade results with stop-loss and exit applied.
     """
-    total_years = len(analysis_results)
-    if total_years == 0:
-        return {
-            'optimal_stop_loss': 0,
-            'optimal_exit': 0,
-            'win_rate': 0,
-            'points_gained': 0
-        }
 
-    # Determine the maximum observed drawdown and gain across all years
-    max_observed_drawdown = max(result['Max Drawdown (%)'] for result in analysis_results)
-    max_observed_gain = max(result['Max Gain (%)'] for result in analysis_results)
+    # Initialize list to store results
+    optimal_trades_results = []
 
-    # Stop loss and exit thresholds to test (1% through max observed drawdown/gain)
-    stop_loss_thresholds = [i for i in range(1, int(max_observed_drawdown) + 1)]
-    exit_thresholds = [i for i in range(1, int(max_observed_gain) + 1)]
+    # Iterate through the analysis results
+    for result in analysis_results:
+        year = result['Year']
 
-    # Store results for each stop loss and exit combination
-    best_combination = {
-        'stop_loss': None,
-        'exit': None,
-        'win_rate': 0,
-        'points_gained': float('-inf')
-    }
-
-    # Iterate over stop loss thresholds
-    for stop_loss in stop_loss_thresholds:
-        # Iterate over exit thresholds
-        for exit_level in exit_thresholds:
-            wins = 0
-            total_points = 0
-
-            # Simulate each year with the given stop loss and exit combination
-            for result in analysis_results:
-                max_drawdown = result['Max Drawdown (%)']
-                max_drawdown_points = result['Max Drawdown (Points)']
-                max_gain = result['Max Gain (%)']
-                max_gain_points = result['Max Gain (Points)']
-                closing_points = result['Closing Points']
-
-                # Apply stop loss (percentage-based)
-                if max_drawdown >= stop_loss:
-                    # Loss proportional to the stop loss in points
-                    total_points += (-stop_loss / max_drawdown) * max_drawdown_points
-                elif max_gain >= exit_level:
-                    # Gain proportional to the exit level in points
-                    total_points += (exit_level / max_gain) * max_gain_points
-                    wins += 1  # Count this as a win because the exit level was hit
-                elif closing_points > 0:
-                    # Positive closing points mean a win
-                    total_points += closing_points
-                    wins += 1  # Count this as a win because closing points are positive
-                else:
-                    # Negative closing points, take the loss
-                    total_points += closing_points
-
-            # Calculate win rate for this stop loss and exit level
-            win_rate = (wins / total_years) * 100
-
-            # If this combination yields better points, update the best combination
-            if total_points > best_combination['points_gained']:
-                best_combination = {
-                    'stop_loss': stop_loss,
-                    'exit': exit_level,
-                    'win_rate': win_rate,
-                    'points_gained': total_points
-                }
+        # Fetch the 'Open' and 'Close' prices from the original OHLC data for the year
+        start_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
+                                       f"{year}-{start_month:02d}-{start_day:02d}")
+        end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
+                                     f"{year}-{end_month:02d}-{end_day:02d}")
 
 
-    # Return the best combination of stop loss and exit
-    return {
-        'optimal_stop_loss': best_combination['stop_loss'],
-        'optimal_exit': best_combination['exit'],
-        'win_rate': best_combination['win_rate'],
-        'points_gained': round(best_combination['points_gained'],4)
-    }
+        if start_data is None or end_data is None:
+            # Skip if no valid start or end data for the year
+            continue
 
-def calculate_summary_statistics(analysis_results):
-    total_years = len(analysis_results)
-    if total_years == 0:
-        return {
-            'win_rate': 0,
-            'total_points_gained': 0,
-            'total_percent_gained': 0,
-            'optimal_stop_loss': 0,
-            'optimal_exit': 0,
-            'optimal_win_rate' : 0,
-            'optimal_points_gained': 0,
-        }
+        open_price = pd.to_numeric(start_data['Open'], errors='coerce')
+        close_price = pd.to_numeric(end_data['Close'], errors='coerce')
 
+        if pd.isnull(open_price) or pd.isnull(close_price):
+            # Skip if the conversion to numeric failed
+            continue
 
-    # Filter wins and losses
-    wins = [result for result in analysis_results if result['Closing Points'] > 0]
-    losses = [result for result in analysis_results if result['Closing Points'] <= 0]
+        max_drawdown = result['Max Drawdown (%)']
+        max_gain = result['Max Gain (%)']
 
-    # Calculate win rate
-    win_rate = (len(wins) / total_years) * 100
+        # Ensure optimal stop-loss and exit are not None
+        stop_loss_threshold = optimal_results.get('optimal_stop_loss')
+        exit_threshold = optimal_results.get('optimal_exit')
 
-    # Calculate total points and percent gained
-    total_points_gained = sum(result['Closing Points'] for result in wins)
-    total_percent_gained = sum(result['Closing Percentage'] for result in wins)
+        if stop_loss_threshold is None or exit_threshold is None:
+            # If stop loss or exit is missing, skip the year
+            continue
 
-    # Calculate optimal stop loss and exit
-    max_drawdowns = [result['Max Drawdown (Points)'] for result in analysis_results]
-    max_profits = [result['Max Gain (Points)'] for result in analysis_results]
+        if max_drawdown >= stop_loss_threshold:
+            # If the stop loss is hit, calculate the loss
+            points_change = -stop_loss_threshold * open_price / 100
+        elif max_gain >= exit_threshold:
+            # If the exit is hit, calculate the gain
+            points_change = exit_threshold * open_price / 100
+        else:
+            # If neither stop loss nor exit is hit, calculate the normal close-to-open change
+            if direction == 'Long':
+                points_change = close_price - open_price
+            else:
+                points_change = open_price - close_price
 
-    # optimal_stop_loss = round(sum(max_drawdowns) / total_years, 4)
-    # optimal_exit = round(sum(max_profits) / total_years,4)
+        percentage_change = (points_change / open_price) * 100
 
-    optimal_calculations = calculate_optimal_exit_and_stop_loss(analysis_results)
+        # Append the result
+        optimal_trades_results.append({
+            'Year': year,
+            'Max Drawdown (Points)': result['Max Drawdown (Points)'],
+            'Max Drawdown (%)': result['Max Drawdown (%)'],
+            'Max Gain (Points)': result['Max Gain (Points)'],
+            'Max Gain (%)': result['Max Gain (%)'],
+            'Closing Points': round(points_change, 4),
+            'Closing Percentage': round(percentage_change, 1)
+        })
 
-    return {
-        'win_rate': win_rate,
-        'total_points_gained': round(total_points_gained,4),
-        'total_percent_gained': total_percent_gained,
-        'optimal_stop_loss': optimal_calculations['optimal_stop_loss'],
-        'optimal_exit': optimal_calculations['optimal_exit'],
-        'optimal_win_rate': optimal_calculations['win_rate'],
-        'optimal_points_gained': optimal_calculations['points_gained']
-    }
+    return optimal_trades_results
 
 
-def create_distribution_chart(yearly_data, title="Distribution of Returns"):
+def update_cumulative_chart_layout(fig, title):
     """
-    Create a distribution chart for the returns over a given range of years using Plotly's default binning.
-
+    Update the layout of a cumulative return chart to match the style of the distribution charts.
     Args:
-        yearly_data (list[dict]): List of dictionaries containing yearly analysis data.
-
-    Returns:
-        go.Figure: A Plotly figure representing the distribution of returns.
+        fig: The Plotly figure object.
+        title: The title for the chart.
     """
-    # Extract the percentage changes from the yearly data
-    returns = [res['Closing Percentage'] for res in yearly_data]
-
-    # Create a histogram to show the distribution of returns
-    fig = go.Figure()
-
-    fig.add_trace(go.Histogram(
-        x=returns,
-        # nbinsx=20, # Let Plotly decide on the best binning based on the data, but we can specify the number of bins.
-        marker_color='#4CAF50',
-        opacity=0.75
-    ))
-
     fig.update_layout(
         title=title,
-        xaxis_title='Return (%)',
-        yaxis_title='Frequency',
-        plot_bgcolor='#1e1e1e',
-        paper_bgcolor='#1e1e1e',
-        font=dict(color='white', family="'Press Start 2P', monospace"),
-        bargap=0.1  # Adjusts the gap between bars for better visibility
+        xaxis_title='Date',
+        yaxis_title='Cumulative Return (%)',
+        plot_bgcolor='#1e1e1e',  # Same dark background as distribution charts
+        paper_bgcolor='#1e1e1e',  # Same dark paper background
+        font=dict(
+            color='white',  # White text color
+            family="'Press Start 2P', monospace"  # Same font as distribution charts
+        ),
+        legend=dict(
+            orientation="h",  # Horizontal legend
+            yanchor="bottom",
+            y=1.02,  # Adjust position
+            xanchor="right",
+            x=1,
+            font=dict(size=10)
+        ),
+        hovermode='x unified',  # Unified hover mode
+        hoverlabel=dict(
+            font=dict(family="'Press Start 2P', monospace"),
+            bgcolor='#1e1e1e',
+            bordercolor='white',
+            font_color='white'
+        ),
+        xaxis=dict(
+            showgrid=False  # Remove vertical grid lines
+        ),
+        yaxis=dict(
+            showgrid=True,  # Keep horizontal grid lines
+            zeroline=False  # Optionally remove the zero line if you don't need it
+        )
     )
 
-    return fig
-
-def create_optimal_distribution_chart(optimal_trades_results):
-    # Use the same approach as the existing distribution chart
-    fig = go.Figure()
-
-    fig.add_trace(go.Histogram(
-        x=optimal_trades_results,
-        marker_color='#FF5733',  # Use a different color for this chart
-        opacity=0.75
-    ))
-
-    fig.update_layout(
-        xaxis_title='Return (%)',
-        yaxis_title='Frequency',
-        plot_bgcolor='#1e1e1e',
-        paper_bgcolor='#1e1e1e',
-        font=dict(color='white', family="'Press Start 2P', monospace"),
-        bargap=0.1
-    )
-
-    return fig
 
 
-def add_distribution_annotation(key, std, color, direction="Vertical"):
 
-    if direction == "Vertical":
-        key.add_annotation(
-            x=std,  # Position along the x-axis
-            y=1,  # Position at the top of the plot area
-            yref='paper',  # Use plot area for y positioning
-            text=f"{round(std, 2)}",  # Annotation text
-            showarrow=False,
-            textangle=-45,  # Rotate text to make it vertical
-            font=dict(color=color, size=9),  # Same color as the line
-            xanchor="center",  # Center text horizontally on the line
-            yanchor="bottom"  # Align the text at the bottom of the plot area
-        )
-    else:
-        key.add_annotation(
-            x=1,  # Position along the x-axis
-            y=std,
-            xref='paper',  # Use plot area for y positioning
-            text=f"{round(std, 2)}",  # Annotation text
-            showarrow=False,
-            textangle=0,  # Rotate text to make it vertical
-            font=dict(color=color, size=9),  # Same color as the line
-            xanchor="center",  # Center text horizontally on the line
-            yanchor="bottom"  # Align the text at the bottom of the plot area
-        )
 
-    return key
+
+
+
+def update_risk_metrics_summary(risk_metrics, color):
+    """
+    Format the risk metrics with the given color.
+    Args:
+        risk_metrics: A dictionary containing risk metrics.
+        color: The color for styling the text.
+    Returns:
+        A formatted HTML string with colored metrics.
+    """
+    return html.Div([
+        html.P(f"Sharpe Ratio: {risk_metrics['Sharpe Ratio']:.2f}, "
+               f"Sortino Ratio: {risk_metrics['Sortino Ratio']:.2f},"
+               f" Max Drawdown: {risk_metrics['Max Drawdown']:.2f}%, "
+               f"Calmar Ratio: {risk_metrics['Calmar Ratio']:.4f}, "
+               f"Volatility: {risk_metrics['Volatility']:.2f}%, "
+               f"Expected Return: {risk_metrics['Annualized Expected Return']:.2f}%", style={'color': color})
+    ])
+
+
+
+
+
+
+
+
+# Function to get the market name based on its index
+
+
+
+
+
+
+
+
+
+
+
 
 def register_callbacks(app):
 
