@@ -45,8 +45,8 @@ COLORS = {
 # Define color scheme for seasonality traces
 # Must match with styles.css #years-checklist
 SEASONALITY_COLORS = {
-    15: '#FF7F0E',  # Color for 15 Years
-    35: '#1F77B4'   # Color for 35 Years
+    15: 'CornFlowerBlue',  # Color for 15 Years
+    35: 'Salmon'   # Color for 35 Years
 }
 
 # Create a dictionary to map market names to the first part of their ticker
@@ -156,29 +156,39 @@ def add_std_lines(fig, data, title="", day_type='pdh'):
     mean_val = data.mean()
     std_val = data.std()
 
+    #I remove mean_val as results are skewed on one side of the axis for example for PDH days current H is always Higher than PDH
     if day_type == 'pdh':
-        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, mean_val + std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, mean_val + 2 * std_val, "Salmon")
+        fig.add_vline(x=std_val, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, std_val, "CornflowerBlue")
+        fig.add_vline(x=2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, 2 * std_val, "Salmon")
     elif day_type == 'pdl':
-        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, mean_val - std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, mean_val - 2 * std_val, "Salmon")
+        fig.add_vline(x=-std_val, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, -std_val, "CornflowerBlue")
+        fig.add_vline(x=-2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, -2 * std_val, "Salmon")
+    elif day_type == 'dup' or day_type == 'ddown':
+        fig.add_vline(x=mean_val-std_val, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, mean_val-std_val, "CornflowerBlue")
+        fig.add_vline(x=mean_val+std_val, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, mean_val+std_val, "CornflowerBlue")
+        fig.add_vline(x=mean_val-2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, mean_val-2 * std_val, "Salmon")
+        fig.add_vline(x=mean_val+2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, mean_val+2 * std_val, "Salmon")
     else:
-        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, mean_val - std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, mean_val + std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, mean_val - 2 * std_val, "Salmon")
-        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, mean_val + 2 * std_val, "Salmon")
+        fig.add_vline(x=-std_val, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, -std_val, "CornflowerBlue")
+        fig.add_vline(x=std_val, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, std_val, "CornflowerBlue")
+        fig.add_vline(x=-2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, -2 * std_val, "Salmon")
+        fig.add_vline(x=2 * std_val, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, 2 * std_val, "Salmon")
 
     fig.update_layout(
-        title=title,
-        xaxis_title='Percentage Change',
+        # title=title,
+        xaxis_title=title,
         yaxis_title='Frequency',
         plot_bgcolor='#1e1e1e',
         paper_bgcolor='#1e1e1e',
@@ -647,99 +657,84 @@ def compute_day_trading_stats(df):
                - Weekday extended stats
     """
     total_days = len(df)
-    d_up = (df['Close'] > df['Open']).sum()
-    d_down = (df['Close'] < df['Open']).sum()
-
-    pd_h = ((df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1))).sum()
-    pd_l = ((df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1))).sum()
-    pd_hl = ((df['High'] >= df['High'].shift(1)) & (df['Low'] <= df['Low'].shift(1))).sum()
-    pd_nhl = ((df['High'] < df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1))).sum()
 
     # Overall regular stats
     stats = {
         'Total Days': total_days,
-        'D UP': d_up,
-        'D UP %': round((d_up / total_days) * 100, 2),
-        'D DN': d_down,
-        'D DN %': round((d_down / total_days) * 100, 2),
-        'PD-H': pd_h,
-        'PD-H %': round((pd_h / total_days) * 100, 2),
-        'PD-L': pd_l,
-        'PD-L %': round((pd_l / total_days) * 100, 2),
-        'PD-HL': pd_hl,
-        'PD-HL %': round((pd_hl / total_days) * 100, 2),
-        'PD-nHL': pd_nhl,
-        'PD-nHL %': round((pd_nhl / total_days) * 100, 2)
+        'D UP': (df['Close'] > df['Open']).sum(),
+        'D UP %': round((df['Close'] > df['Open']).sum() / total_days * 100, 2),
+        'D DN': (df['Close'] < df['Open']).sum(),
+        'D DN %': round((df['Close'] < df['Open']).sum() / total_days * 100, 2),
+        'PD-H': (df['Day_Type_1'] == 'PD-H').sum(),
+        'PD-H %': round((df['Day_Type_1'] == 'PD-H').sum() / total_days * 100, 2),
+        'PD-L': (df['Day_Type_1'] == 'PD-L').sum(),
+        'PD-L %': round((df['Day_Type_1'] == 'PD-L').sum() / total_days * 100, 2),
+        'PD-HL': (df['Day_Type_1'] == 'PD-HL').sum(),
+        'PD-HL %': round((df['Day_Type_1'] == 'PD-HL').sum() / total_days * 100, 2),
+        'PD-nHL': (df['Day_Type_1'] == 'PD-nHL').sum(),
+        'PD-nHL %': round((df['Day_Type_1'] == 'PD-nHL').sum() / total_days * 100, 2),
     }
 
     # Overall extended stats
-    capd_h = ((df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1)) & (df['Close'] > df['High'].shift(1))).sum()
-    cbpd_l = ((df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1)) & (df['Close'] < df['Low'].shift(1))).sum()
-    capd_hl = ((df['High'] >= df['High'].shift(1)) & (df['Close'] > df['High'].shift(1)) & (df['Low'] <= df['Low'].shift(1))).sum()
-    cbpd_hl = ((df['Low'] <= df['Low'].shift(1)) & (df['Close'] < df['Low'].shift(1)) & (df['High'] >= df['High'].shift(1))).sum()
-    bisi = (df['Low'] > df['High'].shift(2)).sum()
-    sibi = (df['High'] < df['Low'].shift(2)).sum()
-
     stats_1 = {
         'Total Days': total_days,
-        'CaPD-H': capd_h,
-        'CaPD-H %': round((capd_h / total_days) * 100, 2) if pd_h != 0 else 0,
-        'CbPD-L': cbpd_l,
-        'CbPD-L %': round((cbpd_l / total_days) * 100, 2) if pd_l != 0 else 0,
-        'CaPD-HL': capd_hl,
-        'CaPD-HL %': round((capd_hl / total_days) * 100, 2) if pd_hl != 0 else 0,
-        'CbPD-HL': cbpd_hl,
-        'CbPD-HL %': round((cbpd_hl / total_days) * 100, 2) if pd_hl != 0 else 0,
-        'BISI': bisi,
-        'BISI %': round((bisi / total_days) * 100, 2),
-        'SIBI': sibi,
-        'SIBI %': round((sibi / total_days) * 100, 2)
+        'CaPD-H': (df['Day_Type_2'] == 'CaPD-H').sum(),
+        'CaPD-H %': round((df['Day_Type_2'] == 'CaPD-H').sum() / total_days * 100, 2),
+        'CbPD-L': (df['Day_Type_2'] == 'CbPD-L').sum(),
+        'CbPD-L %': round((df['Day_Type_2'] == 'CbPD-L').sum() / total_days * 100, 2),
+        'CaPD-HL': (df['Day_Type_2'] == 'CaPD-HL').sum(),
+        'CaPD-HL %': round((df['Day_Type_2'] == 'CaPD-HL').sum() / total_days * 100, 2),
+        'CbPD-HL': (df['Day_Type_2'] == 'CbPD-HL').sum(),
+        'CbPD-HL %': round((df['Day_Type_2'] == 'CbPD-HL').sum() / total_days * 100, 2),
+        'BISI': (df['Day_Type_2'] == 'BISI').sum(),
+        'BISI %': round((df['Day_Type_2'] == 'BISI').sum() / total_days * 100, 2),
+        'SIBI': (df['Day_Type_2'] == 'SIBI').sum(),
+        'SIBI %': round((df['Day_Type_2'] == 'SIBI').sum() / total_days * 100, 2),
     }
 
     # Compute stats grouped by weekday
-    df['Weekday'] = df['Date'].dt.day_name()
-
-    # Regular stats by weekday
     stats_weekdays = {}
+    stats_1_weekdays = {}
+
     for weekday, group in df.groupby('Weekday'):
         weekday_total = len(group)
+
+        # Regular stats by weekday
         stats_weekdays[weekday] = {
             'Total Days': weekday_total,
             'D UP': (group['Close'] > group['Open']).sum(),
             'D UP %': round((group['Close'] > group['Open']).sum() / weekday_total * 100, 2),
             'D DN': (group['Close'] < group['Open']).sum(),
             'D DN %': round((group['Close'] < group['Open']).sum() / weekday_total * 100, 2),
-            'PD-H': ((group['High'] >= group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1))).sum(),
-            'PD-H %': round(((group['High'] >= group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1))).sum() / weekday_total * 100, 2),
-            'PD-L': ((group['Low'] <= group['Low'].shift(1)) & (group['High'] < group['High'].shift(1))).sum(),
-            'PD-L %': round(((group['Low'] <= group['Low'].shift(1)) & (group['High'] < group['High'].shift(1))).sum() / weekday_total * 100, 2),
-            'PD-HL': ((group['High'] >= group['High'].shift(1)) & (group['Low'] <= group['Low'].shift(1))).sum(),
-            'PD-HL %': round(((group['High'] >= group['High'].shift(1)) & (group['Low'] <= group['Low'].shift(1))).sum() / weekday_total * 100, 2),
-            'PD-nHL': ((group['High'] < group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1))).sum(),
-            'PD-nHL %': round(((group['High'] < group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1))).sum() / weekday_total * 100, 2),
+            'PD-H': (group['Day_Type_1'] == 'PD-H').sum(),
+            'PD-H %': round((group['Day_Type_1'] == 'PD-H').sum() / weekday_total * 100, 2),
+            'PD-L': (group['Day_Type_1'] == 'PD-L').sum(),
+            'PD-L %': round((group['Day_Type_1'] == 'PD-L').sum() / weekday_total * 100, 2),
+            'PD-HL': (group['Day_Type_1'] == 'PD-HL').sum(),
+            'PD-HL %': round((group['Day_Type_1'] == 'PD-HL').sum() / weekday_total * 100, 2),
+            'PD-nHL': (group['Day_Type_1'] == 'PD-nHL').sum(),
+            'PD-nHL %': round((group['Day_Type_1'] == 'PD-nHL').sum() / weekday_total * 100, 2),
         }
 
-    # Extended stats by weekday
-    stats_1_weekdays = {}
-    for weekday, group in df.groupby('Weekday'):
-        weekday_total = len(group)
+        # Extended stats by weekday
         stats_1_weekdays[weekday] = {
             'Total Days': weekday_total,
-            'CaPD-H': ((group['High'] >= group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1)) & (group['Close'] > group['High'].shift(1))).sum(),
-            'CaPD-H %': round(((group['High'] >= group['High'].shift(1)) & (group['Low'] > group['Low'].shift(1)) & (group['Close'] > group['High'].shift(1))).sum() / weekday_total * 100, 2),
-            'CbPD-L': ((group['Low'] <= group['Low'].shift(1)) & (group['High'] < group['High'].shift(1)) & (group['Close'] < group['Low'].shift(1))).sum(),
-            'CbPD-L %': round(((group['Low'] <= group['Low'].shift(1)) & (group['High'] < group['High'].shift(1)) & (group['Close'] < group['Low'].shift(1))).sum() / weekday_total * 100, 2),
-            'CaPD-HL': ((group['High'] >= group['High'].shift(1)) & (group['Close'] > group['High'].shift(1)) & (group['Low'] <= group['Low'].shift(1))).sum(),
-            'CaPD-HL %': round(((group['High'] >= group['High'].shift(1)) & (group['Close'] > group['High'].shift(1)) & (group['Low'] <= group['Low'].shift(1))).sum() / weekday_total * 100, 2),
-            'CbPD-HL': ((group['Low'] <= group['Low'].shift(1)) & (group['Close'] < group['Low'].shift(1)) & (group['High'] >= group['High'].shift(1))).sum(),
-            'CbPD-HL %': round(((group['Low'] <= group['Low'].shift(1)) & (group['Close'] < group['Low'].shift(1)) & (group['High'] >= group['High'].shift(1))).sum() / weekday_total * 100, 2),
-            'BISI': (group['Low'] > group['High'].shift(2)).sum(),
-            'BISI %': round((group['Low'] > group['High'].shift(2)).sum() / weekday_total * 100, 2),
-            'SIBI': (group['High'] < group['Low'].shift(2)).sum(),
-            'SIBI %': round((group['High'] < group['Low'].shift(2)).sum() / weekday_total * 100, 2),
+            'CaPD-H': (group['Day_Type_2'] == 'CaPD-H').sum(),
+            'CaPD-H %': round((group['Day_Type_2'] == 'CaPD-H').sum() / weekday_total * 100, 2),
+            'CbPD-L': (group['Day_Type_2'] == 'CbPD-L').sum(),
+            'CbPD-L %': round((group['Day_Type_2'] == 'CbPD-L').sum() / weekday_total * 100, 2),
+            'CaPD-HL': (group['Day_Type_2'] == 'CaPD-HL').sum(),
+            'CaPD-HL %': round((group['Day_Type_2'] == 'CaPD-HL').sum() / weekday_total * 100, 2),
+            'CbPD-HL': (group['Day_Type_2'] == 'CbPD-HL').sum(),
+            'CbPD-HL %': round((group['Day_Type_2'] == 'CbPD-HL').sum() / weekday_total * 100, 2),
+            'BISI': (group['Day_Type_2'] == 'BISI').sum(),
+            'BISI %': round((group['Day_Type_2'] == 'BISI').sum() / weekday_total * 100, 2),
+            'SIBI': (group['Day_Type_2'] == 'SIBI').sum(),
+            'SIBI %': round((group['Day_Type_2'] == 'SIBI').sum() / weekday_total * 100, 2),
         }
 
     return stats, stats_1, stats_weekdays, stats_1_weekdays
+
 
 
 def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, group_by='year'):
@@ -987,22 +982,22 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
     fig_15y = go.Figure()
     fig_15y.add_trace(
         go.Scatter(x=combined_data_15y['Date'], y=combined_data_15y['Cumulative_No_Stop'], mode='lines',
-                   name='No Stop-Loss (15 Years)')
+                   name='No Stop-Loss (15 Years)', line=dict(color='CornflowerBlue'))
     )
     fig_15y.add_trace(
         go.Scatter(x=combined_data_15y['Date'], y=combined_data_15y['Cumulative_Stop_Loss'], mode='lines',
-                   name='With Stop-Loss/Optimal Exit (15 Years)')
+                   name='With Stop-Loss/Optimal Exit (15 Years)', line=dict(color='Salmon'))
     )
 
     # Plotting for the 30-year data
     fig_30y = go.Figure()
     fig_30y.add_trace(
         go.Scatter(x=combined_data_30y['Date'], y=combined_data_30y['Cumulative_No_Stop'], mode='lines',
-                   name='No Stop-Loss (30 Years)')
+                   name='No Stop-Loss (30 Years)', line=dict(color='CornflowerBlue'))
     )
     fig_30y.add_trace(
         go.Scatter(x=combined_data_30y['Date'], y=combined_data_30y['Cumulative_Stop_Loss'], mode='lines',
-                   name='With Stop-Loss/Optimal Exit (30 Years)')
+                   name='With Stop-Loss/Optimal Exit (30 Years)', line=dict(color='Salmon'))
     )
 
     # For 15-year chart
@@ -1072,7 +1067,7 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
 
         # Add layout settings
         fig.update_layout(
-            title=title,
+            # title=title,
             xaxis_title=xaxis_title,
             yaxis_title=yaxis_title,
             plot_bgcolor='#1e1e1e',
@@ -1278,42 +1273,54 @@ def create_high_low_vs_prev_distribution(day_data, day_type="pdh"):
     if day_type == "pdh":
         high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
         fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
-        add_std_lines(fig_high, high_pct_changes, title='PD-H: High vs Previous Day High', day_type=day_type)
+        add_std_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type=day_type)
         return fig_high
 
     elif day_type == "pdl":
         low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
         fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
-        add_std_lines(fig_low, low_pct_changes, title='PD-L: Low vs Previous Day Low', day_type=day_type)
+        add_std_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type=day_type)
         return fig_low
 
     elif day_type == "pdhl":
         high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
         fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
-        add_std_lines(fig_high, high_pct_changes, title='PD-HL: High vs Previous Day High', day_type='pdh')
+        add_std_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type='pdh')
 
         low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
         fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
-        add_std_lines(fig_low, low_pct_changes, title='PD-HL: Low vs Previous Day Low', day_type='pdl')
+        add_std_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type='pdl')
 
         return fig_high, fig_low
+
+    elif day_type == "dup" or day_type == "ddown":
+        high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
+        fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
+        add_std_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type=day_type)
+
+        low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
+        fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
+        add_std_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type=day_type)
+
+        return fig_high, fig_low
+
     else:
         high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
         fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
-        add_std_lines(fig_high, high_pct_changes, title='PD-HL: High vs Previous Day High', day_type=day_type)
+        add_std_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type=day_type)
 
         low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
         fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
-        add_std_lines(fig_low, low_pct_changes, title='PD-HL: Low vs Previous Day Low', day_type=day_type)
+        add_std_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type=day_type)
 
         return fig_high, fig_low
 
 
-def create_distributions(day_data):
+def create_distributions(day_data, day_type="None"):
     distributions = {}
-    open_high_col = f"Open_High_Pct_Change"
-    open_low_col = f"Open_Low_Pct_Change"
-    open_close_col = f"Open_Close_Pct_Change"
+    open_high_col = "Open_High_Pct_Change"
+    open_low_col = "Open_Low_Pct_Change"
+    open_close_col = "Open_Close_Pct_Change"
 
     # Calculate distributions for each metric
     for key, col in zip(['open_high', 'open_low', 'open_close'], [open_high_col, open_low_col, open_close_col]):
@@ -1321,29 +1328,47 @@ def create_distributions(day_data):
         mean_metric = metric_data.mean()
         std_metric = metric_data.std()
 
-        plus_one_std = mean_metric + std_metric
-        plus_two_std = mean_metric + 2 * std_metric
-        minus_one_std = mean_metric - std_metric
-        minus_two_std = mean_metric - 2 * std_metric
+        # Handle one-sided distributions
+        if key in ['open_high', 'open_low'] or day_type == 'dup' or day_type == 'ddown':
+            # Use only std deviations relative to zero
+            plus_one_std = std_metric
+            plus_two_std = 2 * std_metric
+            minus_one_std = -std_metric
+            minus_two_std = -2 * std_metric
+        else:
+            # Symmetric distributions use mean ± std
+            plus_one_std = mean_metric + std_metric
+            plus_two_std = mean_metric + 2 * std_metric
+            minus_one_std = mean_metric - std_metric
+            minus_two_std = mean_metric - 2 * std_metric
 
         # Create histogram with std lines
         distributions[key] = go.Figure(data=[go.Histogram(x=metric_data, nbinsx=50)])
 
         if key == 'open_high':
-
             distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
             add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
 
             distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
             add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
-
         elif key == 'open_low':
             distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
             add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
 
             distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="Salmon")
             add_distribution_annotation(distributions[key], minus_two_std, "Salmon")
+        elif day_type == 'dup':
+            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
 
+            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
+        elif day_type == 'ddown':
+            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
+
+            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], minus_two_std, "Salmon")
         else:
             distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
             add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
@@ -1357,7 +1382,6 @@ def create_distributions(day_data):
             distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
             add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
 
-
         # Update layout for styling
         distributions[key].update_layout(
             xaxis_title=f"{col.replace('_Pct_Change', '').replace('_', ' ')} % Change",
@@ -1369,6 +1393,7 @@ def create_distributions(day_data):
         )
 
     return distributions
+
 
 
 def create_distribution_chart(yearly_data, title="Distribution of Returns"):
@@ -1429,7 +1454,7 @@ def create_optimal_distribution_chart(optimal_trades_results):
 
 def filter_dup_days(df):
     """
-    Filters the dataframe to return only D-UP days (where today's Close is above or equal to today's Open)
+    Filters the dataframe to return only D-UP days (where today's Close is above or equal to today's Open).
 
     Args:
         df (pd.DataFrame): The input OHLC dataframe with percentage changes.
@@ -1437,88 +1462,62 @@ def filter_dup_days(df):
     Returns:
         pd.DataFrame: A dataframe filtered for D-UP days.
     """
-    df_copy = df.copy()
-    df_copy.loc[:, 'D_UP'] = (df_copy['Close'] > df_copy['Open'])
-    # Filter for D_UP days
-    dup_days = df_copy.loc[df_copy['D_UP']].copy()
-
-    return dup_days
+    # Filter for D-UP days directly
+    return df[df['Close'] > df['Open']].copy()
 
 
 def filter_ddown_days(df):
     """
-    Filters the dataframe to return only D-UP days (where today's Close is above or equal to today's Open)
+    Filters the dataframe to return only D-DOWN days (where today's Close is below today's Open).
 
     Args:
         df (pd.DataFrame): The input OHLC dataframe with percentage changes.
 
     Returns:
-        pd.DataFrame: A dataframe filtered for D-UP days.
+        pd.DataFrame: A dataframe filtered for D-DOWN days.
     """
-    df_copy = df.copy()
-    df_copy.loc[:, 'D_DOWN'] = (df_copy['Close'] < df_copy['Open'])
-    # Filter for D_DOWN days
-    ddown_days = df_copy.loc[df_copy['D_DOWN']].copy()
+    # Filter for D-DOWN days directly
+    return df[df['Close'] < df['Open']].copy()
 
-    return ddown_days
 
 def filter_pdh_days(df):
     """
-    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
-    and today's Low is greater than yesterday's Low).
+    Filters the dataframe to return only PD-H days based on the precomputed 'Day_Type_1' column.
 
     Args:
-        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+        df (pd.DataFrame): The input OHLC dataframe with precomputed 'Day_Type_1' column.
 
     Returns:
         pd.DataFrame: A dataframe filtered for PD-H days.
     """
-    df_copy = df.copy()
-
-    df_copy.loc[:, 'PD_H'] = (df_copy['High'] >= df_copy['High'].shift(1)) & (df_copy['Low'] > df_copy['Low'].shift(1))
-    # Filter for PD-H days
-    pdh_days = df_copy.loc[df_copy['PD_H']].copy()
-
-    return pdh_days
+    return df[df['Day_Type_1'] == 'PD-H'].copy()
 
 
 def filter_pdl_days(df):
     """
-    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
-    and today's Low is greater than yesterday's Low).
+    Filters the dataframe to return only PD-L days based on the precomputed 'Day_Type_1' column.
 
     Args:
-        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+        df (pd.DataFrame): The input OHLC dataframe with precomputed 'Day_Type_1' column.
 
     Returns:
-        pd.DataFrame: A dataframe filtered for PD-H days.
+        pd.DataFrame: A dataframe filtered for PD-L days.
     """
-    df_copy = df.copy()
+    return df[df['Day_Type_1'] == 'PD-L'].copy()
 
-    df_copy.loc[:, 'PD_L'] = (df_copy['Low'] <= df_copy['Low'].shift(1)) & (df_copy['High'] < df_copy['High'].shift(1))
-    # Filter for PD-L days
-    pdl_days = df_copy.loc[df_copy['PD_L']].copy()
-
-    return pdl_days
 
 def filter_pdhl_days(df):
     """
-    Filters the dataframe to return only PD-H days (where today's High is above or equal to yesterday's High
-    and today's Low is greater than yesterday's Low).
+    Filters the dataframe to return only PD-HL days based on the precomputed 'Day_Type_1' column.
 
     Args:
-        df (pd.DataFrame): The input OHLC dataframe with percentage changes.
+        df (pd.DataFrame): The input OHLC dataframe with precomputed 'Day_Type_1' column.
 
     Returns:
-        pd.DataFrame: A dataframe filtered for PD-H days.
+        pd.DataFrame: A dataframe filtered for PD-HL days.
     """
-    df_copy = df.copy()
+    return df[df['Day_Type_1'] == 'PD-HL'].copy()
 
-    df_copy.loc[:, 'PD_HL'] = (df_copy['Low'] <= df_copy['Low'].shift(1)) & (df_copy['High'] >= df_copy['High'].shift(1))
-    # Filter for PD-HL days
-    pdhl_days = df_copy.loc[df_copy['PD_HL']].copy()
-
-    return pdhl_days
 
 
 def find_nearest_date(data, target_date, max_delta=3):
@@ -1773,24 +1772,24 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     # D-UP Analysis
     dup_best_stop_loss_level = optimize_stop_loss_open_to_close(dup_days_all_years, direction)
     dup_best_exit_level, dup_expected_return = optimize_stop_loss_and_exit(dup_days_all_years, dup_best_stop_loss_level, direction)
-    dup_distributions = create_distributions(dup_days_all_years)
+    dup_distributions = create_distributions(dup_days_all_years, day_type='dup')
     if direction == 'Short':
         dup_scatters = create_scatter_plots(dup_days_all_years, direction, dup_best_stop_loss_level,
                                             dup_best_exit_level, dup_expected_return, add_distribution_annotations=False)
     else:
         dup_scatters = create_scatter_plots(dup_days_all_years, direction, dup_best_stop_loss_level,
                                             dup_best_exit_level, dup_expected_return)
-    dup_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(dup_days_all_years, day_type='pdh')
+    dup_high_vs_prev_high_dist, dup_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(dup_days_all_years, day_type='dup')
 
     # D-DOWN Analysis
     ddown_best_stop_loss_level = optimize_stop_loss_open_to_close(ddown_days_all_years, direction)
     ddown_best_exit_level, ddown_expected_return = optimize_stop_loss_and_exit(ddown_days_all_years, ddown_best_stop_loss_level, direction)
-    ddown_distributions = create_distributions(ddown_days_all_years)
+    ddown_distributions = create_distributions(ddown_days_all_years, day_type='ddown')
     if direction == 'Long':
         ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level, ddown_expected_return, add_distribution_annotations=False)
     else:
         ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level, ddown_expected_return)
-    ddown_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(ddown_days_all_years, day_type='pdh')
+    ddown_high_vs_prev_high_dist, ddown_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(ddown_days_all_years, day_type='ddown')
 
     # PD-H Analysis
     pdh_best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_days_all_years, direction)
@@ -1857,9 +1856,11 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         'day_trading_stats_1_weekday': day_trading_stats_1_weekday,
         'dup_distributions': dup_distributions,
         'dup_scatters': dup_scatters,
+        'dup_low_vs_prev_low_dist': dup_low_vs_prev_low_dist,
         'dup_high_vs_prev_high_dist': dup_high_vs_prev_high_dist,
         'ddown_distributions': ddown_distributions,
         'ddown_scatters': ddown_scatters,
+        'ddown_low_vs_prev_low_dist': ddown_low_vs_prev_low_dist,
         'ddown_high_vs_prev_high_dist': ddown_high_vs_prev_high_dist,
         'pdh_distributions': pdh_distributions,
         'pdh_scatters': pdh_scatters,
@@ -2312,7 +2313,7 @@ def register_callbacks(app):
                     f'{years} Years',
                     row=1,
                     col=1,
-                    opacity=0.6,
+                    opacity=0.8,
                     line_color=SEASONALITY_COLORS[years],  # Use corresponding color
                     secondary_y=True,
                     hide_yaxis_ticks=True,
@@ -2753,12 +2754,14 @@ def register_callbacks(app):
             Output('dup-open-close-dist', 'figure'),
             Output('dup-open-low-vs-high-scatter', 'figure'),
             Output('dup-open-low-vs-close-scatter', 'figure'),
+            Output('dup-low-vs-prev-low-dist', 'figure'),
             Output('dup-high-vs-prev-high-dist', 'figure'),
             Output('ddown-open-high-dist', 'figure'),
             Output('ddown-open-low-dist', 'figure'),
             Output('ddown-open-close-dist', 'figure'),
             Output('ddown-open-low-vs-high-scatter', 'figure'),
             Output('ddown-open-low-vs-close-scatter', 'figure'),
+            Output('ddown-low-vs-prev-low-dist', 'figure'),
             Output('ddown-high-vs-prev-high-dist', 'figure'),
             Output('pdh-open-high-dist', 'figure'),
             Output('pdh-open-low-dist', 'figure'),
@@ -2838,11 +2841,13 @@ def register_callbacks(app):
         dup_distributions = analysis_results['dup_distributions']
         dup_scatters = analysis_results['dup_scatters']
         dup_high_vs_prev_high_dist = analysis_results['dup_high_vs_prev_high_dist']
+        dup_low_vs_prev_low_dist = analysis_results['dup_low_vs_prev_low_dist']
 
         # D-DOWN stats
         ddown_distributions = analysis_results['ddown_distributions']
         ddown_scatters = analysis_results['ddown_scatters']
         ddown_high_vs_prev_high_dist = analysis_results['ddown_high_vs_prev_high_dist']
+        ddown_low_vs_prev_low_dist = analysis_results['ddown_low_vs_prev_low_dist']
 
         # PD-H stats
         pdh_distributions = analysis_results['pdh_distributions']
@@ -2888,8 +2893,8 @@ def register_callbacks(app):
         stop_loss_metrics_30 = calculate_risk_metrics(daily_returns_30_stoploss, cum_returns_stop_30)
 
         # Risk metrics and summaries for both scenarios (with and without stop-loss)
-        no_stop_loss_color = '#347474'
-        stop_loss_color = '#ff7e67'
+        no_stop_loss_color = 'CornFlowerBlue'
+        stop_loss_color = 'Salmon'
 
         risk_metrics_summary_15 = update_risk_metrics_summary(risk_metrics_15, no_stop_loss_color)
         risk_metrics_summary_30 = update_risk_metrics_summary(risk_metrics_30, no_stop_loss_color)
@@ -2961,6 +2966,7 @@ def register_callbacks(app):
             dup_distributions.get('open_close', {}),
             dup_scatters.get('scatter_1', {}),  # HERE SCATTERS
             dup_scatters.get('scatter_2', {}),
+            dup_low_vs_prev_low_dist,
             dup_high_vs_prev_high_dist,
             # D-DOWN distribution and scatter plots
             ddown_distributions.get('open_high', {}),
@@ -2968,6 +2974,7 @@ def register_callbacks(app):
             ddown_distributions.get('open_close', {}),
             ddown_scatters.get('scatter_1', {}),  # HERE SCATTERS
             ddown_scatters.get('scatter_2', {}),
+            ddown_low_vs_prev_low_dist,
             ddown_high_vs_prev_high_dist,
             # PD-H distribution and scatter plots
             pdh_distributions.get('open_high', {}),

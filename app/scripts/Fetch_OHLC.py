@@ -8,6 +8,48 @@ import numpy as np
 from config import market_tickers  # Import the market_tickers dictionary
 
 
+def calculate_day_type_1(df):
+    """
+    Calculate the primary day type for each row in the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The OHLC data with necessary columns.
+
+    Returns:
+        pd.Series: A series indicating the day type for each row.
+    """
+    conditions = [
+        (df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1)),  # PD-H
+        (df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1)),  # PD-L
+        (df['High'] >= df['High'].shift(1)) & (df['Low'] <= df['Low'].shift(1)),  # PD-HL
+        (df['High'] < df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1))    # PD-nHL
+    ]
+    choices = ['PD-H', 'PD-L', 'PD-HL', 'PD-nHL']
+    return np.select(conditions, choices, default='None')
+
+
+def calculate_day_type_2(df):
+    """
+    Calculate the secondary day type for each row in the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The OHLC data with necessary columns.
+
+    Returns:
+        pd.Series: A series indicating the day type for each row.
+    """
+    conditions = [
+        (df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1)) & (df['Close'] > df['High'].shift(1)),  # CaPD-H
+        (df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1)) & (df['Close'] < df['Low'].shift(1)),  # CbPD-L
+        (df['High'] >= df['High'].shift(1)) & (df['Low'] <= df['Low'].shift(1)) & (df['Close'] > df['High'].shift(1)),  # CaPD-HL
+        (df['Low'] <= df['Low'].shift(1)) & (df['High'] >= df['High'].shift(1)) & (df['Close'] < df['Low'].shift(1)),  # CbPD-HL
+        (df['Low'] > df['High'].shift(2)),  # BISI
+        (df['High'] < df['Low'].shift(2))   # SIBI
+    ]
+    choices = ['CaPD-H', 'CbPD-L', 'CaPD-HL', 'CbPD-HL', 'BISI', 'SIBI']
+    return np.select(conditions, choices, default='None')
+
+
 def clean_numerical_values(df, columns):
     """
     Remove commas and convert columns to numeric types.
@@ -41,13 +83,21 @@ def calculate_percentage_changes(df):
 
 
 def fetch_ohlc_for_2024(ticker, market_name, conn):
+    """
+    Fetch OHLC data for the year 2024, compute percentage changes, day types, and weekday information,
+    and store the data in the SQLite database.
+
+    Args:
+        ticker (str): Ticker symbol of the market.
+        market_name (str): Name of the market.
+        conn (sqlite3.Connection): SQLite database connection.
+    """
     # Define the start date for 2024 and end date as yesterday
     start_date = "2024-01-01"
-    end_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')  # Fetch data up to yesterday
+    end_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
 
     # Fetch OHLC data from yfinance
     data = yf.download(ticker, start=start_date, end=end_date, interval="1d")
-
 
     if data.empty:
         print(f"No data fetched for {market_name}.")
@@ -68,10 +118,13 @@ def fetch_ohlc_for_2024(ticker, market_name, conn):
     # Calculate percentage changes
     data = calculate_percentage_changes(data)
 
+    # Calculate day types and weekday
+    data['Day_Type_1'] = calculate_day_type_1(data)
+    data['Day_Type_2'] = calculate_day_type_2(data)
+    data['Weekday'] = data['Date'].dt.day_name()
+
     # Replace existing data if Date already exists
     table_name = market_name.lower().replace(' ', '_') + '_ohlc'
-
-    # Delete existing rows starting from the start_date
     conn.execute(f"DELETE FROM {table_name} WHERE Date >= ?", (start_date,))
 
     # Insert the new data into the corresponding table in the SQLite database
@@ -99,7 +152,7 @@ def compute_and_store_seasonality(market_name, conn):
         df = pd.read_sql(query, conn)
         df['Date'] = pd.to_datetime(df['Date'])
 
-        # Ensure numerical columns are in the correct format
+        # Ensure numerical columns are in the correct forma
         df['Close'] = pd.to_numeric(df['Close'], errors='coerce')
         df['Open'] = pd.to_numeric(df['Open'], errors='coerce')
         df['High'] = pd.to_numeric(df['High'], errors='coerce')

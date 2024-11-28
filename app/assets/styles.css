@@ -163,11 +163,12 @@ dcc.Graph, dcc.Checklist  {
 }
 
 /* Style each label by targeting the checklist items */
+/* CornflowerBlue and Salmon */
 #years-checklist label:nth-child(1) {
-    color: #FF7F0E;
+    color: #6495ED;
 }
 #years-checklist label:nth-child(2) {
-    color: #1F77B4;
+    color: #FA8072;
 }
 
 .dropdown-menu-direction .Select-control {
