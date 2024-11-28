@@ -307,9 +307,14 @@ def calculate_stop_loss_return(yearly_data, optimal_results, direction):
         pd.Series: The returns calculated with stop-loss applied.
     """
     stop_loss_returns = []
+    stop_loss_or_take_profit = False
 
     # Loop through each trade in yearly data
     for i, row in yearly_data.iterrows():
+        if stop_loss_or_take_profit:
+            stop_loss_returns.append(0)  # Append 0 for all subsequent days after trade closure
+            continue
+
         first_open = row['Open']
 
         # Ensure first_open is a float
@@ -319,7 +324,7 @@ def calculate_stop_loss_return(yearly_data, optimal_results, direction):
             print(f"Error: 'Open' value {first_open} is not a valid float.")
             continue
 
-        # Calculate the stop-loss price
+        # Calculate the stop-loss and take-profit prices
         if direction == 'Long':
             stop_loss_price = first_open * (1 - optimal_results['optimal_stop_loss'] / 100)
             take_profit_price = first_open * (1 + optimal_results['optimal_exit'] / 100)
@@ -327,35 +332,34 @@ def calculate_stop_loss_return(yearly_data, optimal_results, direction):
             stop_loss_price = first_open * (1 + optimal_results['optimal_stop_loss'] / 100)
             take_profit_price = first_open * (1 - optimal_results['optimal_exit'] / 100)
 
-        # Fetch high/low/close for this day
-        day_high = float(row['High'])
-        day_low = float(row['Low'])
-        day_close = float(row['Close'])
+        # Track the cumulative return for this trade
+        daily_return = 0
 
-        # Determine the outcome of the trade
+        # Evaluate trade outcome based on daily price range
+        # if stop_loss_or_take_profit:
+        #     daily_return = 0
         if direction == 'Long':
-            # Case where stop-loss is hit
-            if day_low <= stop_loss_price:
-                stop_loss_return = (stop_loss_price - first_open) / first_open * 100
-            # Case where take profit is hit
-            elif day_high >= take_profit_price:
-                stop_loss_return = (take_profit_price - first_open) / first_open * 100
-            # Neither hit, close at the end of the day
-            else:
-                stop_loss_return = (day_close - first_open) / first_open * 100
-        else:
-            # Case where stop-loss is hit (short trade)
-            if day_high >= stop_loss_price:
-                stop_loss_return = (first_open - stop_loss_price) / first_open * 100
-            # Case where take profit is hit (short trade)
-            elif day_low <= take_profit_price:
-                stop_loss_return = (first_open - take_profit_price) / first_open * 100
-            # Neither hit, close at the end of the day
-            else:
-                stop_loss_return = (first_open - day_close) / first_open * 100
+            if row['Low'] <= stop_loss_price:  # Stop-loss hit
+                daily_return = (stop_loss_price - row['Open']) / first_open * 100
+            elif row['High'] >= take_profit_price:  # Take-profit hit
+                daily_return = (take_profit_price - row['Open']) / first_open * 100
+            else:  # Neither hit, close at the end of the day
+                daily_return = (row['Close'] - row['Open']) / first_open * 100
+        else:  # Short direction
+            if row['High'] >= stop_loss_price:  # Stop-loss hit
+                daily_return = (row['Open'] - stop_loss_price) / first_open * 100
+            elif row['Low'] <= take_profit_price:  # Take-profit hit
+                daily_return = (row['Open'] - take_profit_price) / first_open * 100
+            else:  # Neither hit, close at the end of the day
+                daily_return = (row['Open'] - row['Close']) / first_open * 100
 
-        # Append calculated return
-        stop_loss_returns.append(stop_loss_return)
+        # Append the return for this trade
+        stop_loss_returns.append(daily_return)
+
+        # Break out of the loop for this trade if stop-loss or take-profit is hit
+        if (direction == 'Long' and (row['Low'] <= stop_loss_price or row['High'] >= take_profit_price)) or \
+           (direction == 'Short' and (row['High'] >= stop_loss_price or row['Low'] <= take_profit_price)):
+            stop_loss_or_take_profit = True
 
     # Return the series of stop-loss returns
     return pd.Series(stop_loss_returns)
@@ -944,6 +948,10 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
         # Apply stop-loss/exit for 15-year data slice
         stop_loss_returns_15y = calculate_stop_loss_return(yearly_data_15y, optimal_results_15y, direction)
 
+        # CHECK
+        if year == 2018:
+            stop_loss_returns_15y.to_csv('stop_loss_returns.csv', index=False)
+
         # Ensure lengths match
         if len(stop_loss_returns_15y) == len(yearly_data_15y):
             # Align indices and store stop-loss/exit returns
@@ -951,6 +959,7 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
         else:
             print(
                 f"Warning: Mismatch in lengths for year {year}. Yearly data length: {len(yearly_data_15y)}, Stop-loss return length: {len(stop_loss_returns_15y)}")
+
 
     # Process each year in the 30-year data for stop-loss/exit strategy
     for year in combined_data_30y['Date'].dt.year.unique():
@@ -1014,7 +1023,8 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
             combined_data_30y['Cumulative_No_Stop'], combined_data_30y['Cumulative_Stop_Loss']  # Cumulative returns
             )
 
-def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None, expected_return=None, add_distribution_annotations=True, n_clusters=3):
+def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None,
+                         expected_return_stop_loss=None, expected_return_exit=None, add_distribution_annotations=True, n_clusters=3):
     """
     Create scatter plots with clustering for better visualization.
 
@@ -1099,23 +1109,15 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
         )
         add_distribution_annotation(scatter_1, best_stop_loss_level, "Salmon")
 
-        # Calculation of expected return if stop-loss has not been triggered.
-        # if direction == "Long":
-        #     expected_return = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean()
-        # else:
-        #     expected_return = day_data[day_data[x_col_1] >= best_stop_loss_level][y_col_1].mean()
-        expected_return = day_data[y_col_1].mean()
-
         # Add optimal exit level as a horizontal line
         scatter_1.add_hline(
-            y=expected_return,
+            y=expected_return_stop_loss,
             line_dash="dash",
             line_color="Aquamarine",
             # annotation_text=f"Exit: {expected_return:.2f}",
             # annotation_position="top right"
         )
-        add_distribution_annotation(scatter_1, expected_return, "Aquamarine", direction="Horizontal")
-
+        add_distribution_annotation(scatter_1, expected_return_stop_loss, "Aquamarine", direction="Horizontal")
 
     # Scatter Plot 2: Relation between Open-[Low/High] vs Open-[High/Low]
     scatter_2 = go.Figure()
@@ -1149,14 +1151,15 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
         )
         add_distribution_annotation(scatter_2, best_exit_level, "CornflowerBlue", direction="Horizontal")
 
+        print(f"EXPECTED RETURN: {expected_return_exit}")
         scatter_2.add_hline(
-            y=expected_return,
+            y=expected_return_exit,
             line_dash="dash",
             line_color="Aquamarine",
             # annotation_text=f"Exit: {optimal_close_y:.2f}",
             # annotation_position="top right"
         )
-        add_distribution_annotation(scatter_2, expected_return, "Aquamarine", direction="Horizontal")
+        add_distribution_annotation(scatter_2, expected_return_exit, "Aquamarine", direction="Horizontal")
 
     return {
         'scatter_1': scatter_2,
@@ -1573,44 +1576,58 @@ def optimize_stop_loss_open_to_close(day_data, direction="Long"):
         direction (str): Trade direction, either "Long" or "Short".
 
     Returns:
-        float: Optimal stop-loss level (percentage change) that maximizes the sum of Open-Close percentage changes.
+        tuple: Optimal stop-loss level (percentage change) and expected return.
     """
     best_stop_loss_level = None
     max_cumulative_return = -float('inf')
+    best_expected_return = 0
 
     # Choose columns based on direction
     stop_loss_col = 'Open_Low_Pct_Change' if direction == "Long" else 'Open_High_Pct_Change'
     close_pct_col = 'Open_Close_Pct_Change'
 
+    # Determine range for stop-loss levels
     if direction == 'Long':
-        stop_loss_max = 0
+        stop_loss_max = 0  # For Long, stop-loss is negative (lower than the open)
         stop_loss_min = day_data[stop_loss_col].min()
     else:
-        stop_loss_max = day_data[stop_loss_col].max()
+        stop_loss_max = day_data[stop_loss_col].max()  # For Short, stop-loss is positive (higher than the open)
         stop_loss_min = 0
 
     # Define the range for stop-loss levels
-    stop_loss_range = np.linspace(stop_loss_min, stop_loss_max, 100)  # Broad range to cover both directions
+    stop_loss_range = np.linspace(stop_loss_min, stop_loss_max, 100)
 
     # Loop through possible stop-loss levels
     for stop_loss_level in stop_loss_range:
         if direction == "Long":
-            trades_with_stop_loss = day_data[day_data[stop_loss_col] > stop_loss_level]
+            trades_not_stopped = day_data[day_data[stop_loss_col] > stop_loss_level]
         else:
-            trades_with_stop_loss = day_data[day_data[stop_loss_col] < stop_loss_level]
+            trades_not_stopped = day_data[day_data[stop_loss_col] < stop_loss_level]
 
         # Calculate cumulative return for Open-Close percentage changes
-        if direction == 'Long':
-            cumulative_return = trades_with_stop_loss[close_pct_col].sum()
-        else:
-            cumulative_return = trades_with_stop_loss[close_pct_col].sum() * (-1)
+        cumulative_return = trades_not_stopped[close_pct_col].sum()
+
+        # For Short trades, invert the sign of the cumulative return
+        if direction == "Short":
+            cumulative_return *= -1
 
         # Update best stop-loss level if this level gives a higher cumulative return
         if cumulative_return > max_cumulative_return:
             max_cumulative_return = cumulative_return
             best_stop_loss_level = stop_loss_level
 
-    return best_stop_loss_level
+            # Calculate expected return for this stop-loss level
+            best_expected_return = trades_not_stopped[close_pct_col].mean()
+
+            # Handle empty DataFrame case
+            if pd.isna(best_expected_return):
+                best_expected_return = 0
+
+    return best_stop_loss_level, best_expected_return
+
+
+
+import pandas as pd
 
 
 def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"):
@@ -1628,6 +1645,7 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
     """
     best_exit_level = None
     max_net_return = -float('inf')
+    trades_with_take_profit_exit = None
     trades_with_stop_loss_exit = None
     trades_with_no_exit = None
 
@@ -1646,41 +1664,49 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
     # Define range of take-profit levels
     take_profit_range = np.linspace(take_profit_min, take_profit_max, 100)  # Covers both positive and negative values
 
-    for exit_level in take_profit_range:
+    for take_profit_level in take_profit_range:
         if direction == "Long":
-            trades_with_stop_loss_exit = day_data[
+            trades_with_take_profit_exit = day_data[
                 (day_data[stop_loss_col] > best_stop_loss_level) &
-                (day_data[exit_col] > exit_level)
-            ]
+                (day_data[exit_col] > take_profit_level)
+                ]
             trades_with_no_exit = day_data[
                 (day_data[stop_loss_col] > best_stop_loss_level) &
-                (day_data[exit_col] < exit_level)
+                (day_data[exit_col] < take_profit_level)
+                ]
+            trades_with_stop_loss_exit = day_data[
+                (day_data[stop_loss_col] < best_stop_loss_level)
             ]
         else:
-            trades_with_stop_loss_exit = day_data[
+            trades_with_take_profit_exit = day_data[
                 (day_data[stop_loss_col] < best_stop_loss_level) &
-                (day_data[exit_col] < exit_level)
-            ]
+                (day_data[exit_col] < take_profit_level)
+                ]
             trades_with_no_exit = day_data[
                 (day_data[stop_loss_col] < best_stop_loss_level) &
-                (day_data[exit_col] > exit_level)
+                (day_data[exit_col] > take_profit_level)
+                ]
+            trades_with_stop_loss_exit = day_data[
+                (day_data[stop_loss_col] > best_stop_loss_level)
             ]
 
         # Calculate net return
-        net_return_exit = len(trades_with_stop_loss_exit) * exit_level
+        net_return_take_profit_exit = len(trades_with_take_profit_exit) * take_profit_level
+        net_return_stop_loss_exit = len(trades_with_stop_loss_exit) * best_stop_loss_level
         net_return_no_exit = trades_with_no_exit[close_pct_col].sum()
         if direction == 'Long':
-            total_net_return = net_return_exit + net_return_no_exit
+            total_net_return = net_return_take_profit_exit + net_return_no_exit  # + net_return_stop_loss_exit
+            # - I resigned from it, and decided to calculate expected return values only when I'm right.
         else:
-            total_net_return = (net_return_exit + net_return_no_exit) * (-1)
+            total_net_return = (net_return_take_profit_exit + net_return_no_exit * (-1))  # + net_return_stop_loss_exit
 
         # Update best exit level if it provides a higher net return
         if total_net_return > max_net_return:
             max_net_return = total_net_return
-            best_exit_level = exit_level
+            best_exit_level = take_profit_level
 
-        # Calculate expected return
-    total_trades = len(trades_with_stop_loss_exit) + len(trades_with_no_exit)
+    # Calculate expected return
+    total_trades = len(trades_with_take_profit_exit) + len(trades_with_no_exit)  # +len(trades_with_stop_loss_exit)
     if total_trades > 0:
         expected_return = max_net_return / total_trades
     else:
@@ -1690,7 +1716,6 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
         expected_return = -expected_return
 
     return best_exit_level, expected_return
-
 
 def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     """
@@ -1770,58 +1795,63 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     analysis_results = sorted(analysis_results, key=lambda x: x['Year'], reverse=True)
 
     # D-UP Analysis
-    dup_best_stop_loss_level = optimize_stop_loss_open_to_close(dup_days_all_years, direction)
-    dup_best_exit_level, dup_expected_return = optimize_stop_loss_and_exit(dup_days_all_years, dup_best_stop_loss_level, direction)
+    dup_best_stop_loss_level, dup_expected_return_stop_loss = optimize_stop_loss_open_to_close(dup_days_all_years, direction)
+    dup_best_exit_level, dup_expected_return_exit = optimize_stop_loss_and_exit(dup_days_all_years, dup_best_stop_loss_level, direction)
     dup_distributions = create_distributions(dup_days_all_years, day_type='dup')
     if direction == 'Short':
         dup_scatters = create_scatter_plots(dup_days_all_years, direction, dup_best_stop_loss_level,
-                                            dup_best_exit_level, dup_expected_return, add_distribution_annotations=False)
+                                            dup_best_exit_level, dup_expected_return_stop_loss, dup_expected_return_exit, add_distribution_annotations=False)
     else:
         dup_scatters = create_scatter_plots(dup_days_all_years, direction, dup_best_stop_loss_level,
-                                            dup_best_exit_level, dup_expected_return)
+                                            dup_best_exit_level, dup_expected_return_stop_loss, dup_expected_return_exit)
     dup_high_vs_prev_high_dist, dup_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(dup_days_all_years, day_type='dup')
 
     # D-DOWN Analysis
-    ddown_best_stop_loss_level = optimize_stop_loss_open_to_close(ddown_days_all_years, direction)
-    ddown_best_exit_level, ddown_expected_return = optimize_stop_loss_and_exit(ddown_days_all_years, ddown_best_stop_loss_level, direction)
+    ddown_best_stop_loss_level, ddown_expected_return_stop_loss = optimize_stop_loss_open_to_close(ddown_days_all_years, direction)
+    ddown_best_exit_level, ddown_expected_return_exit = optimize_stop_loss_and_exit(ddown_days_all_years, ddown_best_stop_loss_level, direction)
     ddown_distributions = create_distributions(ddown_days_all_years, day_type='ddown')
     if direction == 'Long':
-        ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level, ddown_expected_return, add_distribution_annotations=False)
+        ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level,
+                                              ddown_expected_return_stop_loss, ddown_expected_return_exit, add_distribution_annotations=False)
     else:
-        ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level, ddown_expected_return)
+        ddown_scatters = create_scatter_plots(ddown_days_all_years, direction, ddown_best_stop_loss_level, ddown_best_exit_level,
+                                              ddown_expected_return_stop_loss, ddown_expected_return_exit)
     ddown_high_vs_prev_high_dist, ddown_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(ddown_days_all_years, day_type='ddown')
 
     # PD-H Analysis
-    pdh_best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_days_all_years, direction)
-    pdh_best_exit_level, pdh_expected_return = optimize_stop_loss_and_exit(pdh_days_all_years, pdh_best_stop_loss_level, direction)
+    pdh_best_stop_loss_level, pdh_expected_return_stop_loss = optimize_stop_loss_open_to_close(pdh_days_all_years, direction)
+    pdh_best_exit_level, pdh_expected_return_exit = optimize_stop_loss_and_exit(pdh_days_all_years, pdh_best_stop_loss_level, direction)
     pdh_distributions = create_distributions(pdh_days_all_years)
-    pdh_scatters = create_scatter_plots(pdh_days_all_years, direction, pdh_best_stop_loss_level, pdh_best_exit_level, pdh_expected_return)
+    pdh_scatters = create_scatter_plots(pdh_days_all_years, direction, pdh_best_stop_loss_level, pdh_best_exit_level,
+                                        pdh_expected_return_stop_loss, pdh_expected_return_exit)
     pdh_high_vs_prev_high_dist = create_high_low_vs_prev_distribution(pdh_days_all_years, day_type='pdh')
 
     # PD-L Analysis
-    pdl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdl_days_all_years, direction)
-    pdl_best_exit_level, pdl_expected_return = optimize_stop_loss_and_exit(pdl_days_all_years, pdl_best_stop_loss_level, direction)
+    pdl_best_stop_loss_level, pdh_expected_return_stop_loss = optimize_stop_loss_open_to_close(pdl_days_all_years, direction)
+    pdl_best_exit_level, pdl_expected_return_exit = optimize_stop_loss_and_exit(pdl_days_all_years, pdl_best_stop_loss_level, direction)
     pdl_distributions = create_distributions(pdl_days_all_years)
-    pdl_scatters = create_scatter_plots(pdl_days_all_years, direction, pdl_best_stop_loss_level, pdl_best_exit_level, pdl_expected_return)
+    pdl_scatters = create_scatter_plots(pdl_days_all_years, direction, pdl_best_stop_loss_level, pdl_best_exit_level,
+                                        pdh_expected_return_stop_loss, pdl_expected_return_exit)
     pdl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdl_days_all_years, day_type='pdl')
 
     # PD-HL Analysis
-    pdhl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdhl_days_all_years, direction)
-    pdhl_best_exit_level, pdhl_expected_return = optimize_stop_loss_and_exit(pdhl_days_all_years, pdhl_best_stop_loss_level, direction)
+    pdhl_best_stop_loss_level, pdhl_expected_return_stop_loss = optimize_stop_loss_open_to_close(pdhl_days_all_years, direction)
+    pdhl_best_exit_level, pdhl_expected_return_exit = optimize_stop_loss_and_exit(pdhl_days_all_years, pdhl_best_stop_loss_level, direction)
     pdhl_distributions = create_distributions(pdhl_days_all_years)
-    pdhl_scatters = create_scatter_plots(pdhl_days_all_years, direction, pdhl_best_stop_loss_level, pdhl_best_exit_level, pdhl_expected_return)
+    pdhl_scatters = create_scatter_plots(pdhl_days_all_years, direction, pdhl_best_stop_loss_level, pdhl_best_exit_level,
+                                         pdhl_expected_return_stop_loss, pdhl_expected_return_exit)
     pdhl_high_vs_prev_high_dist, pdhl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdhl_days_all_years, day_type='pdhl')
 
     # PD-H, PD-L and PD-HL day types
     pdh_pdl_pdhl_days_all_years = pd.concat([pdh_days_all_years, pdl_days_all_years, pdhl_days_all_years],
                                             ignore_index=True)
 
-    pdh_pdl_pdhl_best_stop_loss_level = optimize_stop_loss_open_to_close(pdh_pdl_pdhl_days_all_years, direction)
-    pdh_pdl_pdhl_best_exit_level, pdh_pdl_pdhl_expected_return = optimize_stop_loss_and_exit(pdh_pdl_pdhl_days_all_years, pdh_pdl_pdhl_best_stop_loss_level,
+    pdh_pdl_pdhl_best_stop_loss_level, pdh_pdl_pdhl_expected_return_stop_loss = optimize_stop_loss_open_to_close(pdh_pdl_pdhl_days_all_years, direction)
+    pdh_pdl_pdhl_best_exit_level, pdh_pdl_pdhl_expected_return_exit = optimize_stop_loss_and_exit(pdh_pdl_pdhl_days_all_years, pdh_pdl_pdhl_best_stop_loss_level,
                                                           direction)
     pdh_pdl_pdhl_distributions = create_distributions(pdh_pdl_pdhl_days_all_years)
     pdh_pdl_pdhl_scatters = create_scatter_plots(pdh_pdl_pdhl_days_all_years, direction, pdh_pdl_pdhl_best_stop_loss_level,
-                                             pdh_pdl_pdhl_best_exit_level, pdh_pdl_pdhl_expected_return)
+                                             pdh_pdl_pdhl_best_exit_level, pdh_pdl_pdhl_expected_return_stop_loss, pdh_pdl_pdhl_expected_return_exit)
     pdh_pdl_pdhl_high_vs_prev_high_dist, pdh_pdl_pdhl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdh_pdl_pdhl_days_all_years,
                                                                                                   day_type='pdh_pdl_pdhl')
 
