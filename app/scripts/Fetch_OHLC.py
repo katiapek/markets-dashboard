@@ -22,7 +22,7 @@ def calculate_day_type_1(df):
         (df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1)),  # PD-H
         (df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1)),  # PD-L
         (df['High'] >= df['High'].shift(1)) & (df['Low'] <= df['Low'].shift(1)),  # PD-HL
-        (df['High'] < df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1))    # PD-nHL
+        (df['High'] < df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1))  # PD-nHL
     ]
     choices = ['PD-H', 'PD-L', 'PD-HL', 'PD-nHL']
     return np.select(conditions, choices, default='None')
@@ -39,12 +39,16 @@ def calculate_day_type_2(df):
         pd.Series: A series indicating the day type for each row.
     """
     conditions = [
-        (df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1)) & (df['Close'] > df['High'].shift(1)),  # CaPD-H
-        (df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1)) & (df['Close'] < df['Low'].shift(1)),  # CbPD-L
-        (df['High'] >= df['High'].shift(1)) & (df['Low'] <= df['Low'].shift(1)) & (df['Close'] > df['High'].shift(1)),  # CaPD-HL
-        (df['Low'] <= df['Low'].shift(1)) & (df['High'] >= df['High'].shift(1)) & (df['Close'] < df['Low'].shift(1)),  # CbPD-HL
+        (df['High'] >= df['High'].shift(1)) & (df['Low'] > df['Low'].shift(1)) & (df['Close'] > df['High'].shift(1)),
+        # CaPD-H
+        (df['Low'] <= df['Low'].shift(1)) & (df['High'] < df['High'].shift(1)) & (df['Close'] < df['Low'].shift(1)),
+        # CbPD-L
+        (df['High'] >= df['High'].shift(1)) & (df['Low'] <= df['Low'].shift(1)) & (df['Close'] > df['High'].shift(1)),
+        # CaPD-HL
+        (df['Low'] <= df['Low'].shift(1)) & (df['High'] >= df['High'].shift(1)) & (df['Close'] < df['Low'].shift(1)),
+        # CbPD-HL
         (df['Low'] > df['High'].shift(2)),  # BISI
-        (df['High'] < df['Low'].shift(2))   # SIBI
+        (df['High'] < df['Low'].shift(2))  # SIBI
     ]
     choices = ['CaPD-H', 'CbPD-L', 'CaPD-HL', 'CbPD-HL', 'BISI', 'SIBI']
     return np.select(conditions, choices, default='None')

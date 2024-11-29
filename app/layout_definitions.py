@@ -3,6 +3,7 @@ import dash
 from dash import dcc, html, dash_table
 import dash_bootstrap_components as dbc  # Correct import
 from scripts.config import market_tickers
+
 # from data_fetchers import SeasonalDataFetcher
 
 # Define constants for repeated strings, styles, and default values
@@ -42,7 +43,8 @@ BUTTON_STYLES = {'margin-bottom': '3px'}
 CHECKLIST_STYLES = {'margin-bottom': '10px'}
 LAYOUT_STYLES = {'display': 'flex'}
 GRAPH_STYLES = {'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
-INPUT_STYLE = {"margin-right": "10px", "width":"40px"}
+INPUT_STYLE = {"margin-right": "10px", "width": "40px"}
+
 
 def format_market_name(market_name):
     """
@@ -66,133 +68,147 @@ def create_analysis_section():
     return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white', 'fontFamily': "'Press Start 2P', monospace",
                            'fontSize': '10px'},
                     children=[
-        # Inputs for the analysis
-        html.Div(children=[
-            # Date range picker for selecting start and end dates
-            html.Div(children=[
-                html.Label("Select Date Range", style={'margin-bottom': '5px'}),
-                dcc.DatePickerRange(
-                    id='date-picker-range',
-                    start_date_placeholder_text="Start Period",
-                    end_date_placeholder_text="End Period",
-                    display_format='MMM-DD',
-                    month_format='MMMM',
-                    min_date_allowed='2024-01-01',
-                    max_date_allowed='2024-12-31',
-                    start_date='2024-01-01',  # Default to None or a specific start date
-                    end_date='2024-12-31',  # Default to None or a specific end date
-                    clearable=False,
-                    # day_size=20
-                )
-            ], style={'width': '400px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
+                        # Inputs for the analysis
+                        html.Div(children=[
+                            # Date range picker for selecting start and end dates
+                            html.Div(children=[
+                                html.Label("Select Date Range", style={'margin-bottom': '5px'}),
+                                dcc.DatePickerRange(
+                                    id='date-picker-range',
+                                    start_date_placeholder_text="Start Period",
+                                    end_date_placeholder_text="End Period",
+                                    display_format='MMM-DD',
+                                    month_format='MMMM',
+                                    min_date_allowed='2024-01-01',
+                                    max_date_allowed='2024-12-31',
+                                    start_date='2024-01-01',  # Default to None or a specific start date
+                                    end_date='2024-12-31',  # Default to None or a specific end date
+                                    clearable=False,
+                                    # day_size=20
+                                )
+                            ], style={'width': '400px', 'display': 'flex', 'flex-direction': 'column',
+                                      'align-items': 'center'}),
 
-            html.Div(children=[
-                html.Label("Direction", style={'margin-bottom': '5px'}),
-                dcc.Dropdown(
-                    id='direction-dropdown',
-                    options=[
-                        {'label': 'Long', 'value': 'Long'},
-                        {'label': 'Short', 'value': 'Short'}
-                    ],
-                    value=DEFAULT_DIRECTION,  # Default value
-                    placeholder=DEFAULT_DIRECTION,
-                    style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
-                    clearable=False,
-                    className='dropdown-menu-direction',
-                    searchable=False,
-                ),
-            ], style={'width': '200px', 'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}),
+                            html.Div(children=[
+                                html.Label("Direction", style={'margin-bottom': '5px'}),
+                                dcc.Dropdown(
+                                    id='direction-dropdown',
+                                    options=[
+                                        {'label': 'Long', 'value': 'Long'},
+                                        {'label': 'Short', 'value': 'Short'}
+                                    ],
+                                    value=DEFAULT_DIRECTION,  # Default value
+                                    placeholder=DEFAULT_DIRECTION,
+                                    style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
+                                    clearable=False,
+                                    className='dropdown-menu-direction',
+                                    searchable=False,
+                                ),
+                            ], style={'width': '200px', 'display': 'flex', 'flex-direction': 'column',
+                                      'align-items': 'center'}),
 
-            html.Div(children=[
-                dcc.Interval(
-                    id='interval-auto-load',
-                    interval=1 * 1000,  # 1 second delay
-                    n_intervals=0,  # Starts immediately on page load
-                    max_intervals=1  # Only fires once
-                ),
+                            html.Div(children=[
+                                dcc.Interval(
+                                    id='interval-auto-load',
+                                    interval=1 * 1000,  # 1 second delay
+                                    n_intervals=0,  # Starts immediately on page load
+                                    max_intervals=1  # Only fires once
+                                ),
 
-                html.Button("Perform Analysis", id='perform-analysis-button', style={
-                    'height': '40px', 'margin-top': '18px', 'background-color': '#333', 'color': 'white',
-                    'border': '1px solid white'}),
-            ], style={'display': 'flex', 'align-items': 'center'})
-        ], style={'display': 'flex', 'gap': '15px', 'align-items': 'center'}),
+                                html.Button("Perform Analysis", id='perform-analysis-button', style={
+                                    'height': '40px', 'margin-top': '18px', 'background-color': '#333',
+                                    'color': 'white',
+                                    'border': '1px solid white'}),
+                            ], style={'display': 'flex', 'align-items': 'center'})
+                        ], style={'display': 'flex', 'gap': '15px', 'align-items': 'center'}),
 
-        # Table for Year-by-Year Results
-        html.Div(children=[
-            html.Label("Yearly Analysis", style={'margin-bottom': '5px'}),
-            dash.dash_table.DataTable(id='yearly-analysis-table',
-                                      editable=False,
-                                      cell_selectable=False,
-                                      columns=[
-                                          {'name': 'Year', 'id': 'Year'},
-                                          {'name': 'Max Drawdown (Points)', 'id': 'Max Drawdown (Points)'},
-                                          {'name': 'Max Drawdown (%)', 'id': 'Max Drawdown (%)'},
-                                          {'name': 'Max Gain (Points)', 'id': 'Max Gain (Points)'},
-                                          {'name': 'Max Gain (%)', 'id': 'Max Gain (%)'},
-                                          {'name': 'Closing Points', 'id': 'Closing Points'},
-                                          {'name': 'Closing Percentage', 'id': 'Closing Percentage'},
-                                      ],
-                                      data=[],
-                                      style_header={'backgroundColor': '#333', 'color': 'white', 'border': '1px solid white',
-                                                    'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
-                                      style_cell={'backgroundColor': '#1e1e1e', 'color': 'white', 'border': '1px solid #444',
-                                                  'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
-                                      style_table={'overflowX': 'scroll'}
-                                      )
-        ], style={'padding-top': '15px'}),
+                        # Table for Year-by-Year Results
+                        html.Div(children=[
+                            html.Label("Yearly Analysis", style={'margin-bottom': '5px'}),
+                            dash.dash_table.DataTable(id='yearly-analysis-table',
+                                                      editable=False,
+                                                      cell_selectable=False,
+                                                      columns=[
+                                                          {'name': 'Year', 'id': 'Year'},
+                                                          {'name': 'Max Drawdown (Points)',
+                                                           'id': 'Max Drawdown (Points)'},
+                                                          {'name': 'Max Drawdown (%)', 'id': 'Max Drawdown (%)'},
+                                                          {'name': 'Max Gain (Points)', 'id': 'Max Gain (Points)'},
+                                                          {'name': 'Max Gain (%)', 'id': 'Max Gain (%)'},
+                                                          {'name': 'Closing Points', 'id': 'Closing Points'},
+                                                          {'name': 'Closing Percentage', 'id': 'Closing Percentage'},
+                                                      ],
+                                                      data=[],
+                                                      style_header={'backgroundColor': '#333', 'color': 'white',
+                                                                    'border': '1px solid white',
+                                                                    'fontFamily': "'Press Start 2P', monospace",
+                                                                    'fontSize': '10px'},
+                                                      style_cell={'backgroundColor': '#1e1e1e', 'color': 'white',
+                                                                  'border': '1px solid #444',
+                                                                  'fontFamily': "'Press Start 2P', monospace",
+                                                                  'fontSize': '10px'},
+                                                      style_table={'overflowX': 'scroll'}
+                                                      )
+                        ], style={'padding-top': '15px'}),
 
-        # Summary Statistics for 15 and 30 years
-        html.Div(id='15-year-summary', children="15-Year Summary: ",
-                 style={'margin-top': '20px', 'font-size': '14px', 'background-color': '#333', 'padding': '10px',
-                        'border-radius': '5px', 'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'}, ),
-        html.Div(id='30-year-summary', children="30-Year Summary: ",
-                 style={'margin-top': '20px', 'font-size': '14px', 'background-color': '#333', 'padding': '10px',
-                        'border-radius': '5px', 'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'}),
+                        # Summary Statistics for 15 and 30 years
+                        html.Div(id='15-year-summary', children="15-Year Summary: ",
+                                 style={'margin-top': '20px', 'font-size': '14px', 'background-color': '#333',
+                                        'padding': '10px',
+                                        'border-radius': '5px', 'fontFamily': "'Press Start 2P', monospace",
+                                        'fontSize': '10px'}, ),
+                        html.Div(id='30-year-summary', children="30-Year Summary: ",
+                                 style={'margin-top': '20px', 'font-size': '14px', 'background-color': '#333',
+                                        'padding': '10px',
+                                        'border-radius': '5px', 'fontFamily': "'Press Start 2P', monospace",
+                                        'fontSize': '10px'}),
 
-        # Container for the distribution charts in a row
-        html.Div([
-            # Regular distribution chart for 15 years
-            html.Div([
+                        # Container for the distribution charts in a row
+                        html.Div([
+                            # Regular distribution chart for 15 years
+                            html.Div([
 
-                dcc.Graph(id='distribution-chart-15', config={'displayModeBar': False}, style={'padding': '0', 'margin': '0'}),
-            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
+                                dcc.Graph(id='distribution-chart-15', config={'displayModeBar': False},
+                                          style={'padding': '0', 'margin': '0'}),
+                            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
 
-            # Optimal distribution chart for 15 years
-            html.Div([
+                            # Optimal distribution chart for 15 years
+                            html.Div([
 
-                dcc.Graph(id='distribution-chart-optimal-15', config={'displayModeBar': False}),
-            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
-        ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center'}),
+                                dcc.Graph(id='distribution-chart-optimal-15', config={'displayModeBar': False}),
+                            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
+                        ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center'}),
 
-        # Same structure for the 30 years below
-        html.Div([
-            html.Div([
+                        # Same structure for the 30 years below
+                        html.Div([
+                            html.Div([
 
-                dcc.Graph(id='distribution-chart-30', config={'displayModeBar': False}),
-            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
+                                dcc.Graph(id='distribution-chart-30', config={'displayModeBar': False}),
+                            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
 
-            html.Div([
+                            html.Div([
 
-                dcc.Graph(id='distribution-chart-optimal-30', config={'displayModeBar': False}),
-            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
-        ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center'}),
+                                dcc.Graph(id='distribution-chart-optimal-30', config={'displayModeBar': False}),
+                            ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
+                        ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center'}),
 
-        html.Div([
-            # 15-year cumulative returns and metrics
-            html.Div([
-                dcc.Graph(id='cumulative-return-chart-15', config={'displayModeBar': False}),
-                html.Div(id='risk-metrics-summary-15'),
-                html.Div(id='risk-metrics-summary-15-stoploss'),
-            ], style={'display': 'inline-block', 'width': '48%'}),
+                        html.Div([
+                            # 15-year cumulative returns and metrics
+                            html.Div([
+                                dcc.Graph(id='cumulative-return-chart-15', config={'displayModeBar': False}),
+                                html.Div(id='risk-metrics-summary-15'),
+                                html.Div(id='risk-metrics-summary-15-stoploss'),
+                            ], style={'display': 'inline-block', 'width': '48%'}),
 
-            # 30-year cumulative returns and metrics
-            html.Div([
-                dcc.Graph(id='cumulative-return-chart-30', config={'displayModeBar': False}),
-                html.Div(id='risk-metrics-summary-30'),
-                html.Div(id='risk-metrics-summary-30-stoploss'),
-            ], style={'display': 'inline-block', 'width': '48%'}),
-        ])
-    ])
+                            # 30-year cumulative returns and metrics
+                            html.Div([
+                                dcc.Graph(id='cumulative-return-chart-30', config={'displayModeBar': False}),
+                                html.Div(id='risk-metrics-summary-30'),
+                                html.Div(id='risk-metrics-summary-30-stoploss'),
+                            ], style={'display': 'inline-block', 'width': '48%'}),
+                        ])
+                    ])
+
 
 def create_day_trading_stats_section():
     """
@@ -203,46 +219,46 @@ def create_day_trading_stats_section():
     return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
-        html.H3("Day Trading Stats", style={'textAlign': 'center'}),
-        dash.dash_table.DataTable(
-            id='day-trading-stats-table',
-            editable=False,
-            cell_selectable=False,
-            columns=[
-                {'name': 'Year', 'id': 'Year'},
-                {'name': 'Total Days', 'id': 'Total Days'},
-                {'name': 'D UP', 'id': 'D UP'},
-                {'name': 'D UP %', 'id': 'D UP %'},
-                {'name': 'D DN', 'id': 'D DN'},
-                {'name': 'D DN %', 'id': 'D DN %'},
-                {'name': 'PD-H', 'id': 'PD-H'},
-                {'name': 'PD-H %', 'id': 'PD-H %'},
-                {'name': 'PD-L', 'id': 'PD-L'},
-                {'name': 'PD-L %', 'id': 'PD-L %'},
-                {'name': 'PD-HL', 'id': 'PD-HL'},
-                {'name': 'PD-HL %', 'id': 'PD-HL %'},
-                {'name': 'PD-nHL', 'id': 'PD-nHL'},
-                {'name': 'PD-nHL %', 'id': 'PD-nHL %'},
-            ],
-            data=[],
-            style_header={
-                'backgroundColor': '#333',
-                'color': 'white',
-                'border': '1px solid white',
-                'fontFamily': "'Press Start 2P', monospace",
-                'fontSize': '10px'
-            },
-            style_cell={
-                'backgroundColor': '#1e1e1e',
-                'color': 'white',
-                'border': '1px solid #444',
-                'fontFamily': "'Press Start 2P', monospace",
-                'fontSize': '10px',
-                'textAlign': 'center'
-            },
-            style_table={'overflowX': 'scroll'}
-        )
-    ])
+                        html.H3("Day Trading Stats", style={'textAlign': 'center'}),
+                        dash.dash_table.DataTable(
+                            id='day-trading-stats-table',
+                            editable=False,
+                            cell_selectable=False,
+                            columns=[
+                                {'name': 'Year', 'id': 'Year'},
+                                {'name': 'Total Days', 'id': 'Total Days'},
+                                {'name': 'D UP', 'id': 'D UP'},
+                                {'name': 'D UP %', 'id': 'D UP %'},
+                                {'name': 'D DN', 'id': 'D DN'},
+                                {'name': 'D DN %', 'id': 'D DN %'},
+                                {'name': 'PD-H', 'id': 'PD-H'},
+                                {'name': 'PD-H %', 'id': 'PD-H %'},
+                                {'name': 'PD-L', 'id': 'PD-L'},
+                                {'name': 'PD-L %', 'id': 'PD-L %'},
+                                {'name': 'PD-HL', 'id': 'PD-HL'},
+                                {'name': 'PD-HL %', 'id': 'PD-HL %'},
+                                {'name': 'PD-nHL', 'id': 'PD-nHL'},
+                                {'name': 'PD-nHL %', 'id': 'PD-nHL %'},
+                            ],
+                            data=[],
+                            style_header={
+                                'backgroundColor': '#333',
+                                'color': 'white',
+                                'border': '1px solid white',
+                                'fontFamily': "'Press Start 2P', monospace",
+                                'fontSize': '10px'
+                            },
+                            style_cell={
+                                'backgroundColor': '#1e1e1e',
+                                'color': 'white',
+                                'border': '1px solid #444',
+                                'fontFamily': "'Press Start 2P', monospace",
+                                'fontSize': '10px',
+                                'textAlign': 'center'
+                            },
+                            style_table={'overflowX': 'scroll'}
+                        )
+                    ])
 
 
 def create_day_trading_stats_weekday_section():
@@ -254,46 +270,46 @@ def create_day_trading_stats_weekday_section():
     return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
-        html.H3("Day Trading Stats Weekdays", style={'textAlign': 'center'}),
-        dash.dash_table.DataTable(
-            id='day-trading-stats-weekday-table',
-            editable=False,
-            cell_selectable=False,
-            columns=[
-                {'name': 'Weekday', 'id': 'Weekday'},
-                {'name': 'Total Days', 'id': 'Total Days'},
-                {'name': 'D UP', 'id': 'D UP'},
-                {'name': 'D UP %', 'id': 'D UP %'},
-                {'name': 'D DN', 'id': 'D DN'},
-                {'name': 'D DN %', 'id': 'D DN %'},
-                {'name': 'PD-H', 'id': 'PD-H'},
-                {'name': 'PD-H %', 'id': 'PD-H %'},
-                {'name': 'PD-L', 'id': 'PD-L'},
-                {'name': 'PD-L %', 'id': 'PD-L %'},
-                {'name': 'PD-HL', 'id': 'PD-HL'},
-                {'name': 'PD-HL %', 'id': 'PD-HL %'},
-                {'name': 'PD-nHL', 'id': 'PD-nHL'},
-                {'name': 'PD-nHL %', 'id': 'PD-nHL %'},
-            ],
-            data=[],
-            style_header={
-                'backgroundColor': '#333',
-                'color': 'white',
-                'border': '1px solid white',
-                'fontFamily': "'Press Start 2P', monospace",
-                'fontSize': '10px'
-            },
-            style_cell={
-                'backgroundColor': '#1e1e1e',
-                'color': 'white',
-                'border': '1px solid #444',
-                'fontFamily': "'Press Start 2P', monospace",
-                'fontSize': '10px',
-                'textAlign': 'center'
-            },
-            style_table={'overflowX': 'scroll'}
-        )
-    ])
+                        html.H3("Day Trading Stats Weekdays", style={'textAlign': 'center'}),
+                        dash.dash_table.DataTable(
+                            id='day-trading-stats-weekday-table',
+                            editable=False,
+                            cell_selectable=False,
+                            columns=[
+                                {'name': 'Weekday', 'id': 'Weekday'},
+                                {'name': 'Total Days', 'id': 'Total Days'},
+                                {'name': 'D UP', 'id': 'D UP'},
+                                {'name': 'D UP %', 'id': 'D UP %'},
+                                {'name': 'D DN', 'id': 'D DN'},
+                                {'name': 'D DN %', 'id': 'D DN %'},
+                                {'name': 'PD-H', 'id': 'PD-H'},
+                                {'name': 'PD-H %', 'id': 'PD-H %'},
+                                {'name': 'PD-L', 'id': 'PD-L'},
+                                {'name': 'PD-L %', 'id': 'PD-L %'},
+                                {'name': 'PD-HL', 'id': 'PD-HL'},
+                                {'name': 'PD-HL %', 'id': 'PD-HL %'},
+                                {'name': 'PD-nHL', 'id': 'PD-nHL'},
+                                {'name': 'PD-nHL %', 'id': 'PD-nHL %'},
+                            ],
+                            data=[],
+                            style_header={
+                                'backgroundColor': '#333',
+                                'color': 'white',
+                                'border': '1px solid white',
+                                'fontFamily': "'Press Start 2P', monospace",
+                                'fontSize': '10px'
+                            },
+                            style_cell={
+                                'backgroundColor': '#1e1e1e',
+                                'color': 'white',
+                                'border': '1px solid #444',
+                                'fontFamily': "'Press Start 2P', monospace",
+                                'fontSize': '10px',
+                                'textAlign': 'center'
+                            },
+                            style_table={'overflowX': 'scroll'}
+                        )
+                    ])
 
 
 def create_day_trading_stats_1_section():
@@ -305,46 +321,46 @@ def create_day_trading_stats_1_section():
     return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
-        html.H3("Day Trading Stats - continuation", style={'textAlign': 'center'}),
-        dash.dash_table.DataTable(
-            id='day-trading-stats-1-table',
-            editable=False,
-            cell_selectable=False,
-            columns=[
-                {'name': 'Year', 'id': 'Year'},
-                {'name': 'Total Days', 'id': 'Total Days'},
-                {'name': 'CaPD-H', 'id': 'CaPD-H'},
-                {'name': 'CaPD-H %', 'id': 'CaPD-H %'},
-                {'name': 'CbPD-L', 'id': 'CbPD-L'},
-                {'name': 'CbPD-L %', 'id': 'CbPD-L %'},
-                {'name': 'CaPD-HL', 'id': 'CaPD-HL'},
-                {'name': 'CaPD-HL %', 'id': 'CaPD-HL %'},
-                {'name': 'CbPD-HL', 'id': 'CbPD-HL'},
-                {'name': 'CbPD-HL %', 'id': 'CbPD-HL %'},
-                {'name': 'BISI', 'id': 'BISI'},
-                {'name': 'BISI %', 'id': 'BISI %'},
-                {'name': 'SIBI', 'id': 'SIBI'},
-                {'name': 'SIBI %', 'id': 'SIBI %'},
-            ],
-            data=[],
-            style_header={
-                'backgroundColor': '#333',
-                'color': 'white',
-                'border': '1px solid white',
-                'fontFamily': "'Press Start 2P', monospace",
-                'fontSize': '10px'
-            },
-            style_cell={
-                'backgroundColor': '#1e1e1e',
-                'color': 'white',
-                'border': '1px solid #444',
-                'fontFamily': "'Press Start 2P', monospace",
-                'fontSize': '10px',
-                'textAlign': 'center'
-            },
-            style_table={'overflowX': 'scroll'}
-        )
-    ])
+                        html.H3("Day Trading Stats - continuation", style={'textAlign': 'center'}),
+                        dash.dash_table.DataTable(
+                            id='day-trading-stats-1-table',
+                            editable=False,
+                            cell_selectable=False,
+                            columns=[
+                                {'name': 'Year', 'id': 'Year'},
+                                {'name': 'Total Days', 'id': 'Total Days'},
+                                {'name': 'CaPD-H', 'id': 'CaPD-H'},
+                                {'name': 'CaPD-H %', 'id': 'CaPD-H %'},
+                                {'name': 'CbPD-L', 'id': 'CbPD-L'},
+                                {'name': 'CbPD-L %', 'id': 'CbPD-L %'},
+                                {'name': 'CaPD-HL', 'id': 'CaPD-HL'},
+                                {'name': 'CaPD-HL %', 'id': 'CaPD-HL %'},
+                                {'name': 'CbPD-HL', 'id': 'CbPD-HL'},
+                                {'name': 'CbPD-HL %', 'id': 'CbPD-HL %'},
+                                {'name': 'BISI', 'id': 'BISI'},
+                                {'name': 'BISI %', 'id': 'BISI %'},
+                                {'name': 'SIBI', 'id': 'SIBI'},
+                                {'name': 'SIBI %', 'id': 'SIBI %'},
+                            ],
+                            data=[],
+                            style_header={
+                                'backgroundColor': '#333',
+                                'color': 'white',
+                                'border': '1px solid white',
+                                'fontFamily': "'Press Start 2P', monospace",
+                                'fontSize': '10px'
+                            },
+                            style_cell={
+                                'backgroundColor': '#1e1e1e',
+                                'color': 'white',
+                                'border': '1px solid #444',
+                                'fontFamily': "'Press Start 2P', monospace",
+                                'fontSize': '10px',
+                                'textAlign': 'center'
+                            },
+                            style_table={'overflowX': 'scroll'}
+                        )
+                    ])
 
 
 def create_day_trading_stats_1_weekday_section():
@@ -356,46 +372,46 @@ def create_day_trading_stats_1_weekday_section():
     return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
-        html.H3("Day Trading Stats - continuation - Weekday", style={'textAlign': 'center'}),
-        dash.dash_table.DataTable(
-            id='day-trading-stats-1-weekday-table',
-            editable=False,
-            cell_selectable=False,
-            columns=[
-                {'name': 'Weekday', 'id': 'Weekday'},
-                {'name': 'Total Days', 'id': 'Total Days'},
-                {'name': 'CaPD-H', 'id': 'CaPD-H'},
-                {'name': 'CaPD-H %', 'id': 'CaPD-H %'},
-                {'name': 'CbPD-L', 'id': 'CbPD-L'},
-                {'name': 'CbPD-L %', 'id': 'CbPD-L %'},
-                {'name': 'CaPD-HL', 'id': 'CaPD-HL'},
-                {'name': 'CaPD-HL %', 'id': 'CaPD-HL %'},
-                {'name': 'CbPD-HL', 'id': 'CbPD-HL'},
-                {'name': 'CbPD-HL %', 'id': 'CbPD-HL %'},
-                {'name': 'BISI', 'id': 'BISI'},
-                {'name': 'BISI %', 'id': 'BISI %'},
-                {'name': 'SIBI', 'id': 'SIBI'},
-                {'name': 'SIBI %', 'id': 'SIBI %'},
-            ],
-            data=[],
-            style_header={
-                'backgroundColor': '#333',
-                'color': 'white',
-                'border': '1px solid white',
-                'fontFamily': "'Press Start 2P', monospace",
-                'fontSize': '10px'
-            },
-            style_cell={
-                'backgroundColor': '#1e1e1e',
-                'color': 'white',
-                'border': '1px solid #444',
-                'fontFamily': "'Press Start 2P', monospace",
-                'fontSize': '10px',
-                'textAlign': 'center'
-            },
-            style_table={'overflowX': 'scroll'}
-        )
-    ])
+                        html.H3("Day Trading Stats - continuation - Weekday", style={'textAlign': 'center'}),
+                        dash.dash_table.DataTable(
+                            id='day-trading-stats-1-weekday-table',
+                            editable=False,
+                            cell_selectable=False,
+                            columns=[
+                                {'name': 'Weekday', 'id': 'Weekday'},
+                                {'name': 'Total Days', 'id': 'Total Days'},
+                                {'name': 'CaPD-H', 'id': 'CaPD-H'},
+                                {'name': 'CaPD-H %', 'id': 'CaPD-H %'},
+                                {'name': 'CbPD-L', 'id': 'CbPD-L'},
+                                {'name': 'CbPD-L %', 'id': 'CbPD-L %'},
+                                {'name': 'CaPD-HL', 'id': 'CaPD-HL'},
+                                {'name': 'CaPD-HL %', 'id': 'CaPD-HL %'},
+                                {'name': 'CbPD-HL', 'id': 'CbPD-HL'},
+                                {'name': 'CbPD-HL %', 'id': 'CbPD-HL %'},
+                                {'name': 'BISI', 'id': 'BISI'},
+                                {'name': 'BISI %', 'id': 'BISI %'},
+                                {'name': 'SIBI', 'id': 'SIBI'},
+                                {'name': 'SIBI %', 'id': 'SIBI %'},
+                            ],
+                            data=[],
+                            style_header={
+                                'backgroundColor': '#333',
+                                'color': 'white',
+                                'border': '1px solid white',
+                                'fontFamily': "'Press Start 2P', monospace",
+                                'fontSize': '10px'
+                            },
+                            style_cell={
+                                'backgroundColor': '#1e1e1e',
+                                'color': 'white',
+                                'border': '1px solid #444',
+                                'fontFamily': "'Press Start 2P', monospace",
+                                'fontSize': '10px',
+                                'textAlign': 'center'
+                            },
+                            style_table={'overflowX': 'scroll'}
+                        )
+                    ])
 
 
 def create_dup_analysis_section():
@@ -463,6 +479,7 @@ def create_dup_analysis_section():
 
                     ])
 
+
 def create_ddown_analysis_section():
     """
     Creates a section for D-UP day analysis including distributions and scatter plots.
@@ -486,7 +503,6 @@ def create_ddown_analysis_section():
                                 dcc.Graph(id='ddown-open-high-dist',
                                           config={'displayModeBar': False, 'staticPlot': True}),
                             ], style={'width': '50%', 'display': 'inline-block'}),
-
 
                         ], style={'display': 'flex'}),
 
@@ -539,46 +555,51 @@ def create_pdh_analysis_section():
     return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
-        html.H3("PD-H Day Analysis", style={'textAlign': 'center'}),
+                        html.H3("PD-H Day Analysis", style={'textAlign': 'center'}),
 
-        # Distribution Plots
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdh-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        # Distribution Plots
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdh-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-            html.Div([
-                dcc.Graph(id='pdh-open-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                            html.Div([
+                                dcc.Graph(id='pdh-open-high-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
+                        ], style={'display': 'flex'}),
 
-        ], style={'display': 'flex'}),
+                        # High vs Previous High Distribution
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdh-open-close-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-        # High vs Previous High Distribution
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdh-open-close-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                            html.Div([
+                                dcc.Graph(id='pdh-high-vs-prev-high-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-            html.Div([
-                dcc.Graph(id='pdh-high-vs-prev-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        ]),
 
-        ]),
+                        # Scatter Plots
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdh-open-low-vs-close-scatter',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-        # Scatter Plots
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdh-open-low-vs-close-scatter', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                            html.Div([
+                                dcc.Graph(id='pdh-open-low-vs-high-scatter',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-            html.Div([
-                dcc.Graph(id='pdh-open-low-vs-high-scatter', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        ], style={'display': 'flex'}),
 
-        ], style={'display': 'flex'}),
+                    ])
 
-    ])
 
 def create_pdl_analysis_section():
     """
@@ -590,47 +611,51 @@ def create_pdl_analysis_section():
     return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
-        html.H3("PD-L Day Analysis", style={'textAlign': 'center'}),
+                        html.H3("PD-L Day Analysis", style={'textAlign': 'center'}),
 
-        # Distribution Plots
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdl-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        # Distribution Plots
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdl-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-            html.Div([
-                dcc.Graph(id='pdl-open-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                            html.Div([
+                                dcc.Graph(id='pdl-open-high-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
+                        ], style={'display': 'flex'}),
 
-        ], style={'display': 'flex'}),
+                        # High vs Previous High Distribution
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdl-open-close-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-        # High vs Previous High Distribution
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdl-open-close-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                            html.Div([
+                                dcc.Graph(id='pdl-low-vs-prev-low-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-            html.Div([
-                dcc.Graph(id='pdl-low-vs-prev-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        ]),
 
-        ]),
+                        # Scatter Plots
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdl-open-low-vs-close-scatter',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-        # Scatter Plots
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdl-open-low-vs-close-scatter', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                            html.Div([
+                                dcc.Graph(id='pdl-open-low-vs-high-scatter',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-            html.Div([
-                dcc.Graph(id='pdl-open-low-vs-high-scatter', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        ], style={'display': 'flex'}),
 
+                    ])
 
-        ], style={'display': 'flex'}),
-
-    ])
 
 def create_pdhl_analysis_section():
     """
@@ -642,56 +667,60 @@ def create_pdhl_analysis_section():
     return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
-        html.H3("PD-HL Day Analysis", style={'textAlign': 'center'}),
+                        html.H3("PD-HL Day Analysis", style={'textAlign': 'center'}),
 
-        # Distribution Plots
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdhl-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        # Distribution Plots
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdhl-open-low-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-            html.Div([
-                dcc.Graph(id='pdhl-open-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                            html.Div([
+                                dcc.Graph(id='pdhl-open-high-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
+                        ], style={'display': 'flex'}),
 
-        ], style={'display': 'flex'}),
+                        # Open-Close distribution
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdhl-open-close-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'block', 'margin': '0 auto'}),
+                        ]),
 
-        # Open-Close distribution
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdhl-open-close-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'block', 'margin': '0 auto'}),
-        ]),
+                        # Low vs Prev Day Low and High vs Prev Day High distribution
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdhl-low-vs-prev-low-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
+                            html.Div([
+                                dcc.Graph(id='pdhl-high-vs-prev-high-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-        # Low vs Prev Day Low and High vs Prev Day High distribution
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdhl-low-vs-prev-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        ]),
 
-            html.Div([
-                dcc.Graph(id='pdhl-high-vs-prev-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        # Scatter Plots
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdhl-open-low-vs-close-scatter',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-        ]),
+                            html.Div([
+                                dcc.Graph(id='pdhl-open-low-vs-high-scatter',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
+                        ], style={'display': 'flex'}),
 
-        # Scatter Plots
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdhl-open-low-vs-close-scatter', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                    ])
 
-            html.Div([
-                dcc.Graph(id='pdhl-open-low-vs-high-scatter', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
-
-
-        ], style={'display': 'flex'}),
-
-    ])
 
 def create_pdh_pdl_pdhl_analysis_section():
     """
@@ -703,56 +732,59 @@ def create_pdh_pdl_pdhl_analysis_section():
     return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
-        html.H3("PD-H, PD-L, PD-HL Day Analysis", style={'textAlign': 'center'}),
+                        html.H3("PD-H, PD-L, PD-HL Day Analysis", style={'textAlign': 'center'}),
 
-        # Distribution Plots
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        # Distribution Plots
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdh-pdl-pdhl-open-low-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-            html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                            html.Div([
+                                dcc.Graph(id='pdh-pdl-pdhl-open-high-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
+                        ], style={'display': 'flex'}),
 
-        ], style={'display': 'flex'}),
+                        # Open-Close distribution
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdh-pdl-pdhl-open-close-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'block', 'margin': '0 auto'}),
+                        ]),
 
-        # Open-Close distribution
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-close-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'block', 'margin': '0 auto'}),
-        ]),
+                        # Low vs Prev Day Low and High vs Prev Day High distribution
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdh-pdl-pdhl-low-vs-prev-low-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
+                            html.Div([
+                                dcc.Graph(id='pdh-pdl-pdhl-high-vs-prev-high-dist',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-        # Low vs Prev Day Low and High vs Prev Day High distribution
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-low-vs-prev-low-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        ]),
 
-            html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-high-vs-prev-high-dist', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
+                        # Scatter Plots
+                        html.Div([
+                            html.Div([
+                                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-close-scatter',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
-        ]),
+                            html.Div([
+                                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-high-scatter',
+                                          config={'displayModeBar': False, 'staticPlot': True}),
+                            ], style={'width': '50%', 'display': 'inline-block'}),
 
+                        ], style={'display': 'flex'}),
 
-        # Scatter Plots
-        html.Div([
-            html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-close-scatter', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
-
-            html.Div([
-                dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-high-scatter', config={'displayModeBar': False, 'staticPlot': True}),
-            ], style={'width': '50%', 'display': 'inline-block'}),
-
-
-        ], style={'display': 'flex'}),
-
-    ])
+                    ])
 
 
 def create_correlation_section():
@@ -851,7 +883,6 @@ def create_correlation_section():
     ], style={'padding': '20px', 'backgroundColor': '#1e1e1e'})
 
 
-
 def create_layout(app):
     """
     Create and set the layout for the Dash application.
@@ -860,7 +891,8 @@ def create_layout(app):
         app (dash.Dash): The Dash application instance.
     """
     # Create market links using market_tickers
-    market_links = [html.A(name, id={'type': 'market-link', 'index': ticker}, href='#', style={'margin-right': '10px'}) for
+    market_links = [html.A(name, id={'type': 'market-link', 'index': ticker}, href='#', style={'margin-right': '10px'})
+                    for
                     name, ticker in market_tickers.items()]
 
     app.layout = html.Div(style={'display': 'flex'}, children=[
@@ -922,7 +954,6 @@ def create_layout(app):
                     ],
                     style={'margin-top': '20px'}
                 ),
-
 
                 # Day Trading Extended below the Stats section
                 html.Div(
@@ -1044,8 +1075,6 @@ def create_layout(app):
             ],
             style={'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
         ),
-
-
 
         html.Div(
             id='right-panel',
@@ -1252,7 +1281,8 @@ def create_layout(app):
                         ]),
                         # Foldable COT Disaggregated Futures Only
                         html.Div([
-                            html.Button('Disaggregated - Futures Only', id='disaggregated-futures-only-toggle', n_clicks=0,
+                            html.Button('Disaggregated - Futures Only', id='disaggregated-futures-only-toggle',
+                                        n_clicks=0,
                                         style={'width': '100%', 'textAlign': 'left'}),
                             dbc.Collapse(
                                 children=[
@@ -1395,7 +1425,6 @@ def create_layout(app):
                                 is_open=False
                             )
                         ]),
-
 
                         html.Div([
                             # html.Button('Previous Year', id='prev-year-button', n_clicks=0),
