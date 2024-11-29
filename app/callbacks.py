@@ -1,13 +1,10 @@
 # callbacks.py
+
 from dash import Input, Output, State, ctx, html  # , dcc
-# from dash.dash_table.Format import Format, FormatTemplate
-# import dash
 from datetime import timedelta
 import numpy as np
 import plotly.graph_objs as go
-# import plotly.graph_objects as go
 import plotly.subplots as sp
-# import plotly.express as px
 import pandas as pd
 from layout_definitions import format_market_name
 from data_fetchers import (
@@ -22,8 +19,6 @@ from data_fetchers import (
     CorrelationDataFetcher
 )
 from scripts.config import market_tickers
-# import matplotlib.pyplot as plt
-# from sklearn.linear_model import LinearRegression
 from sklearn.cluster import KMeans
 
 # Constants for trace colors and default values
@@ -1084,7 +1079,6 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
         )
         add_distribution_annotation(scatter_2, best_exit_level, "CornflowerBlue", direction="Horizontal")
 
-        print(f"EXPECTED RETURN: {expected_return_exit}")
         scatter_2.add_hline(
             y=expected_return_exit,
             line_dash="dash",
@@ -1918,8 +1912,6 @@ def update_risk_metrics_summary(risk_metrics, color):
 
 
 # Function to get the market name based on its index
-
-
 def register_callbacks(app):
     # Callback to toggle the foldable menu for "Legacy - Combined"
     @app.callback(
@@ -2631,6 +2623,7 @@ def register_callbacks(app):
 
     # Callback for Opportunity Analysis section
 
+
     @app.callback(
         [
             Output('yearly-analysis-table', 'data'),
@@ -2953,5 +2946,6 @@ def register_callbacks(app):
         # Dynamically define columns
         correlation_180d_columns = [{'name': col, 'id': col} for col in correlation_180d.columns]
         correlation_15y_columns = [{'name': col, 'id': col} for col in correlation_15y.columns]
+
 
         return correlation_180d_data, correlation_180d_columns, correlation_15y_data, correlation_15y_columns

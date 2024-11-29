@@ -4,8 +4,6 @@ from dash import dcc, html, dash_table
 import dash_bootstrap_components as dbc  # Correct import
 from scripts.config import market_tickers
 
-# from data_fetchers import SeasonalDataFetcher
-
 # Define constants for repeated strings, styles, and default values
 DEFAULT_MARKET = 'SP 500'
 DEFAULT_YEARS = [15, 35]
@@ -1070,6 +1068,27 @@ def create_layout(app):
                         )
                     ],
                     style={'margin-top': '20px'}
+                ),
+
+                html.Div(
+                    children=[
+                        html.P(
+                            "Disclaimer: Trading involves substantial risk. ",
+                            style={"color": "white", "display": "inline", "fontSize": "10px"},
+                        ),
+                        html.A(
+                            "Read Full Disclaimer",
+                            href="/disclaimer",  # This is the route for the disclaimer page
+                            target="_blank",  # Open in a new tab
+                            style={
+                                "color": "#4CAF50",
+                                "textDecoration": "underline",
+                                "fontSize": "10px",
+                                "marginLeft": "5px",
+                            },
+                        ),
+                    ],
+                    style={"backgroundColor": "#1e1e1e", "padding": "10px", "textAlign": "center"},
                 )
 
             ],
