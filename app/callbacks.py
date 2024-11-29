@@ -20,6 +20,12 @@ from data_fetchers import (
 )
 from scripts.config import market_tickers
 from sklearn.cluster import KMeans
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+user_tier = os.getenv("USER_TIER", "free")
 
 # Constants for trace colors and default values
 DEFAULT_MARKET = 'SP 500'
@@ -1914,6 +1920,7 @@ def update_risk_metrics_summary(risk_metrics, color):
 # Function to get the market name based on its index
 def register_callbacks(app):
     # Callback to toggle the foldable menu for "Legacy - Combined"
+
     @app.callback(
         Output('ohlc-cycles-collapse', 'is_open'),
         [Input('ohlc-cycles-toggle', 'n_clicks')],
@@ -2169,25 +2176,27 @@ def register_callbacks(app):
                 # Apply rangebreaks only for the OHLC chart
                 fig.update_xaxes(rangebreaks=[dict(values=dt_breaks)], row=1, col=1)
 
-        # Add Seasonality chart
-        for years in selected_years:
-            df = SeasonalDataFetcher.fetch_seasonal_data(format_market_name(stored_market), years, current_year)
-            if not df.empty:
-                # Connect the lines even if there are missing dates
-                add_trace(
-                    fig,
-                    df['Date'],
-                    df['Indexed_Cumulative_Percent_Change'],
-                    f'{years} Years',
-                    row=1,
-                    col=1,
-                    opacity=0.8,
-                    line_color=SEASONALITY_COLORS[years],  # Use corresponding color
-                    secondary_y=True,
-                    hide_yaxis_ticks=True,
-                    show_legend=False,
-                    disable_hover=False
-                )
+        if user_tier == 'premium':
+            # Add Seasonality chart
+            for years in selected_years:
+                df = SeasonalDataFetcher.fetch_seasonal_data(format_market_name(stored_market), years, current_year)
+                if not df.empty:
+                    # Connect the lines even if there are missing dates
+                    add_trace(
+                        fig,
+                        df['Date'],
+                        df['Indexed_Cumulative_Percent_Change'],
+                        f'{years} Years',
+                        row=1,
+                        col=1,
+                        opacity=0.8,
+                        line_color=SEASONALITY_COLORS[years],  # Use corresponding color
+                        secondary_y=True,
+                        hide_yaxis_ticks=True,
+                        show_legend=False,
+                        disable_hover=False
+                    )
+
         row_index = 2
         for subplot, table_suffix, report_type in active_subplots:
             if subplot == 'Open Interest':
@@ -2555,14 +2564,6 @@ def register_callbacks(app):
             return ''
         return 'collapsed' if n_clicks % 2 == 1 else ''
 
-    """""
-    @app.callback(
-        Output('stored-market', 'data'),
-        [Input('market-dropdown', 'value')]
-    )
-    def update_stored_market(selected_market):
-        return next((name for name, ticker in market_tickers.items() if ticker == selected_market), DEFAULT_MARKET)
-    """""
 
     @app.callback(
         Output('current-year', 'data'),
@@ -2623,294 +2624,294 @@ def register_callbacks(app):
 
     # Callback for Opportunity Analysis section
 
-
-    @app.callback(
-        [
-            Output('yearly-analysis-table', 'data'),
-            Output('15-year-summary', 'children'),
-            Output('30-year-summary', 'children'),
-            Output('distribution-chart-15', 'figure'),
-            Output('distribution-chart-optimal-15', 'figure'),
-            Output('distribution-chart-30', 'figure'),
-            Output('distribution-chart-optimal-30', 'figure'),
-            Output('cumulative-return-chart-15', 'figure'),
-            Output('cumulative-return-chart-30', 'figure'),
-            Output('risk-metrics-summary-15', 'children'),
-            Output('risk-metrics-summary-30', 'children'),
-            Output('risk-metrics-summary-15-stoploss', 'children'),
-            Output('risk-metrics-summary-30-stoploss', 'children'),
-            Output('day-trading-stats-table', 'data'),
-            Output('day-trading-stats-1-table', 'data'),
-            Output('day-trading-stats-weekday-table', 'data'),
-            Output('day-trading-stats-1-weekday-table', 'data'),
-            Output('dup-open-high-dist', 'figure'),
-            Output('dup-open-low-dist', 'figure'),
-            Output('dup-open-close-dist', 'figure'),
-            Output('dup-open-low-vs-high-scatter', 'figure'),
-            Output('dup-open-low-vs-close-scatter', 'figure'),
-            Output('dup-low-vs-prev-low-dist', 'figure'),
-            Output('dup-high-vs-prev-high-dist', 'figure'),
-            Output('ddown-open-high-dist', 'figure'),
-            Output('ddown-open-low-dist', 'figure'),
-            Output('ddown-open-close-dist', 'figure'),
-            Output('ddown-open-low-vs-high-scatter', 'figure'),
-            Output('ddown-open-low-vs-close-scatter', 'figure'),
-            Output('ddown-low-vs-prev-low-dist', 'figure'),
-            Output('ddown-high-vs-prev-high-dist', 'figure'),
-            Output('pdh-open-high-dist', 'figure'),
-            Output('pdh-open-low-dist', 'figure'),
-            Output('pdh-open-close-dist', 'figure'),
-            Output('pdh-open-low-vs-high-scatter', 'figure'),
-            Output('pdh-open-low-vs-close-scatter', 'figure'),
-            Output('pdh-high-vs-prev-high-dist', 'figure'),
-            Output('pdl-open-high-dist', 'figure'),
-            Output('pdl-open-low-dist', 'figure'),
-            Output('pdl-open-close-dist', 'figure'),
-            Output('pdl-open-low-vs-high-scatter', 'figure'),
-            Output('pdl-open-low-vs-close-scatter', 'figure'),
-            Output('pdl-low-vs-prev-low-dist', 'figure'),
-            Output('pdhl-open-high-dist', 'figure'),
-            Output('pdhl-open-low-dist', 'figure'),
-            Output('pdhl-open-close-dist', 'figure'),
-            Output('pdhl-open-low-vs-high-scatter', 'figure'),
-            Output('pdhl-open-low-vs-close-scatter', 'figure'),
-            Output('pdhl-low-vs-prev-low-dist', 'figure'),
-            Output('pdhl-high-vs-prev-high-dist', 'figure'),
-            Output('pdh-pdl-pdhl-open-high-dist', 'figure'),
-            Output('pdh-pdl-pdhl-open-low-dist', 'figure'),
-            Output('pdh-pdl-pdhl-open-close-dist', 'figure'),
-            Output('pdh-pdl-pdhl-open-low-vs-high-scatter', 'figure'),
-            Output('pdh-pdl-pdhl-open-low-vs-close-scatter', 'figure'),
-            Output('pdh-pdl-pdhl-low-vs-prev-low-dist', 'figure'),
-            Output('pdh-pdl-pdhl-high-vs-prev-high-dist', 'figure')
-        ],
-        [Input('perform-analysis-button', 'n_clicks'),
-         Input('interval-auto-load', 'n_intervals')],
-        [State('date-picker-range', 'start_date'),
-         State('date-picker-range', 'end_date'),
-         State('direction-dropdown', 'value'),
-         State('years-checklist', 'value'),
-         State('stored-market', 'data')],
-        prevent_initial_call=True
-    )
-    def perform_analysis_and_update_layout(n_clicks, n_intervals, start_date, end_date, direction, years_range,
-                                           stored_market):
-        start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day
-        end_month, end_day = pd.to_datetime(end_date).month, pd.to_datetime(end_date).day
-
-        ohlc_data_all_years = pd.DataFrame()
-        current_year = 2024
-
-        for year_offset in years_range:
-            year = current_year - year_offset
-            start_date_str = f'{year}-{start_month:02d}-{start_day:02d}'
-            end_date_str = f'{current_year}-{end_month:02d}-{end_day:02d}'
-            ohlc_data_year = OHLCDataFetcher.fetch_ohlc_data_by_range(stored_market, start_date_str, end_date_str)
-
-            if not ohlc_data_year.empty:
-                ohlc_data_all_years = pd.concat([ohlc_data_all_years, ohlc_data_year], ignore_index=True)
-
-        if ohlc_data_all_years.empty:
-            return [], "No data available for 15-Year Summary", "No data available for 30-Year Summary", {}, {}
-
-        # Perform analysis on the fetched OHLC data (Unoptimized results)
-        analysis_results = perform_analysis(stored_market, start_date, end_date, direction, ohlc_data_all_years)
-
-        # Prepare data for the yearly analysis table (Unoptimized)
-        yearly_data = analysis_results['yearly_results']
-
-        # Prepare summaries for 15 years and 30 years
-        summary_15 = analysis_results['15_year_summary']
-        summary_30 = analysis_results['30_year_summary']
-
-        # Calculate optimal stop-loss and exit for 15 and 30 years
-        optimal_results_15y = analysis_results['optimal_results_15y']
-        optimal_results_30y = analysis_results['optimal_results_15y']
-
-        # Simulate trades with optimal S/L and exit for 15 and 30 years
-        optimal_trades_results_15y = analysis_results['optimal_trades_results_15y']
-        optimal_trades_results_30y = analysis_results['optimal_trades_results_30y']
-
-        # D-UP stats
-        dup_distributions = analysis_results['dup_distributions']
-        dup_scatters = analysis_results['dup_scatters']
-        dup_high_vs_prev_high_dist = analysis_results['dup_high_vs_prev_high_dist']
-        dup_low_vs_prev_low_dist = analysis_results['dup_low_vs_prev_low_dist']
-
-        # D-DOWN stats
-        ddown_distributions = analysis_results['ddown_distributions']
-        ddown_scatters = analysis_results['ddown_scatters']
-        ddown_high_vs_prev_high_dist = analysis_results['ddown_high_vs_prev_high_dist']
-        ddown_low_vs_prev_low_dist = analysis_results['ddown_low_vs_prev_low_dist']
-
-        # PD-H stats
-        pdh_distributions = analysis_results['pdh_distributions']
-        pdh_scatters = analysis_results['pdh_scatters']
-        pdh_high_vs_prev_high_dist = analysis_results['pdh_high_vs_prev_high_dist']
-
-        # PD-L stats
-        pdl_distributions = analysis_results['pdl_distributions']
-        pdl_scatters = analysis_results['pdl_scatters']
-        pdl_low_vs_prev_low_dist = analysis_results['pdl_low_vs_prev_low_dist']
-
-        # PD-HL stats
-        pdhl_distributions = analysis_results['pdhl_distributions']
-        pdhl_scatters = analysis_results['pdhl_scatters']
-        pdhl_low_vs_prev_low_dist = analysis_results['pdhl_low_vs_prev_low_dist']
-        pdhl_high_vs_prev_high_dist = analysis_results['pdhl_high_vs_prev_high_dist']
-
-        # PD-H, PD-L and PD-HL stats
-        pdh_pdl_pdhl_distributions = analysis_results['pdh_pdl_pdhl_distributions']
-        pdh_pdl_pdhl_scatters = analysis_results['pdh_pdl_pdhl_scatters']
-        pdh_pdl_pdhl_low_vs_prev_low_dist = analysis_results['pdh_pdl_pdhl_low_vs_prev_low_dist']
-        pdh_pdl_pdhl_high_vs_prev_high_dist = analysis_results['pdh_pdl_pdhl_high_vs_prev_high_dist']
-
-        # Distribution Charts for 15 and 30 years
-        distribution_chart_15 = create_distribution_chart(yearly_data[:15], "15-Year Distribution")
-        optimal_distribution_chart_15 = create_distribution_chart(optimal_trades_results_15y,
-                                                                  "15-Year Optimal Distribution")
-        distribution_chart_30 = create_distribution_chart(yearly_data[:30], "30-Year Distribution")
-        optimal_distribution_chart_30 = create_distribution_chart(optimal_trades_results_30y,
-                                                                  "30-Year Optimal Distribution")
-
-        # Cumulative return charts for 15 and 30 years
-        (fig_15y, fig_30y, daily_returns_15, daily_returns_30, daily_returns_15_stoploss, daily_returns_30_stoploss,
-         cum_returns_no_stop_15, cum_returns_stop_15, cum_returns_no_stop_30, cum_returns_stop_30) = (
-            create_cumulative_return_charts(start_month, start_day, end_month, end_day, direction,
-                                            ohlc_data_all_years, 15,
-                                            optimal_results_15y, optimal_results_30y
-                                            ))
-
-        # Calculate risk metrics using cumulative returns
-        risk_metrics_15 = calculate_risk_metrics(daily_returns_15, cum_returns_no_stop_15)
-        risk_metrics_30 = calculate_risk_metrics(daily_returns_30, cum_returns_no_stop_30)
-
-        # Calculate stop-loss risk metrics
-        stop_loss_metrics_15 = calculate_risk_metrics(daily_returns_15_stoploss, cum_returns_stop_15)
-        stop_loss_metrics_30 = calculate_risk_metrics(daily_returns_30_stoploss, cum_returns_stop_30)
-
-        # Risk metrics and summaries for both scenarios (with and without stop-loss)
-        no_stop_loss_color = 'CornFlowerBlue'
-        stop_loss_color = 'Salmon'
-
-        risk_metrics_summary_15 = update_risk_metrics_summary(risk_metrics_15, no_stop_loss_color)
-        risk_metrics_summary_30 = update_risk_metrics_summary(risk_metrics_30, no_stop_loss_color)
-        stop_loss_metrics_summary_15 = update_risk_metrics_summary(stop_loss_metrics_15, stop_loss_color)
-        stop_loss_metrics_summary_30 = update_risk_metrics_summary(stop_loss_metrics_30, stop_loss_color)
-
-        # Compute day trading stats by year
-        stats_df = analysis_results['day_trading_stats']
-        stats_1_df = analysis_results['day_trading_stats_1']
-        stats_weekday_df = analysis_results['day_trading_stats_weekday']
-        stats_1_weekday_df = analysis_results['day_trading_stats_1_weekday']
-
-        # Separate the 'Total' row and the numeric years for sorting
-        total_row = stats_df[stats_df['Year'] == 'Total']
-        stats_df = stats_df[stats_df['Year'] != 'Total']
-
-        total_1_row = stats_1_df[stats_1_df['Year'] == 'Total']
-        stats_1_df = stats_1_df[stats_1_df['Year'] != 'Total']
-
-        # Ensure the 'Year' column is integer type for sorting
-        stats_df = stats_df.copy()  # Explicitly create a copy to avoid SettingWithCopyWarning
-        stats_df['Year'] = stats_df['Year'].astype(int)
-
-        stats_1_df = stats_1_df.copy()  # Explicitly create a copy to avoid SettingWithCopyWarning
-        stats_1_df['Year'] = stats_1_df['Year'].astype(int)
-
-        # Convert the dictionary to a DataFrame if it's not already one
-        stats_df = pd.DataFrame(stats_df)
-        stats_1_df = pd.DataFrame(stats_1_df)
-
-        # Drop duplicates and sort in one line with chaining
-        stats_df = stats_df.drop_duplicates(subset=['Year']).sort_values(by='Year', ascending=False)
-        stats_1_df = stats_1_df.drop_duplicates(subset=['Year']).sort_values(by='Year', ascending=False)
-
-        # Add the 'Total' row back to the end of the DataFrame
-        stats_df = pd.concat([stats_df, total_row], ignore_index=True)
-        stats_1_df = pd.concat([stats_1_df, total_1_row], ignore_index=True)
-
-        # Convert the DataFrame to a dictionary for Dash DataTable
-        day_trading_stats = stats_df.to_dict('records')
-        day_trading_stats_1 = stats_1_df.to_dict('records')
-        day_trading_stats_weekday = stats_weekday_df.to_dict('records')
-        day_trading_stats_1_weekday = stats_1_weekday_df.to_dict('records')
-
-        return (
-            yearly_data,  # Unoptimized data for the yearly analysis table
-            f"15-Year Summary: Win Rate: "
-            f"{summary_15['win_rate']:.2f}%, Points Gained: {summary_15['total_points_gained']}, "
-            f"Optimal S/L: "
-            f"{summary_15['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_15['optimal_exit']:.2f}%, "
-            f"Optimal Win Rate: "
-            f"{summary_15['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_15['optimal_points_gained']}",
-            f"30-Year Summary: Win Rate: "
-            f"{summary_30['win_rate']:.2f}%, Points Gained: {summary_30['total_points_gained']}, "
-            f"Optimal S/L: "
-            f"{summary_30['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_30['optimal_exit']:.2f}%, "
-            f"Optimal Win Rate: "
-            f"{summary_30['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_30['optimal_points_gained']}",
-            distribution_chart_15,  # Unoptimized distribution chart for 15 years
-            optimal_distribution_chart_15,  # Optimized distribution chart for 15 years
-            distribution_chart_30,  # Unoptimized distribution chart for 30 years
-            optimal_distribution_chart_30,  # Optimized distribution chart for 30 years
-            fig_15y,  # Cumulative return chart for 15 years
-            fig_30y,  # Cumulative return chart for 30 years
-            risk_metrics_summary_15,
-            risk_metrics_summary_30,
-            stop_loss_metrics_summary_15,
-            stop_loss_metrics_summary_30,
-            day_trading_stats,  # Day trading stats
-            day_trading_stats_1,
-            day_trading_stats_weekday,  # Day trading stats
-            day_trading_stats_1_weekday,
-            # D-UP distribution and scatter plots
-            dup_distributions.get('open_high', {}),
-            dup_distributions.get('open_low', {}),
-            dup_distributions.get('open_close', {}),
-            dup_scatters.get('scatter_1', {}),  # HERE SCATTERS
-            dup_scatters.get('scatter_2', {}),
-            dup_low_vs_prev_low_dist,
-            dup_high_vs_prev_high_dist,
-            # D-DOWN distribution and scatter plots
-            ddown_distributions.get('open_high', {}),
-            ddown_distributions.get('open_low', {}),
-            ddown_distributions.get('open_close', {}),
-            ddown_scatters.get('scatter_1', {}),  # HERE SCATTERS
-            ddown_scatters.get('scatter_2', {}),
-            ddown_low_vs_prev_low_dist,
-            ddown_high_vs_prev_high_dist,
-            # PD-H distribution and scatter plots
-            pdh_distributions.get('open_high', {}),
-            pdh_distributions.get('open_low', {}),
-            pdh_distributions.get('open_close', {}),
-            pdh_scatters.get('scatter_1', {}),  # HERE SCATTERS
-            pdh_scatters.get('scatter_2', {}),
-            pdh_high_vs_prev_high_dist,
-            # PD-L distribution and scatter plots
-            pdl_distributions.get('open_high', {}),
-            pdl_distributions.get('open_low', {}),
-            pdl_distributions.get('open_close', {}),
-            pdl_scatters.get('scatter_1', {}),
-            pdl_scatters.get('scatter_2', {}),
-            pdl_low_vs_prev_low_dist,
-            # PD-HL distribution and scatter plots
-            pdhl_distributions.get('open_high', {}),
-            pdhl_distributions.get('open_low', {}),
-            pdhl_distributions.get('open_close', {}),
-            pdhl_scatters.get('scatter_1', {}),
-            pdhl_scatters.get('scatter_2', {}),
-            pdhl_low_vs_prev_low_dist,
-            pdhl_high_vs_prev_high_dist,
-            # PD-H, PD-L, PD-HL distribution and scatter plots
-            pdh_pdl_pdhl_distributions.get('open_high', {}),
-            pdh_pdl_pdhl_distributions.get('open_low', {}),
-            pdh_pdl_pdhl_distributions.get('open_close', {}),
-            pdh_pdl_pdhl_scatters.get('scatter_1', {}),
-            pdh_pdl_pdhl_scatters.get('scatter_2', {}),
-            pdh_pdl_pdhl_low_vs_prev_low_dist,
-            pdh_pdl_pdhl_high_vs_prev_high_dist,
+    if user_tier == 'premium':
+        @app.callback(
+            [
+                Output('yearly-analysis-table', 'data'),
+                Output('15-year-summary', 'children'),
+                Output('30-year-summary', 'children'),
+                Output('distribution-chart-15', 'figure'),
+                Output('distribution-chart-optimal-15', 'figure'),
+                Output('distribution-chart-30', 'figure'),
+                Output('distribution-chart-optimal-30', 'figure'),
+                Output('cumulative-return-chart-15', 'figure'),
+                Output('cumulative-return-chart-30', 'figure'),
+                Output('risk-metrics-summary-15', 'children'),
+                Output('risk-metrics-summary-30', 'children'),
+                Output('risk-metrics-summary-15-stoploss', 'children'),
+                Output('risk-metrics-summary-30-stoploss', 'children'),
+                Output('day-trading-stats-table', 'data'),
+                Output('day-trading-stats-1-table', 'data'),
+                Output('day-trading-stats-weekday-table', 'data'),
+                Output('day-trading-stats-1-weekday-table', 'data'),
+                Output('dup-open-high-dist', 'figure'),
+                Output('dup-open-low-dist', 'figure'),
+                Output('dup-open-close-dist', 'figure'),
+                Output('dup-open-low-vs-high-scatter', 'figure'),
+                Output('dup-open-low-vs-close-scatter', 'figure'),
+                Output('dup-low-vs-prev-low-dist', 'figure'),
+                Output('dup-high-vs-prev-high-dist', 'figure'),
+                Output('ddown-open-high-dist', 'figure'),
+                Output('ddown-open-low-dist', 'figure'),
+                Output('ddown-open-close-dist', 'figure'),
+                Output('ddown-open-low-vs-high-scatter', 'figure'),
+                Output('ddown-open-low-vs-close-scatter', 'figure'),
+                Output('ddown-low-vs-prev-low-dist', 'figure'),
+                Output('ddown-high-vs-prev-high-dist', 'figure'),
+                Output('pdh-open-high-dist', 'figure'),
+                Output('pdh-open-low-dist', 'figure'),
+                Output('pdh-open-close-dist', 'figure'),
+                Output('pdh-open-low-vs-high-scatter', 'figure'),
+                Output('pdh-open-low-vs-close-scatter', 'figure'),
+                Output('pdh-high-vs-prev-high-dist', 'figure'),
+                Output('pdl-open-high-dist', 'figure'),
+                Output('pdl-open-low-dist', 'figure'),
+                Output('pdl-open-close-dist', 'figure'),
+                Output('pdl-open-low-vs-high-scatter', 'figure'),
+                Output('pdl-open-low-vs-close-scatter', 'figure'),
+                Output('pdl-low-vs-prev-low-dist', 'figure'),
+                Output('pdhl-open-high-dist', 'figure'),
+                Output('pdhl-open-low-dist', 'figure'),
+                Output('pdhl-open-close-dist', 'figure'),
+                Output('pdhl-open-low-vs-high-scatter', 'figure'),
+                Output('pdhl-open-low-vs-close-scatter', 'figure'),
+                Output('pdhl-low-vs-prev-low-dist', 'figure'),
+                Output('pdhl-high-vs-prev-high-dist', 'figure'),
+                Output('pdh-pdl-pdhl-open-high-dist', 'figure'),
+                Output('pdh-pdl-pdhl-open-low-dist', 'figure'),
+                Output('pdh-pdl-pdhl-open-close-dist', 'figure'),
+                Output('pdh-pdl-pdhl-open-low-vs-high-scatter', 'figure'),
+                Output('pdh-pdl-pdhl-open-low-vs-close-scatter', 'figure'),
+                Output('pdh-pdl-pdhl-low-vs-prev-low-dist', 'figure'),
+                Output('pdh-pdl-pdhl-high-vs-prev-high-dist', 'figure')
+            ],
+            [Input('perform-analysis-button', 'n_clicks'),
+             Input('interval-auto-load', 'n_intervals')],
+            [State('date-picker-range', 'start_date'),
+             State('date-picker-range', 'end_date'),
+             State('direction-dropdown', 'value'),
+             State('years-checklist', 'value'),
+             State('stored-market', 'data')],
+            prevent_initial_call=True
         )
+        def perform_analysis_and_update_layout(n_clicks, n_intervals, start_date, end_date, direction, years_range,
+                                               stored_market):
+            start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day
+            end_month, end_day = pd.to_datetime(end_date).month, pd.to_datetime(end_date).day
+
+            ohlc_data_all_years = pd.DataFrame()
+            current_year = 2024
+
+            for year_offset in years_range:
+                year = current_year - year_offset
+                start_date_str = f'{year}-{start_month:02d}-{start_day:02d}'
+                end_date_str = f'{current_year}-{end_month:02d}-{end_day:02d}'
+                ohlc_data_year = OHLCDataFetcher.fetch_ohlc_data_by_range(stored_market, start_date_str, end_date_str)
+
+                if not ohlc_data_year.empty:
+                    ohlc_data_all_years = pd.concat([ohlc_data_all_years, ohlc_data_year], ignore_index=True)
+
+            if ohlc_data_all_years.empty:
+                return [], "No data available for 15-Year Summary", "No data available for 30-Year Summary", {}, {}
+
+            # Perform analysis on the fetched OHLC data (Unoptimized results)
+            analysis_results = perform_analysis(stored_market, start_date, end_date, direction, ohlc_data_all_years)
+
+            # Prepare data for the yearly analysis table (Unoptimized)
+            yearly_data = analysis_results['yearly_results']
+
+            # Prepare summaries for 15 years and 30 years
+            summary_15 = analysis_results['15_year_summary']
+            summary_30 = analysis_results['30_year_summary']
+
+            # Calculate optimal stop-loss and exit for 15 and 30 years
+            optimal_results_15y = analysis_results['optimal_results_15y']
+            optimal_results_30y = analysis_results['optimal_results_15y']
+
+            # Simulate trades with optimal S/L and exit for 15 and 30 years
+            optimal_trades_results_15y = analysis_results['optimal_trades_results_15y']
+            optimal_trades_results_30y = analysis_results['optimal_trades_results_30y']
+
+            # D-UP stats
+            dup_distributions = analysis_results['dup_distributions']
+            dup_scatters = analysis_results['dup_scatters']
+            dup_high_vs_prev_high_dist = analysis_results['dup_high_vs_prev_high_dist']
+            dup_low_vs_prev_low_dist = analysis_results['dup_low_vs_prev_low_dist']
+
+            # D-DOWN stats
+            ddown_distributions = analysis_results['ddown_distributions']
+            ddown_scatters = analysis_results['ddown_scatters']
+            ddown_high_vs_prev_high_dist = analysis_results['ddown_high_vs_prev_high_dist']
+            ddown_low_vs_prev_low_dist = analysis_results['ddown_low_vs_prev_low_dist']
+
+            # PD-H stats
+            pdh_distributions = analysis_results['pdh_distributions']
+            pdh_scatters = analysis_results['pdh_scatters']
+            pdh_high_vs_prev_high_dist = analysis_results['pdh_high_vs_prev_high_dist']
+
+            # PD-L stats
+            pdl_distributions = analysis_results['pdl_distributions']
+            pdl_scatters = analysis_results['pdl_scatters']
+            pdl_low_vs_prev_low_dist = analysis_results['pdl_low_vs_prev_low_dist']
+
+            # PD-HL stats
+            pdhl_distributions = analysis_results['pdhl_distributions']
+            pdhl_scatters = analysis_results['pdhl_scatters']
+            pdhl_low_vs_prev_low_dist = analysis_results['pdhl_low_vs_prev_low_dist']
+            pdhl_high_vs_prev_high_dist = analysis_results['pdhl_high_vs_prev_high_dist']
+
+            # PD-H, PD-L and PD-HL stats
+            pdh_pdl_pdhl_distributions = analysis_results['pdh_pdl_pdhl_distributions']
+            pdh_pdl_pdhl_scatters = analysis_results['pdh_pdl_pdhl_scatters']
+            pdh_pdl_pdhl_low_vs_prev_low_dist = analysis_results['pdh_pdl_pdhl_low_vs_prev_low_dist']
+            pdh_pdl_pdhl_high_vs_prev_high_dist = analysis_results['pdh_pdl_pdhl_high_vs_prev_high_dist']
+
+            # Distribution Charts for 15 and 30 years
+            distribution_chart_15 = create_distribution_chart(yearly_data[:15], "15-Year Distribution")
+            optimal_distribution_chart_15 = create_distribution_chart(optimal_trades_results_15y,
+                                                                      "15-Year Optimal Distribution")
+            distribution_chart_30 = create_distribution_chart(yearly_data[:30], "30-Year Distribution")
+            optimal_distribution_chart_30 = create_distribution_chart(optimal_trades_results_30y,
+                                                                      "30-Year Optimal Distribution")
+
+            # Cumulative return charts for 15 and 30 years
+            (fig_15y, fig_30y, daily_returns_15, daily_returns_30, daily_returns_15_stoploss, daily_returns_30_stoploss,
+             cum_returns_no_stop_15, cum_returns_stop_15, cum_returns_no_stop_30, cum_returns_stop_30) = (
+                create_cumulative_return_charts(start_month, start_day, end_month, end_day, direction,
+                                                ohlc_data_all_years, 15,
+                                                optimal_results_15y, optimal_results_30y
+                                                ))
+
+            # Calculate risk metrics using cumulative returns
+            risk_metrics_15 = calculate_risk_metrics(daily_returns_15, cum_returns_no_stop_15)
+            risk_metrics_30 = calculate_risk_metrics(daily_returns_30, cum_returns_no_stop_30)
+
+            # Calculate stop-loss risk metrics
+            stop_loss_metrics_15 = calculate_risk_metrics(daily_returns_15_stoploss, cum_returns_stop_15)
+            stop_loss_metrics_30 = calculate_risk_metrics(daily_returns_30_stoploss, cum_returns_stop_30)
+
+            # Risk metrics and summaries for both scenarios (with and without stop-loss)
+            no_stop_loss_color = 'CornFlowerBlue'
+            stop_loss_color = 'Salmon'
+
+            risk_metrics_summary_15 = update_risk_metrics_summary(risk_metrics_15, no_stop_loss_color)
+            risk_metrics_summary_30 = update_risk_metrics_summary(risk_metrics_30, no_stop_loss_color)
+            stop_loss_metrics_summary_15 = update_risk_metrics_summary(stop_loss_metrics_15, stop_loss_color)
+            stop_loss_metrics_summary_30 = update_risk_metrics_summary(stop_loss_metrics_30, stop_loss_color)
+
+            # Compute day trading stats by year
+            stats_df = analysis_results['day_trading_stats']
+            stats_1_df = analysis_results['day_trading_stats_1']
+            stats_weekday_df = analysis_results['day_trading_stats_weekday']
+            stats_1_weekday_df = analysis_results['day_trading_stats_1_weekday']
+
+            # Separate the 'Total' row and the numeric years for sorting
+            total_row = stats_df[stats_df['Year'] == 'Total']
+            stats_df = stats_df[stats_df['Year'] != 'Total']
+
+            total_1_row = stats_1_df[stats_1_df['Year'] == 'Total']
+            stats_1_df = stats_1_df[stats_1_df['Year'] != 'Total']
+
+            # Ensure the 'Year' column is integer type for sorting
+            stats_df = stats_df.copy()  # Explicitly create a copy to avoid SettingWithCopyWarning
+            stats_df['Year'] = stats_df['Year'].astype(int)
+
+            stats_1_df = stats_1_df.copy()  # Explicitly create a copy to avoid SettingWithCopyWarning
+            stats_1_df['Year'] = stats_1_df['Year'].astype(int)
+
+            # Convert the dictionary to a DataFrame if it's not already one
+            stats_df = pd.DataFrame(stats_df)
+            stats_1_df = pd.DataFrame(stats_1_df)
+
+            # Drop duplicates and sort in one line with chaining
+            stats_df = stats_df.drop_duplicates(subset=['Year']).sort_values(by='Year', ascending=False)
+            stats_1_df = stats_1_df.drop_duplicates(subset=['Year']).sort_values(by='Year', ascending=False)
+
+            # Add the 'Total' row back to the end of the DataFrame
+            stats_df = pd.concat([stats_df, total_row], ignore_index=True)
+            stats_1_df = pd.concat([stats_1_df, total_1_row], ignore_index=True)
+
+            # Convert the DataFrame to a dictionary for Dash DataTable
+            day_trading_stats = stats_df.to_dict('records')
+            day_trading_stats_1 = stats_1_df.to_dict('records')
+            day_trading_stats_weekday = stats_weekday_df.to_dict('records')
+            day_trading_stats_1_weekday = stats_1_weekday_df.to_dict('records')
+
+            return (
+                yearly_data,  # Unoptimized data for the yearly analysis table
+                f"15-Year Summary: Win Rate: "
+                f"{summary_15['win_rate']:.2f}%, Points Gained: {summary_15['total_points_gained']}, "
+                f"Optimal S/L: "
+                f"{summary_15['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_15['optimal_exit']:.2f}%, "
+                f"Optimal Win Rate: "
+                f"{summary_15['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_15['optimal_points_gained']}",
+                f"30-Year Summary: Win Rate: "
+                f"{summary_30['win_rate']:.2f}%, Points Gained: {summary_30['total_points_gained']}, "
+                f"Optimal S/L: "
+                f"{summary_30['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_30['optimal_exit']:.2f}%, "
+                f"Optimal Win Rate: "
+                f"{summary_30['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_30['optimal_points_gained']}",
+                distribution_chart_15,  # Unoptimized distribution chart for 15 years
+                optimal_distribution_chart_15,  # Optimized distribution chart for 15 years
+                distribution_chart_30,  # Unoptimized distribution chart for 30 years
+                optimal_distribution_chart_30,  # Optimized distribution chart for 30 years
+                fig_15y,  # Cumulative return chart for 15 years
+                fig_30y,  # Cumulative return chart for 30 years
+                risk_metrics_summary_15,
+                risk_metrics_summary_30,
+                stop_loss_metrics_summary_15,
+                stop_loss_metrics_summary_30,
+                day_trading_stats,  # Day trading stats
+                day_trading_stats_1,
+                day_trading_stats_weekday,  # Day trading stats
+                day_trading_stats_1_weekday,
+                # D-UP distribution and scatter plots
+                dup_distributions.get('open_high', {}),
+                dup_distributions.get('open_low', {}),
+                dup_distributions.get('open_close', {}),
+                dup_scatters.get('scatter_1', {}),  # HERE SCATTERS
+                dup_scatters.get('scatter_2', {}),
+                dup_low_vs_prev_low_dist,
+                dup_high_vs_prev_high_dist,
+                # D-DOWN distribution and scatter plots
+                ddown_distributions.get('open_high', {}),
+                ddown_distributions.get('open_low', {}),
+                ddown_distributions.get('open_close', {}),
+                ddown_scatters.get('scatter_1', {}),  # HERE SCATTERS
+                ddown_scatters.get('scatter_2', {}),
+                ddown_low_vs_prev_low_dist,
+                ddown_high_vs_prev_high_dist,
+                # PD-H distribution and scatter plots
+                pdh_distributions.get('open_high', {}),
+                pdh_distributions.get('open_low', {}),
+                pdh_distributions.get('open_close', {}),
+                pdh_scatters.get('scatter_1', {}),  # HERE SCATTERS
+                pdh_scatters.get('scatter_2', {}),
+                pdh_high_vs_prev_high_dist,
+                # PD-L distribution and scatter plots
+                pdl_distributions.get('open_high', {}),
+                pdl_distributions.get('open_low', {}),
+                pdl_distributions.get('open_close', {}),
+                pdl_scatters.get('scatter_1', {}),
+                pdl_scatters.get('scatter_2', {}),
+                pdl_low_vs_prev_low_dist,
+                # PD-HL distribution and scatter plots
+                pdhl_distributions.get('open_high', {}),
+                pdhl_distributions.get('open_low', {}),
+                pdhl_distributions.get('open_close', {}),
+                pdhl_scatters.get('scatter_1', {}),
+                pdhl_scatters.get('scatter_2', {}),
+                pdhl_low_vs_prev_low_dist,
+                pdhl_high_vs_prev_high_dist,
+                # PD-H, PD-L, PD-HL distribution and scatter plots
+                pdh_pdl_pdhl_distributions.get('open_high', {}),
+                pdh_pdl_pdhl_distributions.get('open_low', {}),
+                pdh_pdl_pdhl_distributions.get('open_close', {}),
+                pdh_pdl_pdhl_scatters.get('scatter_1', {}),
+                pdh_pdl_pdhl_scatters.get('scatter_2', {}),
+                pdh_pdl_pdhl_low_vs_prev_low_dist,
+                pdh_pdl_pdhl_high_vs_prev_high_dist,
+            )
 
     @app.callback(
         [

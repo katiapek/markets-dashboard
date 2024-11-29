@@ -5,9 +5,6 @@ from layout_definitions import create_layout
 from callbacks import register_callbacks
 
 
-
-
-
 # Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, '/assets/styles.css'])
 app.title = "ClockTrades"
