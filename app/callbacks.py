@@ -12,7 +12,10 @@ from data_fetchers import (
     NetPositionsDataFetcher,
     PositionsChangeNetDataFetcher,
     Index26WDataFetcher,
-    CorrelationDataFetcher
+    CorrelationDataFetcher,
+    fetch_ohlc_data_cached,
+    fetch_active_subplot_data,
+    fetch_seasonal_data_cached
 )
 from dotenv import load_dotenv
 import os
@@ -279,12 +282,22 @@ def register_callbacks(app):
                                row_heights=row_heights)
 
         # Add OHLC chart
+        # Replace this block in your update_graph function
         if 'OHLC' in ohlc_visibility:
-            ohlc_df = OHLCDataFetcher.fetch_ohlc_data(stored_market, current_year)
+            ohlc_df = fetch_ohlc_data_cached(stored_market, current_year)
             if not ohlc_df.empty:
-                # Use the correctly formatted 'Date' column for the x-axis
-                add_candlestick_trace(fig, ohlc_df['Date'], ohlc_df['Open'], ohlc_df['High'], ohlc_df['Low'],
-                                      ohlc_df['Close'], f'OHLC {current_year}', row=1, col=1, secondary_y=False)
+                add_candlestick_trace(
+                    fig,
+                    ohlc_df['Date'],
+                    ohlc_df['Open'],
+                    ohlc_df['High'],
+                    ohlc_df['Low'],
+                    ohlc_df['Close'],
+                    f'OHLC {current_year}',
+                    row=1,
+                    col=1,
+                    secondary_y=False
+                )
 
                 # Build a complete timeline and identify missing dates for OHLC chart
                 dt_all = pd.date_range(start=ohlc_df['Date'].min(), end=ohlc_df['Date'].max())
@@ -297,7 +310,7 @@ def register_callbacks(app):
         if user_tier == 'premium':
             # Add Seasonality chart
             for years in selected_years:
-                df = SeasonalDataFetcher.fetch_seasonal_data(format_market_name(stored_market), years, current_year)
+                df = fetch_seasonal_data_cached(format_market_name(stored_market), years, current_year)
                 if not df.empty:
                     # Connect the lines even if there are missing dates
                     add_trace(
@@ -317,22 +330,19 @@ def register_callbacks(app):
 
         row_index = 2
         for subplot, table_suffix, report_type in active_subplots:
+            df = fetch_active_subplot_data(stored_market, current_year, subplot, table_suffix, report_type)
+
             if subplot == 'Open Interest':
-                df = OpenInterestDataFetcher.fetch_open_interest_data(stored_market, current_year, table_suffix,
-                                                                      report_type)
 
                 if not df.empty:
                     if not df.empty:
                         df = df.apply(pd.to_numeric, errors='coerce')
                         df['Date'] = pd.to_datetime(df['Date'])  # Convert to datetime format if needed
-                        add_trace(fig, df['Date'], df['open_interest_all'], f'Open Interest ({table_suffix})',
+                        add_trace(fig, df['Date'], df['open_interest_all'], f'Open Interest',
                                   row=row_index, col=1, line_color=COLORS['open_interest'])
                         # update_yaxis(fig, row=row_index, col=1, title='OI')
 
             elif subplot == 'OI Percentages':
-                df = OpenInterestPercentagesFetcher.fetch_open_interest_percentages(
-                    stored_market, current_year, table_suffix, report_type
-                )
 
                 if not df.empty:
                     if report_type == 'legacy':
@@ -397,8 +407,7 @@ def register_callbacks(app):
                         # update_yaxis(fig, row=row_index, col=1, title='% of Open Interest')
 
             elif subplot == 'Positions Change':
-                df = PositionsChangeDataFetcher.fetch_positions_change_data(stored_market, current_year, table_suffix,
-                                                                            report_type)
+
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
                     df['Date'] = pd.to_datetime(df['Date'])
@@ -481,8 +490,7 @@ def register_callbacks(app):
                         # update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
 
             elif subplot == 'Net Positions':
-                df = NetPositionsDataFetcher.fetch_net_positions_data(stored_market, current_year, table_suffix,
-                                                                      report_type)
+
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
                     df['Date'] = pd.to_datetime(df['Date'])
@@ -521,8 +529,7 @@ def register_callbacks(app):
                         # update_yaxis(fig, row=row_index, col=1, title='Net Positions')
 
             elif subplot == 'Net Positions Change':
-                df = PositionsChangeNetDataFetcher.fetch_positions_change_net_data(stored_market, current_year,
-                                                                                   table_suffix, report_type)
+
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
                     df['Date'] = pd.to_datetime(df['Date'])
@@ -580,7 +587,7 @@ def register_callbacks(app):
                         # update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
 
             elif subplot == '26W Index':
-                df = Index26WDataFetcher.fetch_26w_index_data(stored_market, current_year, table_suffix, report_type)
+
                 if not df.empty:
                     df = df.apply(pd.to_numeric, errors='coerce')
                     df['Date'] = pd.to_datetime(df['Date'])

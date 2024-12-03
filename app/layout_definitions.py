@@ -936,15 +936,15 @@ def create_layout(app):
                         html.Button('Next Year', id='next-year-button', n_clicks=0, className='above-chart-button')
                     ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px', 'gap': '10px'}),
 
-                    dcc.Graph(
-                        id='combined-chart',
-                        config={
-                            'scrollZoom': True,
-                            'doubleClick': 'autosize',
-                            'displayModeBar': False,
 
-                        },
-                        style={'backgroundColor': '#1e1e1e'}  # Set background color for the graph container
+                    dcc.Loading(
+                        id="loading-combined-chart",
+                        type="default",
+                        children=dcc.Graph(
+                            id="combined-chart",
+                            config={"scrollZoom": True, "doubleClick": "autosize", "displayModeBar": False},
+                            style={"backgroundColor": "#1e1e1e"}
+                        ),
                     ),
 
                     # Opportunity analysis section below the main chart

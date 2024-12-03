@@ -6,6 +6,43 @@ import pandas as pd
 from scripts.config import db_path_str
 from datetime import timedelta
 from dateutil import parser
+from functools import lru_cache
+
+
+# Set the database path
+db_path = os.getenv('DATABASE_PATH', db_path_str)
+
+@lru_cache(maxsize=10)
+def fetch_ohlc_data_cached(market, year):
+    """
+    Fetches and caches OHLC data for a specific market and year.
+    """
+    start_date = f"{year}-01-01"
+    end_date = f"{year}-12-31"
+    return OHLCDataFetcher.fetch_ohlc_data_by_range(market, start_date, end_date)
+
+
+@lru_cache(maxsize=10)
+def fetch_active_subplot_data(market, year, subplot, table_suffix, report_type):
+    if subplot == 'Open Interest':
+        return OpenInterestDataFetcher.fetch_open_interest_data(market, year, table_suffix, report_type)
+    elif subplot == 'OI Percentages':
+        return OpenInterestPercentagesFetcher.fetch_open_interest_percentages(market, year, table_suffix, report_type)
+    elif subplot == 'Positions Change':
+        return PositionsChangeDataFetcher.fetch_positions_change_data(market, year, table_suffix, report_type)
+    elif subplot == 'Net Positions':
+        return NetPositionsDataFetcher.fetch_net_positions_data(market, year, table_suffix, report_type)
+    elif subplot == 'Net Positions Change':
+        return PositionsChangeNetDataFetcher.fetch_positions_change_net_data(market, year, table_suffix, report_type)
+    elif subplot == '26W Index':
+        return Index26WDataFetcher.fetch_26w_index_data(market, year, table_suffix, report_type)
+    return pd.DataFrame()
+
+
+@lru_cache(maxsize=5)
+def fetch_seasonal_data_cached(market, years, base_year):
+    return SeasonalDataFetcher.fetch_seasonal_data(market, years, base_year)
+
 
 def clean_ohlc_data(df):
     """
@@ -23,11 +60,6 @@ def clean_ohlc_data(df):
         df[col] = df[col].astype(str).str.replace(',', '').astype(float)
 
     return df
-
-
-
-# Set the database path
-db_path = os.getenv('DATABASE_PATH', db_path_str)
 
 class BaseDataFetcher:
     """
