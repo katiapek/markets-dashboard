@@ -1,6 +1,24 @@
 # config.py
 db_path_str = '/Users/kamil/PycharmProjects/MarketsDashboard/app/data/markets_data.db'
 
+COLORS = {
+    'open_interest': 'orange',
+    'comm_long': 'Red',
+    'comm_short': 'Salmon',
+    'noncomm_long': 'Blue',
+    'noncomm_short': 'CornflowerBlue',
+    'other_long': 'Green',
+    'other_short': 'Lightgreen',
+    'seasonality_colors': {
+        15: 'CornFlowerBlue',
+        35: 'Salmon',
+    },
+}
+
+DEFAULT_MARKET = 'SP 500'
+DEFAULT_YEAR = 2024
+
+# Market tickers used by yfinance
 market_tickers = {
     'Day 30 Fed Fund': 'ZQ=F',
     'Note 2Y': 'ZT=F',
@@ -55,7 +73,7 @@ market_tickers = {
 
 }
 
-# Market codes for filtering
+# Market codes for COT data
 market_codes = {
     'Day 30 Fed Fund': '045601',
     'Note 2Y': '042601',
