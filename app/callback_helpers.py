@@ -1,3 +1,5 @@
+# callback_helpers.py
+
 import numpy as np
 import plotly.graph_objs as go
 import pandas as pd
@@ -939,6 +941,12 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
     def add_scatter_with_clustering(fig, x, y, xaxis_title, yaxis_title, title):
         # Perform K-Means clustering
         data = np.column_stack((x, y))
+        # Remove rows with NaN values
+        data = data[~np.isnan(data).any(axis=1)]
+        # Check if there is enough data after removing NaNs
+        if data.shape[0] < n_clusters:
+            raise ValueError("Not enough valid data points for clustering. Please check the input data.")
+
         kmeans = KMeans(n_clusters=n_clusters, random_state=42).fit(data)
         labels = kmeans.labels_
 
