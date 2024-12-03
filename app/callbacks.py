@@ -154,7 +154,7 @@ def add_distribution_annotation(key, std, color, direction="Vertical"):
     return key
 
 
-def add_std_lines(fig, data, title="", day_type='pdh'):
+def add_percentile_lines(fig, data, title="", day_type='pdh'):
     """
     Add standard deviation lines to a given figure.
 
@@ -164,40 +164,37 @@ def add_std_lines(fig, data, title="", day_type='pdh'):
         title (str): Title for the figure.
         day_type (str): Type of day for analysis - 'pdh', 'pdl', or 'pdhl'.
     """
-    mean_val = data.mean()
-    std_val = data.std()
 
-    # I remove mean_val as results are skewed on one side of the axis
-    # for example for PDH days current H is always Higher than PDH
+    lower_70, upper_70, lower_95, upper_95 = calculate_percentiles(data.to_frame(), str(data.name))
 
     if day_type == 'pdh':
-        fig.add_vline(x=std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, std_val, "CornflowerBlue")
-        fig.add_vline(x=2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, 2 * std_val, "Salmon")
+        fig.add_vline(x=upper_70, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, upper_70, "CornflowerBlue")
+        fig.add_vline(x=upper_95, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, upper_95, "Salmon")
     elif day_type == 'pdl':
-        fig.add_vline(x=-std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, -std_val, "CornflowerBlue")
-        fig.add_vline(x=-2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, -2 * std_val, "Salmon")
+        fig.add_vline(x=lower_70, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, lower_70, "CornflowerBlue")
+        fig.add_vline(x=lower_95, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, lower_95, "Salmon")
     elif day_type == 'dup' or day_type == 'ddown':
-        fig.add_vline(x=mean_val - std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, mean_val - std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val + std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, mean_val + std_val, "CornflowerBlue")
-        fig.add_vline(x=mean_val - 2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, mean_val - 2 * std_val, "Salmon")
-        fig.add_vline(x=mean_val + 2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, mean_val + 2 * std_val, "Salmon")
+        fig.add_vline(x=lower_70, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, lower_70, "CornflowerBlue")
+        fig.add_vline(x=upper_70, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, upper_70, "CornflowerBlue")
+        fig.add_vline(x=lower_95, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, lower_95, "Salmon")
+        fig.add_vline(x=upper_95, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, upper_95, "Salmon")
     else:
-        fig.add_vline(x=-std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, -std_val, "CornflowerBlue")
-        fig.add_vline(x=std_val, line_dash="dash", line_color="CornflowerBlue")
-        add_distribution_annotation(fig, std_val, "CornflowerBlue")
-        fig.add_vline(x=-2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, -2 * std_val, "Salmon")
-        fig.add_vline(x=2 * std_val, line_dash="dash", line_color="Salmon")
-        add_distribution_annotation(fig, 2 * std_val, "Salmon")
+        fig.add_vline(x=lower_70, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, lower_70, "CornflowerBlue")
+        fig.add_vline(x=upper_70, line_dash="dash", line_color="CornflowerBlue")
+        add_distribution_annotation(fig, upper_70, "CornflowerBlue")
+        fig.add_vline(x=lower_95, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, lower_95, "Salmon")
+        fig.add_vline(x=upper_95, line_dash="dash", line_color="Salmon")
+        add_distribution_annotation(fig, upper_95, "Salmon")
 
     fig.update_layout(
         # title=title,
@@ -1115,48 +1112,66 @@ def create_high_low_vs_prev_distribution(day_data, day_type="pdh"):
     if day_type == "pdh":
         high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
         fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
-        add_std_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type=day_type)
+        add_percentile_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type=day_type)
         return fig_high
 
     elif day_type == "pdl":
         low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
         fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
-        add_std_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type=day_type)
+        add_percentile_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type=day_type)
         return fig_low
 
     elif day_type == "pdhl":
         high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
         fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
-        add_std_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type='pdh')
+        add_percentile_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type='pdh')
 
         low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
         fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
-        add_std_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type='pdl')
+        add_percentile_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type='pdl')
 
         return fig_high, fig_low
 
     elif day_type == "dup" or day_type == "ddown":
         high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
         fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
-        add_std_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type=day_type)
+        add_percentile_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type=day_type)
 
         low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
         fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
-        add_std_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type=day_type)
+        add_percentile_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type=day_type)
 
         return fig_high, fig_low
 
     else:
         high_pct_changes = day_data['PDH_High_Pct_Change'].dropna()
         fig_high = go.Figure(data=[go.Histogram(x=high_pct_changes, nbinsx=50)])
-        add_std_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type=day_type)
+        add_percentile_lines(fig_high, high_pct_changes, title='High-Previous Day High % Change', day_type=day_type)
 
         low_pct_changes = day_data['PDL_Low_Pct_Change'].dropna()
         fig_low = go.Figure(data=[go.Histogram(x=low_pct_changes, nbinsx=50)])
-        add_std_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type=day_type)
+        add_percentile_lines(fig_low, low_pct_changes, title='Low-Previous Day Low % Change', day_type=day_type)
 
         return fig_high, fig_low
 
+def calculate_percentiles(day_data, column):
+    """
+    Calculate percentiles for a given column in the day data.
+
+    Args:
+        day_data (pd.DataFrame): The data containing daily price change metrics.
+        column (str): The column for which to calculate percentiles.
+
+    Returns:
+        tuple: Lower and upper bounds for 70% and 95% ranges.
+    """
+    metric_data = day_data[column].dropna()
+    lower_70 = metric_data.quantile(0.15)  # Lower bound for 70% range
+    upper_70 = metric_data.quantile(0.85)  # Upper bound for 70% range
+    lower_95 = metric_data.quantile(0.025)  # Lower bound for 95% range
+    upper_95 = metric_data.quantile(0.975)  # Upper bound for 95% range
+
+    return lower_70, upper_70, lower_95, upper_95
 
 def create_distributions(day_data, day_type="None"):
     distributions = {}
@@ -1167,62 +1182,47 @@ def create_distributions(day_data, day_type="None"):
     # Calculate distributions for each metric
     for key, col in zip(['open_high', 'open_low', 'open_close'], [open_high_col, open_low_col, open_close_col]):
         metric_data = day_data[col].dropna()
-        mean_metric = metric_data.mean()
-        std_metric = metric_data.std()
+        lower_70, upper_70, lower_95, upper_95 = calculate_percentiles(day_data, col)
 
-        # Handle one-sided distributions
-        if key in ['open_high', 'open_low'] or day_type == 'dup' or day_type == 'ddown':
-            # Use only std deviations relative to zero
-            plus_one_std = std_metric
-            plus_two_std = 2 * std_metric
-            minus_one_std = -std_metric
-            minus_two_std = -2 * std_metric
-        else:
-            # Symmetric distributions use mean ± std
-            plus_one_std = mean_metric + std_metric
-            plus_two_std = mean_metric + 2 * std_metric
-            minus_one_std = mean_metric - std_metric
-            minus_two_std = mean_metric - 2 * std_metric
-
-        # Create histogram with std lines
+        # Create histogram with percentile lines
         distributions[key] = go.Figure(data=[go.Histogram(x=metric_data, nbinsx=50)])
 
         if key == 'open_high':
-            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
-            add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
+            distributions[key].add_vline(x=upper_70, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], upper_70, "CornflowerBlue")
 
-            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
-            add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
+            distributions[key].add_vline(x=upper_95, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], upper_95, "Salmon")
         elif key == 'open_low':
-            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
-            add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
+            distributions[key].add_vline(x=lower_70, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], lower_70, "CornflowerBlue")
 
-            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="Salmon")
-            add_distribution_annotation(distributions[key], minus_two_std, "Salmon")
+            distributions[key].add_vline(x=lower_95, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], lower_95, "Salmon")
         elif day_type == 'dup':
-            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
-            add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
+            distributions[key].add_vline(x=upper_70, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], upper_70, "CornflowerBlue")
 
-            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
-            add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
+            distributions[key].add_vline(x=upper_95, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], upper_95, "Salmon")
         elif day_type == 'ddown':
-            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
-            add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
+            distributions[key].add_vline(x=lower_70, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], lower_70, "CornflowerBlue")
 
-            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="Salmon")
-            add_distribution_annotation(distributions[key], minus_two_std, "Salmon")
+            distributions[key].add_vline(x=lower_95, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], lower_95, "Salmon")
         else:
-            distributions[key].add_vline(x=minus_one_std, line_dash="dash", line_color="CornflowerBlue")
-            add_distribution_annotation(distributions[key], minus_one_std, "CornflowerBlue")
+            distributions[key].add_vline(x=lower_70, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], lower_70, "CornflowerBlue")
 
-            distributions[key].add_vline(x=plus_one_std, line_dash="dash", line_color="CornflowerBlue")
-            add_distribution_annotation(distributions[key], plus_one_std, "CornflowerBlue")
+            distributions[key].add_vline(x=upper_70, line_dash="dash", line_color="CornflowerBlue")
+            add_distribution_annotation(distributions[key], upper_70, "CornflowerBlue")
 
-            distributions[key].add_vline(x=minus_two_std, line_dash="dash", line_color="Salmon")
-            add_distribution_annotation(distributions[key], minus_two_std, "Salmon")
+            distributions[key].add_vline(x=lower_95, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], lower_95, "Salmon")
 
-            distributions[key].add_vline(x=plus_two_std, line_dash="dash", line_color="Salmon")
-            add_distribution_annotation(distributions[key], plus_two_std, "Salmon")
+            distributions[key].add_vline(x=upper_95, line_dash="dash", line_color="Salmon")
+            add_distribution_annotation(distributions[key], upper_95, "Salmon")
 
         # Update layout for styling
         distributions[key].update_layout(
