@@ -125,3 +125,92 @@ market_codes = {
     'Platinum': '076651',
 }
 
+TRACE_CONFIG = {
+    'Open Interest': {
+        'legacy': {
+            'columns': ['open_interest_all'],
+            'names': ['Open Interest'],
+            'colors': ['open_interest'],
+        },
+        'disaggregated': {
+            'columns': ['open_interest_all'],
+            'names': ['Open Interest'],
+            'colors': ['open_interest'],
+        },
+        'tff': {
+            'columns': ['open_interest_all'],
+            'names': ['Open Interest'],
+            'colors': ['open_interest'],
+        },
+    },
+    'OI Percentages': {
+        'legacy': {
+            'columns': ['pct_of_oi_noncomm_long_all', 'pct_of_oi_noncomm_short_all',
+                        'pct_of_oi_comm_long_all', 'pct_of_oi_comm_short_all'],
+            'names': ['% of OI Non-Commercials Long', '% of OI Non-Commercials Short',
+                      '% of OI Commercials Long', '% of OI Commercials Short'],
+            'colors': ['noncomm_long', 'noncomm_short', 'comm_long', 'comm_short'],
+        },
+        'disaggregated': {
+            'columns': ['pct_of_oi_m_money_long_all', 'pct_of_oi_m_money_short_all',
+                        'pct_of_oi_prod_merc_long', 'pct_of_oi_prod_merc_short',
+                        'pct_of_oi_swap_long_all', 'pct_of_oi_swap_short_all'],
+            'names': ['% of OI Managed Money Long', '% of OI Managed Money Short',
+                      '% of OI Producers/Merchants Long', '% of OI Producers/Merchants Short',
+                      '% of OI Swap Dealers Long', '% of OI Swap Dealers Short'],
+            'colors': ['noncomm_long', 'noncomm_short', 'comm_long', 'comm_short','other_long', 'other_short'],
+        },
+        'tff': {
+            'columns': ['pct_of_oi_lev_money_long', 'pct_of_oi_lev_money_short',
+                        'pct_of_oi_asset_mgr_long', 'pct_of_oi_asset_mgr_short',
+                        'pct_of_oi_dealer_long_all', 'pct_of_oi_dealer_short_all'],
+            'names': ['% of OI Leveraged Money Long', '% of OI Leveraged Money Short',
+                      '% of OI Asset Managers Long', '% of OI Asset Managers Short',
+                      '% of OI Dealers Long', '% of OI Dealers Short'],
+            'colors': ['noncomm_long', 'noncomm_short', 'comm_long', 'comm_short', 'other_long', 'other_short'],
+        },
+    },
+    'Net Positions': {
+        'legacy': {
+            'columns': ['noncomm_net_positions', 'comm_net_positions'],
+            'names': ['Net Positions Non-Commercials', 'Net Positions Commercials'],
+            'colors': ['noncomm_long', 'comm_long'],
+        },
+        'disaggregated': {
+            'columns': ['m_money_net_positions', 'prod_merc_net_positions',
+                        'swap_net_positions'],
+            'names': ['Net Positions Managed Money', 'Net Positions Producers / Merchants',
+                      'Net Positions Swap Dealers'],
+            'colors': ['noncomm_long', 'comm_long', 'other_long'],
+        },
+        'tff': {
+            'columns': ['lev_money_net_positions', 'asset_mgr_net_positions',
+                        'dealer_net_positions'],
+            'names': ['Net Positions Managed Money', 'Net Positions Asset Mgrs',
+                      'Net Positions Dealers'],
+            'colors': ['noncomm_long','comm_long','other_long'],
+        },
+    },
+    '26W Index': {
+        'legacy': {
+            'columns': ['noncomm_26w_index', 'comm_26w_index'],
+            'names': ['Non-Commercials 26W Index', 'Commercials 26W Index'],
+            'colors': ['noncomm_long', 'comm_long'],
+        },
+        'disaggregated': {
+            'columns': ['m_money_26w_index', 'prod_merc_26w_index',
+                        'swap_26w_index'],
+            'names': ['Managed Money 26W Index', 'Producers / Merchants 26W Index',
+                      'Swap Dealers 26W Index'],
+            'colors': ['noncomm_long', 'comm_long', 'other_long'],
+        },
+        'tff': {
+            'columns': ['lev_money_26w_index', 'asset_mgr_26w_index',
+                        'dealer_26w_index'],
+            'names': ['Managed Money 26W Index', 'Asset Mgrs 26W Index',
+                      'Dealers 26W Index'],
+            'colors': ['noncomm_long','comm_long','other_long'],
+        },
+    },
+
+}
