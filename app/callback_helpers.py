@@ -7,7 +7,8 @@ from sklearn.cluster import KMeans
 from datetime import timedelta
 from dash import html
 from scripts.config import market_tickers, DEFAULT_MARKET, DEFAULT_YEAR
-
+import cProfile
+import pstats
 
 def add_trace(fig, x, y, trace_name, row, col, mode='lines', line_color=None, secondary_y=False, chart_type='line',
               opacity=1, hide_yaxis_ticks=False, bar_width=None, bar_offset=None, show_legend=True,
@@ -395,13 +396,6 @@ def calculate_max_gain(df, open_price, close_price, direction):
 
 
 def calculate_optimal_exit_and_stop_loss(analysis_results):
-    """
-    Calculate the optimal stop loss and exit based on historical max drawdowns and gains.
-    Args:
-        analysis_results (list): List of yearly analysis results with max drawdown and max gain values.
-    Returns:
-        dict: A dictionary containing the optimal stop loss, optimal exit, win rate, and points gained.
-    """
     total_years = len(analysis_results)
     if total_years == 0:
         return {
@@ -411,30 +405,19 @@ def calculate_optimal_exit_and_stop_loss(analysis_results):
             'points_gained': 0
         }
 
-    # Determine the maximum observed drawdown and gain across all years
+    # Precompute reusable data
     max_observed_drawdown = max(result['Max Drawdown (%)'] for result in analysis_results)
     max_observed_gain = max(result['Max Gain (%)'] for result in analysis_results)
 
-    # Stop loss and exit thresholds to test (1% through max observed drawdown/gain)
-    stop_loss_thresholds = [i for i in range(1, int(max_observed_drawdown) + 1)]
-    exit_thresholds = [i for i in range(1, int(max_observed_gain) + 1)]
+    # Optimize thresholds
+    stop_loss_thresholds = np.linspace(1, max_observed_drawdown, num=50)
+    exit_thresholds = np.linspace(1, max_observed_gain, num=50)
 
-    # Store results for each stop loss and exit combination
-    best_combination = {
-        'stop_loss': None,
-        'exit': None,
-        'win_rate': 0,
-        'points_gained': float('-inf')
-    }
+    best_combination = {'stop_loss': None, 'exit': None, 'win_rate': 0, 'points_gained': float('-inf')}
 
-    # Iterate over stop loss thresholds
     for stop_loss in stop_loss_thresholds:
-        # Iterate over exit thresholds
         for exit_level in exit_thresholds:
-            wins = 0
-            total_points = 0
-
-            # Simulate each year with the given stop loss and exit combination
+            total_points, wins = 0, 0
             for result in analysis_results:
                 max_drawdown = result['Max Drawdown (%)']
                 max_drawdown_points = result['Max Drawdown (Points)']
@@ -442,35 +425,25 @@ def calculate_optimal_exit_and_stop_loss(analysis_results):
                 max_gain_points = result['Max Gain (Points)']
                 closing_points = result['Closing Points']
 
-                # Apply stop loss (percentage-based)
                 if max_drawdown >= stop_loss:
-                    # Loss proportional to the stop loss in points
                     total_points += (-stop_loss / max_drawdown) * max_drawdown_points
                 elif max_gain >= exit_level:
-                    # Gain proportional to the exit level in points
                     total_points += (exit_level / max_gain) * max_gain_points
-                    wins += 1  # Count this as a win because the exit level was hit
-                elif closing_points > 0:
-                    # Positive closing points mean a win
-                    total_points += closing_points
-                    wins += 1  # Count this as a win because closing points are positive
+                    wins += 1
                 else:
-                    # Negative closing points, take the loss
                     total_points += closing_points
+                    if closing_points > 0:
+                        wins += 1
 
-            # Calculate win rate for this stop loss and exit level
             win_rate = (wins / total_years) * 100
-
-            # If this combination yields better points, update the best combination
             if total_points > best_combination['points_gained']:
-                best_combination = {
+                best_combination.update({
                     'stop_loss': stop_loss,
                     'exit': exit_level,
                     'win_rate': win_rate,
                     'points_gained': total_points
-                }
+                })
 
-    # Return the best combination of stop loss and exit
     return {
         'optimal_stop_loss': best_combination['stop_loss'],
         'optimal_exit': best_combination['exit'],
@@ -856,10 +829,6 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
             print(
                 f"Warning: Mismatch in lengths for year {year}. Yearly data length: {len(yearly_data_30y)}"
                 f", Stop-loss return length: {len(stop_loss_returns_30y)}")
-    # Invert returns for short trades
-    # if direction == 'Short':
-    #    combined_data_15y['Stop_Loss_Returns'] *= -1
-    #    combined_data_30y['Stop_Loss_Returns'] *= -1
 
     # Calculate cumulative returns for both no stop-loss and with stop-loss/optimal exit strategies
     combined_data_15y['Cumulative_No_Stop'] = combined_data_15y['No_Stop_Returns'].cumsum()
@@ -903,7 +872,6 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
             combined_data_15y['Cumulative_No_Stop'], combined_data_15y['Cumulative_Stop_Loss'],  # Cumulative returns
             combined_data_30y['Cumulative_No_Stop'], combined_data_30y['Cumulative_Stop_Loss']  # Cumulative returns
             )
-
 
 def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None,
                          expected_return_stop_loss=None, expected_return_exit=None, add_distribution_annotations=True,
@@ -1394,7 +1362,7 @@ def optimize_stop_loss_open_to_close(day_data, direction="Long"):
         stop_loss_min = 0
 
     # Define the range for stop-loss levels
-    stop_loss_range = np.linspace(stop_loss_min, stop_loss_max, 100)
+    stop_loss_range = np.linspace(stop_loss_min, stop_loss_max, 50)
 
     # Loop through possible stop-loss levels
     for stop_loss_level in stop_loss_range:
@@ -1457,7 +1425,7 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
         take_profit_min = day_data[exit_col].min()
 
     # Define range of take-profit levels
-    take_profit_range = np.linspace(take_profit_min, take_profit_max, 100)  # Covers both positive and negative values
+    take_profit_range = np.linspace(take_profit_min, take_profit_max, 50)  # Covers both positive and negative values
 
     for take_profit_level in take_profit_range:
         if direction == "Long":
@@ -1559,18 +1527,6 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
         if filtered_yearly_data.empty:
             continue
 
-        # Aggregate filtered data for D-UP, D-DOWN, PD-H, PD-L, and PD-HL analysis across all years
-        dup_days_all_years = pd.concat([dup_days_all_years, filter_dup_days(filtered_yearly_data)],
-                                       ignore_index=True)
-        ddown_days_all_years = pd.concat([ddown_days_all_years, filter_ddown_days(filtered_yearly_data)],
-                                         ignore_index=True)
-        pdh_days_all_years = pd.concat([pdh_days_all_years, filter_pdh_days(filtered_yearly_data)],
-                                       ignore_index=True)
-        pdl_days_all_years = pd.concat([pdl_days_all_years, filter_pdl_days(filtered_yearly_data)],
-                                       ignore_index=True)
-        pdhl_days_all_years = pd.concat([pdhl_days_all_years, filter_pdhl_days(filtered_yearly_data)],
-                                        ignore_index=True)
-
         # Perform calculations (points change, max drawdown, etc.)
         open_price = pd.to_numeric(start_data['Open'], errors='coerce')
         close_price = pd.to_numeric(end_data['Close'], errors='coerce')
@@ -1591,8 +1547,30 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
             'Closing Percentage': round(percentage_change, 1)
         })
 
-    # Sort analysis results by year
-    analysis_results = sorted(analysis_results, key=lambda x: x['Year'], reverse=True)
+        # Sort analysis results by year
+        analysis_results = sorted(analysis_results, key=lambda x: x['Year'], reverse=True)
+
+        # Filter columns for dup and ddown analysis
+        filtered_yearly_data_for_dup_ddown = filtered_yearly_data[['Open_Low_Pct_Change', 'Open_High_Pct_Change',
+                                                                   'Open_Close_Pct_Change', 'Close', 'Open', 'Day_Type_1',
+                                                                   'PDH_High_Pct_Change', 'PDL_Low_Pct_Change']]
+
+        # Filter columns for pdh, pdl, and pdhl analysis
+        filtered_yearly_data_for_pdh_pdl_pdhl = filtered_yearly_data[['Open_Low_Pct_Change', 'Open_High_Pct_Change',
+                                                                      'Open_Close_Pct_Change', 'Day_Type_1',
+                                                                      'PDH_High_Pct_Change', 'PDL_Low_Pct_Change']]
+
+        # Aggregate filtered data for D-UP, D-DOWN, PD-H, PD-L, and PD-HL analysis across all years
+        dup_days_all_years = pd.concat([dup_days_all_years, filter_dup_days(filtered_yearly_data_for_dup_ddown)],
+                                       ignore_index=True)
+        ddown_days_all_years = pd.concat([ddown_days_all_years, filter_ddown_days(filtered_yearly_data_for_dup_ddown)],
+                                         ignore_index=True)
+        pdh_days_all_years = pd.concat([pdh_days_all_years, filter_pdh_days(filtered_yearly_data_for_pdh_pdl_pdhl)],
+                                       ignore_index=True)
+        pdl_days_all_years = pd.concat([pdl_days_all_years, filter_pdl_days(filtered_yearly_data_for_pdh_pdl_pdhl)],
+                                       ignore_index=True)
+        pdhl_days_all_years = pd.concat([pdhl_days_all_years, filter_pdhl_days(filtered_yearly_data_for_pdh_pdl_pdhl)],
+                                        ignore_index=True)
 
     # D-UP Analysis
     dup_best_stop_loss_level, dup_expected_return_stop_loss = (
@@ -1736,8 +1714,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     }
 
 
-def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month, end_day, optimal_results,
-                            direction):
+def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month, end_day, optimal_results, direction):
     """
     Simulates trades with stop-loss and exit strategy applied, using the optimal results.
     Args:
@@ -1750,6 +1727,29 @@ def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day,
         list: List of simulated trade results with stop-loss and exit applied.
     """
 
+    # Ensure optimal stop-loss and exit are defined
+    stop_loss_threshold = optimal_results.get('optimal_stop_loss')
+    exit_threshold = optimal_results.get('optimal_exit')
+
+    if stop_loss_threshold is None or exit_threshold is None:
+        return []  # Return empty if thresholds are missing
+
+    # Pre-filter the OHLC data for the relevant years
+    years = [result['Year'] for result in analysis_results]
+    ohlc_filtered = ohlc_data[ohlc_data['Date'].dt.year.isin(years)]
+
+    # Precompute start and end dates for each year
+    start_dates = {}
+    end_dates = {}
+    for year in years:
+        start_date = find_nearest_date(ohlc_filtered[ohlc_filtered['Date'].dt.year == year],
+                                       f"{year}-{start_month:02d}-{start_day:02d}")
+        end_date = find_nearest_date(ohlc_filtered[ohlc_filtered['Date'].dt.year == year],
+                                     f"{year}-{end_month:02d}-{end_day:02d}")
+        if start_date is not None and end_date is not None:
+            start_dates[year] = start_date
+            end_dates[year] = end_date
+
     # Initialize list to store results
     optimal_trades_results = []
 
@@ -1757,46 +1757,30 @@ def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day,
     for result in analysis_results:
         year = result['Year']
 
-        # Fetch the 'Open' and 'Close' prices from the original OHLC data for the year
-        start_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
-                                       f"{year}-{start_month:02d}-{start_day:02d}")
-        end_data = find_nearest_date(ohlc_data[ohlc_data['Date'].dt.year == year],
-                                     f"{year}-{end_month:02d}-{end_day:02d}")
-
-        if start_data is None or end_data is None:
-            # Skip if no valid start or end data for the year
+        # Skip if start or end date is missing
+        if year not in start_dates or year not in end_dates:
             continue
 
+        start_data = start_dates[year]
+        end_data = end_dates[year]
+
+        # Get the 'Open' and 'Close' prices
         open_price = pd.to_numeric(start_data['Open'], errors='coerce')
         close_price = pd.to_numeric(end_data['Close'], errors='coerce')
 
         if pd.isnull(open_price) or pd.isnull(close_price):
-            # Skip if the conversion to numeric failed
-            continue
+            continue  # Skip if prices are invalid
 
         max_drawdown = result['Max Drawdown (%)']
         max_gain = result['Max Gain (%)']
 
-        # Ensure optimal stop-loss and exit are not None
-        stop_loss_threshold = optimal_results.get('optimal_stop_loss')
-        exit_threshold = optimal_results.get('optimal_exit')
-
-        if stop_loss_threshold is None or exit_threshold is None:
-            # If stop loss or exit is missing, skip the year
-            continue
-
+        # Determine points change based on thresholds
         if max_drawdown >= stop_loss_threshold:
-            # If the stop loss is hit, calculate the loss
             points_change = -stop_loss_threshold * open_price / 100
         elif max_gain >= exit_threshold:
-            # If the exit is hit, calculate the gain
             points_change = exit_threshold * open_price / 100
         else:
-            # If neither stop loss nor exit is hit, calculate the normal close-to-open change
-            if direction == 'Long':
-                points_change = close_price - open_price
-            else:
-                points_change = open_price - close_price
+            points_change = (close_price - open_price) if direction == 'Long' else (open_price - close_price)
 
         percentage_change = (points_change / open_price) * 100
 

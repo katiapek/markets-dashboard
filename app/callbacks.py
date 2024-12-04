@@ -22,6 +22,11 @@ import os
 from callback_helpers import *
 from scripts.config import COLORS, market_tickers, TRACE_CONFIG
 
+import cProfile
+import pstats
+from io import StringIO
+
+profiler = cProfile.Profile()
 
 # Load environment variables from .env file
 load_dotenv()
@@ -704,7 +709,14 @@ def register_callbacks(app):
                 return [], "No data available for 15-Year Summary", "No data available for 30-Year Summary", {}, {}
 
             # Perform analysis on the fetched OHLC data (Unoptimized results)
+            profiler.enable()
             analysis_results = perform_analysis(stored_market, start_date, end_date, direction, ohlc_data_all_years)
+            profiler.disable()
+            s = StringIO()
+            ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
+            ps.print_stats()
+            print(s.getvalue())
+
 
             # Prepare data for the yearly analysis table (Unoptimized)
             yearly_data = analysis_results['yearly_results']
