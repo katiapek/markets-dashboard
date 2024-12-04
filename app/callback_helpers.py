@@ -30,10 +30,13 @@ def add_trace(fig, x, y, trace_name, row, col, mode='lines', line_color=None, se
     """
     if chart_type == 'line':
         trace = go.Scatter(x=x, y=y, mode=mode, name=trace_name, line=dict(color=line_color), showlegend=show_legend,
-                           opacity=opacity, connectgaps=True, hoverinfo='skip' if disable_hover else 'x+y')
+                           opacity=opacity, connectgaps=True, hoverinfo='skip' if disable_hover else 'x+y',
+                           hovertemplate='%{y:.2f}',
+                           )
     else:  # chart_type == 'bar':
         trace = go.Bar(x=x, y=y, name=trace_name, marker=dict(color=line_color), showlegend=show_legend,
-                       opacity=opacity, width=bar_width, offset=bar_offset, hovertemplate='%{y}<extra></extra>')
+                       opacity=opacity, width=bar_width, offset=bar_offset, hovertemplate='%{y:.2f}',
+                       )
 
     fig.add_trace(trace, row=row, col=col, secondary_y=secondary_y)
     fig.update_layout(bargap=0.2)

@@ -537,7 +537,8 @@ def register_callbacks(app):
             )
 
         fig.update_traces(hoverinfo="x+y",
-                          xaxis="x1")
+                          xaxis="x1",
+                          )
         # If added xaxis="x1" it gives nice vertical line across all subplots but not working for Week 26 Index
 
         return fig
