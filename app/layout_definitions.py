@@ -939,7 +939,7 @@ def create_layout(app):
 
                     dcc.Loading(
                         id="loading-combined-chart",
-                        type="default",
+                        type="circle",
                         children=dcc.Graph(
                             id="combined-chart",
                             config={"scrollZoom": True, "doubleClick": "autosize", "displayModeBar": False},
