@@ -207,19 +207,8 @@ class OpenInterestDataFetcher(BaseDataFetcher):
             pd.DataFrame: DataFrame containing the Open Interest data with additional 'Day_of_Year' column.
         """
         table_name = f"{market.lower().replace(' ', '_')}{table_suffix}"
-        # print(f"Fetching from Table {table_name} and report: {report_type}")
-        # Select columns based on the report type
-        if report_type == 'legacy':
-            columns = 'report_date_as_yyyy_mm_dd, open_interest_all'
-        elif report_type == 'disaggregated':
-            columns = 'report_date_as_yyyy_mm_dd, open_interest_all'
-            # m_money_positions_long_all, m_money_positions_short_all,
-            # prod_merc_positions_long, prod_merc_positions_short, swap_positions_long_all,
-            # swap_positions_short_all
-        elif report_type == 'tff':
-            columns = 'report_date_as_yyyy_mm_dd, open_interest_all'
-        else:
-            raise ValueError(f"Unknown report type: {report_type}")
+
+        columns = 'report_date_as_yyyy_mm_dd, open_interest_all'
 
         query = f"""
         SELECT {columns}
@@ -230,11 +219,10 @@ class OpenInterestDataFetcher(BaseDataFetcher):
         df = OpenInterestDataFetcher.fetch_data(query, params)
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'], format="%Y-%m-%d %H:%M:%S")
-            # df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
-            # df['Date'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'], format="%Y-%m-%d %H:%M:%S")
             df['Date'] = df['report_date_as_yyyy_mm_dd']
             df.sort_values(by='Date', inplace=True)
         return df
+
 
 class OpenInterestPercentagesFetcher(BaseDataFetcher):
     """
@@ -400,7 +388,6 @@ class PositionsChangeDataFetcher(BaseDataFetcher):
 
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
-            # df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
 
             # Convert the relevant columns to numeric, based on report type
             for col in numeric_columns:
@@ -613,7 +600,7 @@ class Index26WDataFetcher(BaseDataFetcher):
 
         else:
             raise ValueError(f"Unknown report type: {report_type}")
-        # print(f"TABLE: {table_name} COLUMNS: {columns}")
+
         query = f"""
         SELECT {columns}
         FROM {table_name}
@@ -624,7 +611,6 @@ class Index26WDataFetcher(BaseDataFetcher):
 
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
-            # df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
 
             # Convert the relevant columns to numeric, based on report type
             for col in numeric_columns:

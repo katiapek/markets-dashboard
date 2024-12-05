@@ -73,11 +73,11 @@ else:
     }
 
 
-BUTTON_STYLES = {'margin-bottom': '3px'}
-CHECKLIST_STYLES = {'margin-bottom': '10px'}
+BUTTON_STYLES = {'marginBottom': '3px'}
+CHECKLIST_STYLES = {'marginBottom': '10px'}
 LAYOUT_STYLES = {'display': 'flex'}
 GRAPH_STYLES = {'flex': 1, 'padding': '10px', 'overflow': 'hidden'}
-INPUT_STYLE = {"margin-right": "10px", "width": "40px"}
+INPUT_STYLE = {"marginRight": "10px", "width": "40px"}
 
 
 def format_market_name(market_name):
@@ -106,7 +106,7 @@ def create_analysis_section():
                         html.Div(children=[
                             # Date range picker for selecting start and end dates
                             html.Div(children=[
-                                html.Label("Select Date Range", style={'margin-bottom': '5px'}),
+                                html.Label("Select Date Range", style={'marginBottom': '5px'}),
                                 dcc.DatePickerRange(
                                     id='date-picker-range',
                                     start_date_placeholder_text="Start Period",
@@ -120,11 +120,11 @@ def create_analysis_section():
                                     clearable=False,
                                     # day_size=20
                                 )
-                            ], style={'width': '400px', 'display': 'flex', 'flex-direction': 'column',
-                                      'align-items': 'center'}),
+                            ], style={'width': '400px', 'display': 'flex', 'flexDirection': 'column',
+                                      'alignItems': 'center'}),
 
                             html.Div(children=[
-                                html.Label("Direction", style={'margin-bottom': '5px'}),
+                                html.Label("Direction", style={'marginBottom': '5px'}),
                                 dcc.Dropdown(
                                     id='direction-dropdown',
                                     options=[
@@ -133,13 +133,13 @@ def create_analysis_section():
                                     ],
                                     value=DEFAULT_DIRECTION,  # Default value
                                     placeholder=DEFAULT_DIRECTION,
-                                    style={'background-color': '#333', 'color': 'white', 'border-color': '#555'},
+                                    style={'backgroundColor': '#333', 'color': 'white', 'borderColor': '#555'},
                                     clearable=False,
                                     className='dropdown-menu-direction',
                                     searchable=False,
                                 ),
-                            ], style={'width': '200px', 'display': 'flex', 'flex-direction': 'column',
-                                      'align-items': 'center'}),
+                            ], style={'width': '200px', 'display': 'flex', 'flexDirection': 'column',
+                                      'alignItems': 'center'}),
 
                             html.Div(children=[
                                 dcc.Interval(
@@ -150,15 +150,15 @@ def create_analysis_section():
                                 ),
 
                                 html.Button("Perform Analysis", id='perform-analysis-button', style={
-                                    'height': '40px', 'margin-top': '18px', 'background-color': '#333',
+                                    'height': '40px', 'marginTop': '18px', 'backgroundColor': '#333',
                                     'color': 'white',
                                     'border': '1px solid white'}),
-                            ], style={'display': 'flex', 'align-items': 'center'})
-                        ], style={'display': 'flex', 'gap': '15px', 'align-items': 'center'}),
+                            ], style={'display': 'flex', 'alignItems': 'center'})
+                        ], style={'display': 'flex', 'gap': '15px', 'alignItems': 'center'}),
 
                         # Table for Year-by-Year Results
                         html.Div(children=[
-                            html.Label("Yearly Analysis", style={'margin-bottom': '5px'}),
+                            html.Label("Yearly Analysis", style={'marginBottom': '5px'}),
                             dash.dash_table.DataTable(id='yearly-analysis-table',
                                                       editable=False,
                                                       cell_selectable=False,
@@ -183,18 +183,18 @@ def create_analysis_section():
                                                                   'fontSize': '10px'},
                                                       style_table={'overflowX': 'scroll'}
                                                       )
-                        ], style={'padding-top': '15px'}),
+                        ], style={'paddingTop': '15px'}),
 
                         # Summary Statistics for 15 and 30 years
                         html.Div(id='15-year-summary', children="15-Year Summary: ",
-                                 style={'margin-top': '20px', 'font-size': '14px', 'background-color': '#333',
+                                 style={'marginTop': '20px', 'backgroundColor': '#333',
                                         'padding': '10px',
-                                        'border-radius': '5px', 'fontFamily': "'Press Start 2P', monospace",
+                                        'borderRadius': '5px', 'fontFamily': "'Press Start 2P', monospace",
                                         'fontSize': '10px'}, ),
                         html.Div(id='30-year-summary', children="30-Year Summary: ",
-                                 style={'margin-top': '20px', 'font-size': '14px', 'background-color': '#333',
+                                 style={'marginTop': '20px', 'backgroundColor': '#333',
                                         'padding': '10px',
-                                        'border-radius': '5px', 'fontFamily': "'Press Start 2P', monospace",
+                                        'borderRadius': '5px', 'fontFamily': "'Press Start 2P', monospace",
                                         'fontSize': '10px'}),
 
                         # Container for the distribution charts in a row
@@ -211,7 +211,7 @@ def create_analysis_section():
 
                                 dcc.Graph(id='distribution-chart-optimal-15', config={'displayModeBar': False}),
                             ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
-                        ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center'}),
+                        ], style={'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center'}),
 
                         # Same structure for the 30 years below
                         html.Div([
@@ -224,7 +224,7 @@ def create_analysis_section():
 
                                 dcc.Graph(id='distribution-chart-optimal-30', config={'displayModeBar': False}),
                             ], style={'width': '50%', 'display': 'inline-block', 'padding': '10px'}),
-                        ], style={'display': 'flex', 'justify-content': 'space-between', 'align-items': 'center'}),
+                        ], style={'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center'}),
 
                         html.Div([
                             # 15-year cumulative returns and metrics
@@ -934,7 +934,7 @@ def create_layout(app):
                         html.Button('Next Market', id='next-market-button', n_clicks=0, className='above-chart-button'),
                         html.Button('Prev. Year', id='prev-year-button', n_clicks=0, className='above-chart-button'),
                         html.Button('Next Year', id='next-year-button', n_clicks=0, className='above-chart-button')
-                    ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px', 'gap': '10px'}),
+                    ], style={'display': 'flex', 'justifyContent': 'space-between', 'marginTop': '10px', 'gap': '10px'}),
 
 
                     dcc.Loading(
@@ -957,7 +957,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     # Day Trading Starts below the analysis section
@@ -970,7 +970,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     # Day Trading Starts below the analysis section - Weekday
@@ -983,7 +983,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     # Day Trading Extended below the Stats section
@@ -996,7 +996,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     # Day Trading Extended below the Stats section - Weekday
@@ -1009,7 +1009,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     # Create D-UP analysis section
@@ -1022,7 +1022,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     # Create D-DOWN analysis section
@@ -1035,7 +1035,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     # Create PD-H analysis section
@@ -1048,7 +1048,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     # Create PD-L analysis section
@@ -1061,7 +1061,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     # Create PD-HL analysis section
@@ -1074,7 +1074,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     # Create PD-H, PD-L, PD-HL analysis section
@@ -1087,7 +1087,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     # Create Correlation Tables section
@@ -1100,7 +1100,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     html.Div(
@@ -1147,20 +1147,20 @@ def create_layout(app):
                                         placeholder=DEFAULT_MARKET,
                                         clearable=False,  # Optional: prevent clearing
                                         className='dropdown-menu-1',
-                                        style={'width': '100%', 'margin-bottom': '10px', 'backgroundColor': '#2b2b2b',
+                                        style={'width': '100%', 'marginBottom': '10px', 'backgroundColor': '#2b2b2b',
                                                'color': 'white', 'border': 'none'},
                                         searchable=False
                                     ),
                                     html.Div([
                                         html.Button('Prev. Market', id='prev-market-button', n_clicks=0),
                                         html.Button('Next Market', id='next-market-button', n_clicks=0),
-                                    ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px'}),
+                                    ], style={'display': 'flex', 'justifyContent': 'space-between', 'marginTop': '10px'}),
                                     html.Div([
                                         html.Button('Prev. Year', id='prev-year-button', n_clicks=0),
                                         html.Button('Next Year', id='next-year-button', n_clicks=0)
-                                    ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px'}),
+                                    ], style={'display': 'flex', 'justifyContent': 'space-between', 'marginTop': '10px'}),
                                 ],
-                                style={'margin-bottom': '10px'}
+                                style={'marginBottom': '10px'}
                             ),
                             html.Div([
                                 html.Button('OHLC & Cycles', id='ohlc-cycles-toggle', n_clicks=0,
@@ -1481,9 +1481,8 @@ def create_layout(app):
                             html.Div([
                                 # html.Button('Previous Year', id='prev-year-button', n_clicks=0),
                                 # html.Button('Next Year', id='next-year-button', n_clicks=0)
-                            ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px'}),
+                            ], style={'display': 'flex', 'justifyContent': 'space-between', 'marginTop': '10px'}),
                             dcc.Store(id='current-year', data=2024),
-                            dcc.Store(id='stored-market', data=DEFAULT_MARKET),
                             dcc.Store(id='stored-market', data=DEFAULT_MARKET),
                             dcc.Store(id='active-subplots', data=[]),  # Track active subplots dynamically
                         ]
@@ -1502,7 +1501,7 @@ def create_layout(app):
                         html.Button('Next Market', id='next-market-button', n_clicks=0, className='above-chart-button'),
                         html.Button('Prev. Year', id='prev-year-button', n_clicks=0, className='above-chart-button'),
                         html.Button('Next Year', id='next-year-button', n_clicks=0, className='above-chart-button')
-                    ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px',
+                    ], style={'display': 'flex', 'justifyContent': 'space-between', 'marginTop': '10px',
                               'gap': '10px'}),
 
                     dcc.Graph(
@@ -1536,7 +1535,7 @@ def create_layout(app):
                                 type='default'
                             )
                         ],
-                        style={'margin-top': '20px'}
+                        style={'marginTop': '20px'}
                     ),
 
                     html.Div(
@@ -1583,22 +1582,22 @@ def create_layout(app):
                                         placeholder=DEFAULT_MARKET,
                                         clearable=False,  # Optional: prevent clearing
                                         className='dropdown-menu-1',
-                                        style={'width': '100%', 'margin-bottom': '10px', 'backgroundColor': '#2b2b2b',
+                                        style={'width': '100%', 'marginBottom': '10px', 'backgroundColor': '#2b2b2b',
                                                'color': 'white', 'border': 'none'},
                                         searchable=False
                                     ),
                                     html.Div([
                                         html.Button('Prev. Market', id='prev-market-button', n_clicks=0),
                                         html.Button('Next Market', id='next-market-button', n_clicks=0),
-                                    ], style={'display': 'flex', 'justify-content': 'space-between',
-                                              'margin-top': '10px'}),
+                                    ], style={'display': 'flex', 'justifyContent': 'space-between',
+                                              'marginTop': '10px'}),
                                     html.Div([
                                         html.Button('Prev. Year', id='prev-year-button', n_clicks=0),
                                         html.Button('Next Year', id='next-year-button', n_clicks=0)
-                                    ], style={'display': 'flex', 'justify-content': 'space-between',
-                                              'margin-top': '10px'}),
+                                    ], style={'display': 'flex', 'justifyContent': 'space-between',
+                                              'marginTop': '10px'}),
                                 ],
-                                style={'margin-bottom': '10px'}
+                                style={'marginBottom': '10px'}
                             ),
 
                             html.Div([
@@ -1920,9 +1919,8 @@ def create_layout(app):
                             html.Div([
                                 # html.Button('Previous Year', id='prev-year-button', n_clicks=0),
                                 # html.Button('Next Year', id='next-year-button', n_clicks=0)
-                            ], style={'display': 'flex', 'justify-content': 'space-between', 'margin-top': '10px'}),
+                            ], style={'display': 'flex', 'justifyContent': 'space-between', 'marginTop': '10px'}),
                             dcc.Store(id='current-year', data=2024),
-                            dcc.Store(id='stored-market', data=DEFAULT_MARKET),
                             dcc.Store(id='stored-market', data=DEFAULT_MARKET),
                             dcc.Store(id='active-subplots', data=[]),  # Track active subplots dynamically
                         ]

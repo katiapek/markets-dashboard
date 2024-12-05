@@ -875,6 +875,7 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
 
 def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None,
                          expected_return_stop_loss=None, expected_return_exit=None, add_distribution_annotations=True,
+                         use_gl = True,
                          n_clusters=3):
     """
     Create scatter plots with clustering for better visualization.
@@ -921,16 +922,28 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
         kmeans = KMeans(n_clusters=n_clusters, random_state=42).fit(data)
         labels = kmeans.labels_
 
-        # Add clustered points to the plot
-        for cluster_id in range(n_clusters):
-            cluster_points = data[labels == cluster_id]
-            fig.add_trace(go.Scatter(
-                x=cluster_points[:, 0],
-                y=cluster_points[:, 1],
-                mode='markers',
-                marker=dict(size=7),
-                name=f'Cluster {cluster_id + 1}'
-            ))
+        if not use_gl:
+            # Add clustered points to the plot
+            for cluster_id in range(n_clusters):
+                cluster_points = data[labels == cluster_id]
+                fig.add_trace(go.Scatter(
+                    x=cluster_points[:, 0],
+                    y=cluster_points[:, 1],
+                    mode='markers',
+                    marker=dict(size=7),
+                    name=f'Cluster {cluster_id + 1}'
+                ))
+        else:
+            fig.add_traces([
+                go.Scattergl(
+                    x=data[labels == cluster_id, 0],
+                    y=data[labels == cluster_id, 1],
+                    mode='markers',
+                    marker=dict(size=7),
+                    name=f'Cluster {cluster_id + 1}'
+                )
+                for cluster_id in range(n_clusters)
+            ])
 
         # Add layout settings
         fig.update_layout(
@@ -1626,7 +1639,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
                                                                                 pdl_best_stop_loss_level, direction)
     pdl_distributions = create_distributions(pdl_days_all_years)
     pdl_scatters = create_scatter_plots(pdl_days_all_years, direction, pdl_best_stop_loss_level, pdl_best_exit_level,
-                                        pdh_expected_return_stop_loss, pdl_expected_return_exit)
+                                        pdh_expected_return_stop_loss, pdl_expected_return_exit, use_gl=False)
     pdl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdl_days_all_years, day_type='pdl')
 
     # PD-HL Analysis
@@ -1637,7 +1650,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     pdhl_distributions = create_distributions(pdhl_days_all_years)
     pdhl_scatters = create_scatter_plots(pdhl_days_all_years, direction, pdhl_best_stop_loss_level,
                                          pdhl_best_exit_level,
-                                         pdhl_expected_return_stop_loss, pdhl_expected_return_exit)
+                                         pdhl_expected_return_stop_loss, pdhl_expected_return_exit, use_gl=False)
     pdhl_high_vs_prev_high_dist, pdhl_low_vs_prev_low_dist = create_high_low_vs_prev_distribution(pdhl_days_all_years,
                                                                                                   day_type='pdhl')
 
