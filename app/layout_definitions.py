@@ -118,7 +118,6 @@ def create_analysis_section():
                                     start_date='2024-01-01',  # Default to None or a specific start date
                                     end_date='2024-12-31',  # Default to None or a specific end date
                                     clearable=False,
-                                    # day_size=20
                                 )
                             ], style={'width': '400px', 'display': 'flex', 'flexDirection': 'column',
                                       'alignItems': 'center'}),

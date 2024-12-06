@@ -110,6 +110,141 @@ dcc.Graph, dcc.Checklist  {
     text-align: center;
 }
 
+/* Style the entire DatePickerRange container */
+#date-picker-range {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    border-radius: 5px;
+}
+
+/* Style input boxes inside DatePickerRange */
+#date-picker-range input {
+    background-color: #1e1e1e;
+    color: white;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    border: none;
+    outline: none;
+    text-align: center;
+}
+
+/* Style the arrow (SVG) inside DatePickerRange */
+.DateRangePickerInput {
+    color: white;
+    background-color: #1e1e1e;
+
+}
+
+/* Style the calendar container */
+.CalendarMonth {
+    background-color: #1e1e1e;
+    color: white;
+}
+
+.CalendarMonthGrid {
+    background-color: #1e1e1e;
+    background: #1e1e1e;
+
+    }
+
+.CalendarMonth_table {
+    margin-top: 10px;
+    margin-left: 0px;
+}
+
+/* Style the calendar caption (month name) */
+.CalendarMonth_caption {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    text-align: center;
+    color: white;
+}
+
+/* Style individual day cells */
+.CalendarDay {
+    background-color: #1e1e1e;
+    color: white;
+    font-size: 8px;
+
+}
+
+.DayPicker {
+    background: #1e1e1e;
+    /* border: 1px solid white; */
+    border-right: 1px solid white;
+    padding: 0px;
+    margin: 1px;
+}
+
+.DayPicker_weekHeader_li {
+    background-color: #1e1e1e;
+    color: white;
+    font-size: 10px;
+}
+
+.DayPickerNavigation_svg_horizontal {
+    color: black;
+}
+
+.DayPickerNavigation_button:hover {
+    background-color: Salmon;
+    color: black;
+}
+
+/* Highlight hovered days */
+.CalendarDay:hover {
+    background-color: white;
+    color: black;
+    cursor: pointer;
+}
+
+/* Style selected start and end dates */
+.CalendarDay__selected_start,
+.CalendarDay__selected_end {
+    background-color: CornflowerBlue;
+    border: none;
+    color: Salmon;
+    font-weight: bold;
+}
+
+.CalendarDay {
+    border-color: white;
+}
+
+/* Style dates in the selected range */
+.CalendarDay__selected_span {
+    background-color: CornflowerBlue;
+    color: white;
+}
+
+
+/* Style the arrow buttons in the calendar */
+.CalendarMonthNavigation_button {
+    background-color: #1e1e1e;
+    color: white;
+    cursor: pointer;
+}
+
+.CalendarMonthNavigation_button:hover {
+    background-color: CornflowerBlue;
+    color: black;
+}
+
+/* Style for disabled days */
+.CalendarDay__blocked_out_of_range {
+    color: #555;
+    cursor: not-allowed;
+}
+
+/* Hide the button with a question mark */
+.DayPickerKeyboardShortcuts_buttonReset {
+    display: none !important;
+}
+
+
+
 /* Ensure the dropdown has a dark background on page load */
 .dropdown-menu-1 {
     background-color: #1e1e1e !important; /* Dark background color */

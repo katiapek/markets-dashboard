@@ -1,6 +1,6 @@
 # callbacks.py
 
-from dash import Input, Output, State, ctx, html  # , dcc
+from dash import Input, Output, State, ctx, html, dcc, callback_context
 import plotly.subplots as sp
 from layout_definitions import format_market_name
 from data_fetchers import (
@@ -293,28 +293,35 @@ def register_callbacks(app):
         initial_x_range = [ohlc_df["Date"].iloc[0], ohlc_df["Date"].iloc[-1]]
         initial_y_range = [ohlc_df["Low"].min(), ohlc_df["High"].max()]
 
+        # Determine if reset is needed (via year change)
+        ctx = callback_context
+        triggered_prop = ctx.triggered[0]['prop_id'] if ctx.triggered else None
+        reset_required = triggered_prop in ['current-year.data']
+
         # Default Ranges
         x_range = initial_x_range
         y_range = initial_y_range
 
-        # Check for User Interactions
-        if relayout_data:
+        # Check for User Interactions and Adjust Ranges
+        if relayout_data and not reset_required:
             if "xaxis.range[0]" in relayout_data and "xaxis.range[1]" in relayout_data:
-                # Convert relayoutData x-range to Timestamp for comparison
+                # Convert relayoutData x-range to Timestamps
                 x_range_start = pd.Timestamp(relayout_data["xaxis.range[0]"])
                 x_range_end = pd.Timestamp(relayout_data["xaxis.range[1]"])
 
-                # Clamp the range to prevent zooming out beyond the initial range
+                # Clamp the range to prevent excessive zooming out or in
                 x_range = [
-                    max(x_range_start, initial_x_range[0]),
-                    min(x_range_end, initial_x_range[1])
+                    max(initial_x_range[0], x_range_start),
+                    min(initial_x_range[1], x_range_end)
                 ]
 
-            filtered_data = ohlc_df[(ohlc_df["Date"] >= x_range[0]) & (ohlc_df["Date"] <= x_range[1])]
-            if not filtered_data.empty:
-                y_range = [filtered_data["Low"].min(), filtered_data["High"].max()]
-                y_padding = (y_range[1] - y_range[0]) * 0.1
-                y_range = [y_range[0] - y_padding, y_range[1] + y_padding]
+            if "yaxis.autorange" in relayout_data or "xaxis.range[0]" in relayout_data:
+                # Dynamically adjust Y-axis to fit the data within the selected X-axis range
+                filtered_data = ohlc_df[(ohlc_df["Date"] >= x_range[0]) & (ohlc_df["Date"] <= x_range[1])]
+                y_range = [
+                    max(initial_y_range[0], filtered_data["Low"].min()),
+                    min(initial_y_range[1], filtered_data["High"].max())
+                ]
 
         # Add OHLC chart
         if 'OHLC' in ohlc_visibility:
@@ -530,6 +537,7 @@ def register_callbacks(app):
         fig.update_xaxes(rangeslider=dict(visible=False), type='date', row=1, col=1)
 
         fig.update_layout(
+            uirevision=stored_market,
             xaxis=dict(range=x_range),
             yaxis=dict(range=y_range, fixedrange=True, autorange=False),
             height=total_height,
