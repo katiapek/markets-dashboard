@@ -268,11 +268,12 @@ def register_callbacks(app):
          Input('years-checklist', 'value'),
          Input('ohlc-checklist', 'value'),
          Input('stored-market', 'data'),
-         Input('current-year', 'data')
+         Input('current-year', 'data'),
+         Input("combined-chart", "relayoutData"),
          ],
         prevent_initial_call=False
     )
-    def update_graph(active_subplots, selected_years, ohlc_visibility, stored_market, current_year):
+    def update_graph(active_subplots, selected_years, ohlc_visibility, stored_market, current_year, relayout_data):
         num_rows = 1 + len(active_subplots)
         specs = [[{'secondary_y': True}]] + [[{'secondary_y': False}] for _ in range(len(active_subplots))]
 
@@ -286,14 +287,36 @@ def register_callbacks(app):
         fig = sp.make_subplots(rows=num_rows, cols=1, shared_xaxes=True, vertical_spacing=0.0, specs=specs,
                                row_heights=row_heights)
 
+        ohlc_df = fetch_ohlc_data_cached(stored_market, current_year)
+
+        # Initial Range Configuration
+        initial_x_range = [ohlc_df["Date"].iloc[0], ohlc_df["Date"].iloc[-1]]
+        initial_y_range = [ohlc_df["Low"].min(), ohlc_df["High"].max()]
+
+        # Default Ranges
+        x_range = initial_x_range
+        y_range = initial_y_range
+
+        # Check for User Interactions
+        if relayout_data:
+            if "xaxis.range[0]" in relayout_data and "xaxis.range[1]" in relayout_data:
+                # Convert relayoutData x-range to Timestamp for comparison
+                x_range_start = pd.Timestamp(relayout_data["xaxis.range[0]"])
+                x_range_end = pd.Timestamp(relayout_data["xaxis.range[1]"])
+
+                # Clamp the range to prevent zooming out beyond the initial range
+                x_range = [
+                    max(x_range_start, initial_x_range[0]),
+                    min(x_range_end, initial_x_range[1])
+                ]
+
+            if "yaxis.autorange" in relayout_data or "xaxis.range[0]" in relayout_data:
+                # Dynamically adjust Y-axis to fit the data within the selected X-axis range
+                filtered_data = ohlc_df[(ohlc_df["Date"] >= x_range[0]) & (ohlc_df["Date"] <= x_range[1])]
+                y_range = [filtered_data["Low"].min(), filtered_data["High"].max()]
+
         # Add OHLC chart
         if 'OHLC' in ohlc_visibility:
-            ohlc_df = fetch_ohlc_data_cached(stored_market, current_year)
-
-            # Initial Range Configuration
-            initial_x_range = [ohlc_df["Date"].iloc[0], ohlc_df["Date"].iloc[-1]]
-            initial_y_range = [ohlc_df["Low"].min(), ohlc_df["High"].max()]
-
             if not ohlc_df.empty:
                 add_candlestick_trace(
                     fig,
@@ -496,6 +519,8 @@ def register_callbacks(app):
         fig.update_xaxes(rangeslider=dict(visible=False), type='date', row=1, col=1)
 
         fig.update_layout(
+            xaxis=dict(range=x_range),
+            yaxis=dict(range=y_range, fixedrange=False, autorange=False),
             height=total_height,
             title=f'{stored_market} - Year {current_year}',
             legend=dict(
@@ -526,7 +551,7 @@ def register_callbacks(app):
                 zeroline=False,  # Hide x-axis zero line
                 # showline=False,  # Hide x-axis line
                 # mirror=False,  # Avoid axis line mirroring
-                row=i, col=1
+                range=x_range, row=i, col=1
             )
             fig.update_yaxes(
                 showgrid=False,  # Hide y-axis grid lines
