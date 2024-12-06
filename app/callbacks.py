@@ -310,10 +310,11 @@ def register_callbacks(app):
                     min(x_range_end, initial_x_range[1])
                 ]
 
-            if "yaxis.autorange" in relayout_data or "xaxis.range[0]" in relayout_data:
-                # Dynamically adjust Y-axis to fit the data within the selected X-axis range
-                filtered_data = ohlc_df[(ohlc_df["Date"] >= x_range[0]) & (ohlc_df["Date"] <= x_range[1])]
+            filtered_data = ohlc_df[(ohlc_df["Date"] >= x_range[0]) & (ohlc_df["Date"] <= x_range[1])]
+            if not filtered_data.empty:
                 y_range = [filtered_data["Low"].min(), filtered_data["High"].max()]
+                y_padding = (y_range[1] - y_range[0]) * 0.1
+                y_range = [y_range[0] - y_padding, y_range[1] + y_padding]
 
         # Add OHLC chart
         if 'OHLC' in ohlc_visibility:
@@ -344,7 +345,6 @@ def register_callbacks(app):
             for years in selected_years:
                 df = fetch_seasonal_data_cached(format_market_name(stored_market), years, current_year)
                 if not df.empty:
-                    # Connect the lines even if there are missing dates
                     add_trace(
                         fig,
                         df['Date'],
@@ -367,151 +367,162 @@ def register_callbacks(app):
 
             if not df.empty:
                 df['Date'] = pd.to_datetime(df['Date'])
+
+                filtered_data = df[(df["Date"] >= x_range[0]) & (df["Date"] <= x_range[1])]
+
                 config = TRACE_CONFIG.get(subplot, {}).get(report_type, None)
 
                 if config:
                     for column, participant_name, color in zip(config['columns'], config['names'], config['colors']):
                         add_trace(
                             fig,
-                            df['Date'],
-                            df[column],
+                            filtered_data['Date'],
+                            filtered_data[column],
                             f"{participant_name}",
                             row=row_index,
                             col=1,
                             line_color=COLORS[color]
                         )
+                    filtered_y_range = [filtered_data.iloc[:, 1:].min(), filtered_data.iloc[:, 1:].max()]
+                    fig.update_yaxes(range=filtered_y_range, row=row_index, col=1, fixedrange=True)
 
             if subplot == 'Positions Change':
                 if report_type == 'legacy':
 
+                    filtered_data = df[(df["Date"] >= x_range[0]) & (df["Date"] <= x_range[1])]
+
                     set_bar_width = 70000000
-                    add_trace(fig, df['Date'], df['pct_change_noncomm_long'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_noncomm_long'],
                               f'% Change Non-Commercials Long', row=row_index, col=1,
                               line_color=COLORS['noncomm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=0)
-                    add_trace(fig, df['Date'], df['pct_change_noncomm_short'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_noncomm_short'],
                               f'% Change Non-Commercials Short', row=row_index, col=1,
                               line_color=COLORS['noncomm_short'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=1 * set_bar_width)
-                    add_trace(fig, df['Date'], df['pct_change_comm_long'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_comm_long'],
                               f'% Change Commercials Long', row=row_index, col=1,
                               line_color=COLORS['comm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=2 * set_bar_width)
-                    add_trace(fig, df['Date'], df['pct_change_comm_short'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_comm_short'],
                               f'% Change Commercials Short', row=row_index, col=1,
                               line_color=COLORS['comm_short'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=3 * set_bar_width)
-                    # update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
+                    # fig.update_yaxes(fixedrange=True)
+
 
                 elif report_type == 'disaggregated':
                     set_bar_width = 60000000
-                    add_trace(fig, df['Date'], df['pct_change_m_money_long'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_m_money_long'],
                               f'% Change Managed Money Long', row=row_index, col=1,
                               line_color=COLORS['noncomm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=0)
-                    add_trace(fig, df['Date'], df['pct_change_m_money_short'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_m_money_short'],
                               f'% Change Managed Money Short', row=row_index, col=1,
                               line_color=COLORS['noncomm_short'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=1 * set_bar_width)
-                    add_trace(fig, df['Date'], df['pct_change_prod_merc_long'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_prod_merc_long'],
                               f'% Change Producers / Merchants Long', row=row_index, col=1,
                               line_color=COLORS['comm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=2 * set_bar_width)
-                    add_trace(fig, df['Date'], df['pct_change_prod_merc_short'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_prod_merc_short'],
                               f'% Change Producers / Merchants Short', row=row_index, col=1,
                               line_color=COLORS['comm_short'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=3 * set_bar_width)
-                    add_trace(fig, df['Date'], df['pct_change_swap_long'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_swap_long'],
                               f'% Change Swap Dealers Long', row=row_index, col=1,
                               line_color=COLORS['other_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=4 * set_bar_width)
-                    add_trace(fig, df['Date'], df['pct_change_swap_short'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_swap_short'],
                               f'% Change Swap Dealers Short', row=row_index, col=1,
                               line_color=COLORS['other_short'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=5 * set_bar_width)
-                    # update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
+                    # fig.update_yaxes(fixedrange=True)
 
                 elif report_type == 'tff':
                     set_bar_width = 60000000
-                    add_trace(fig, df['Date'], df['pct_change_lev_money_long'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_lev_money_long'],
                               f'% Change Managed Money Long', row=row_index, col=1,
                               line_color=COLORS['noncomm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=0)
-                    add_trace(fig, df['Date'], df['pct_change_lev_money_short'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_lev_money_short'],
                               f'% Change Managed Money Short', row=row_index, col=1,
                               line_color=COLORS['noncomm_short'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=1 * set_bar_width)
-                    add_trace(fig, df['Date'], df['pct_change_asset_mgr_long'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_asset_mgr_long'],
                               f'% Change Asset Mgrs Long', row=row_index, col=1,
                               line_color=COLORS['comm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=2 * set_bar_width)
-                    add_trace(fig, df['Date'], df['pct_change_asset_mgr_short'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_asset_mgr_short'],
                               f'% Change Asset Mgrs Short', row=row_index, col=1,
                               line_color=COLORS['comm_short'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=3 * set_bar_width)
-                    add_trace(fig, df['Date'], df['pct_change_dealer_long'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_dealer_long'],
                               f'% Change Swap Dealers Long', row=row_index, col=1,
                               line_color=COLORS['other_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=4 * set_bar_width)
-                    add_trace(fig, df['Date'], df['pct_change_dealer_short'],
+                    add_trace(fig, filtered_data['Date'], filtered_data['pct_change_dealer_short'],
                               f'% Change Swap Dealers Short', row=row_index, col=1,
                               line_color=COLORS['other_short'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=5 * set_bar_width)
-                    # update_yaxis(fig, row=row_index, col=1, title='% Change in Positions')
+                    # fig.update_yaxes(fixedrange=True)
 
             elif subplot == 'Net Positions Change':
 
+                filtered_data = df[(df["Date"] >= x_range[0]) & (df["Date"] <= x_range[1])]
+
                 if report_type == 'legacy':
                     set_bar_width = 70000000
-                    add_trace(fig, df['Date'],
-                              df['pct_change_noncomm_net_positions'],
+                    add_trace(fig, filtered_data['Date'],
+                              filtered_data['pct_change_noncomm_net_positions'],
                               f'% Change Net Positions Non-Commercials', row=row_index, col=1,
                               line_color=COLORS['noncomm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=0 * set_bar_width)
-                    add_trace(fig, df['Date'],
-                              df['pct_change_comm_net_positions'],
+                    add_trace(fig, filtered_data['Date'],
+                              filtered_data['pct_change_comm_net_positions'],
                               f'% Change Net Positions Commercials', row=row_index, col=1,
                               line_color=COLORS['comm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=1 * set_bar_width)
-                    # update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
+                    # fig.update_yaxes(fixedrange=True)
 
                 elif report_type == 'disaggregated':
                     set_bar_width = 60000000
-                    add_trace(fig, df['Date'],
-                              df['pct_change_m_money_net_positions'],
+                    add_trace(fig, filtered_data['Date'],
+                              filtered_data['pct_change_m_money_net_positions'],
                               f'% Change Net Positions Managed Money', row=row_index, col=1,
                               line_color=COLORS['noncomm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=0 * set_bar_width)
-                    add_trace(fig, df['Date'],
-                              df['pct_change_prod_merc_net_positions'],
+                    add_trace(fig, filtered_data['Date'],
+                              filtered_data['pct_change_prod_merc_net_positions'],
                               f'% Change Net Positions Producers / Merchants', row=row_index, col=1,
                               line_color=COLORS['comm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=1 * set_bar_width)
-                    add_trace(fig, df['Date'],
-                              df['pct_change_swap_net_positions'],
+                    add_trace(fig, filtered_data['Date'],
+                              filtered_data['pct_change_swap_net_positions'],
                               f'% Change Net Positions Swap Dealers', row=row_index, col=1,
                               line_color=COLORS['other_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=2 * set_bar_width)
-                    # update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
+                    # fig.update_yaxes(fixedrange=True)
 
                 elif report_type == 'tff':
                     set_bar_width = 60000000
-                    add_trace(fig, df['Date'],
-                              df['pct_change_lev_money_net_positions'],
+
+                    add_trace(fig, filtered_data['Date'],
+                              filtered_data['pct_change_lev_money_net_positions'],
                               f'% Change Net Positions Managed Money', row=row_index, col=1,
                               line_color=COLORS['noncomm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=0 * set_bar_width)
-                    add_trace(fig, df['Date'],
-                              df['pct_change_asset_mgr_net_positions'],
+                    add_trace(fig, filtered_data['Date'],
+                              filtered_data['pct_change_asset_mgr_net_positions'],
                               f'% Change Net Positions Asset Mgrs', row=row_index, col=1,
                               line_color=COLORS['comm_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=1 * set_bar_width)
-                    add_trace(fig, df['Date'],
-                              df['pct_change_dealer_net_positions'],
+                    add_trace(fig, filtered_data['Date'],
+                              filtered_data['pct_change_dealer_net_positions'],
                               f'% Change Net Positions Dealers', row=row_index, col=1,
                               line_color=COLORS['other_long'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=2 * set_bar_width)
-                    # update_yaxis(fig, row=row_index, col=1, title='% Change in Net Positions')
+                    # fig.update_yaxes(fixedrange=True)
 
             row_index += 1
 
@@ -520,7 +531,7 @@ def register_callbacks(app):
 
         fig.update_layout(
             xaxis=dict(range=x_range),
-            yaxis=dict(range=y_range, fixedrange=False, autorange=False),
+            yaxis=dict(range=y_range, fixedrange=True, autorange=False),
             height=total_height,
             title=f'{stored_market} - Year {current_year}',
             legend=dict(
@@ -558,7 +569,8 @@ def register_callbacks(app):
                 zeroline=False,  # Hide y-axis zero line
                 # showline=False,  # Hide y-axis line
                 # mirror=False,  # Avoid axis line mirroring
-                row=i, col=1
+                row=i, col=1,
+                fixedrange=True,
             )
 
         fig.update_traces(hoverinfo="x+y",
