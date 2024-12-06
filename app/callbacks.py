@@ -289,6 +289,11 @@ def register_callbacks(app):
         # Add OHLC chart
         if 'OHLC' in ohlc_visibility:
             ohlc_df = fetch_ohlc_data_cached(stored_market, current_year)
+
+            # Initial Range Configuration
+            initial_x_range = [ohlc_df["Date"].iloc[0], ohlc_df["Date"].iloc[-1]]
+            initial_y_range = [ohlc_df["Low"].min(), ohlc_df["High"].max()]
+
             if not ohlc_df.empty:
                 add_candlestick_trace(
                     fig,

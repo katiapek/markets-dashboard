@@ -10,6 +10,7 @@ from scripts.config import market_tickers, DEFAULT_MARKET, DEFAULT_YEAR
 import cProfile
 import pstats
 
+
 def add_trace(fig, x, y, trace_name, row, col, mode='lines', line_color=None, secondary_y=False, chart_type='line',
               opacity=1, hide_yaxis_ticks=False, bar_width=None, bar_offset=None, show_legend=True,
               disable_hover=False):

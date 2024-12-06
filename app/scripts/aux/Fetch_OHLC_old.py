@@ -88,43 +88,24 @@ def calculate_percentage_changes(df):
 
 def fetch_ohlc_for_2024(ticker, market_name, conn):
     """
-    Fetch OHLC data for the year 2024 and append new entries to the database.
+    Fetch OHLC data for the year 2024, compute percentage changes, day types, and weekday information,
+    and store the data in the SQLite database.
 
     Args:
         ticker (str): Ticker symbol of the market.
         market_name (str): Name of the market.
         conn (sqlite3.Connection): SQLite database connection.
     """
-    # Define the table name
-    table_name = market_name.lower().replace(' ', '_') + '_ohlc'
-
-    # Query the latest date in the database
-    query = f"SELECT MAX(Date) FROM {table_name}"
-    cursor = conn.execute(query)
-    result = cursor.fetchone()
-    last_date = result[0]
-
-    # Determine the start date for fetching new data
-    if last_date:
-        last_date = last_date.split(" ")[0]  # Strip the time component if present
-        start_date = (datetime.strptime(last_date, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d')
-    else:
-        start_date = "2024-01-01"  # Start from the beginning if the table is empty
-
-    # Define the end date as yesterday
+    # Define the start date for 2024 and end date as yesterday
+    start_date = "2024-01-01"
     end_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-
-    # If start_date is after end_date, no need to fetch
-    if datetime.strptime(start_date, '%Y-%m-%d') > datetime.strptime(end_date, '%Y-%m-%d'):
-        print(f"No new data to fetch for {market_name}.")
-        # return
 
     # Fetch OHLC data from yfinance
     data = yf.download(ticker, start=start_date, end=end_date, interval="1d")
 
     if data.empty:
-        print(f"No new data fetched for {market_name}.")
-        # return
+        print(f"No data fetched for {market_name}.")
+        return
 
     # Reset the index to get the Date column
     data.reset_index(inplace=True)
@@ -147,19 +128,15 @@ def fetch_ohlc_for_2024(ticker, market_name, conn):
     data['Day_Type_2'] = calculate_day_type_2(data)
     data['Weekday'] = data['Date'].dt.day_name()
 
-    # Insert the new data into the database
+    # Replace existing data if Date already exists
+    table_name = market_name.lower().replace(' ', '_') + '_ohlc'
+
+    # Drop the table if schema mismatches
+    conn.execute(f"DROP TABLE IF EXISTS {table_name}")
+
+    # Insert the new data into the corresponding table in the SQLite database
     data.to_sql(table_name, conn, if_exists='append', index=False)
-    print(f"New data for {market_name} appended to the database.")
-
-
-def remove_outliers(df, col, threshold=3):
-    """
-    Remove outliers based on standard deviation.
-    """
-    mean = df[col].mean()
-    std = df[col].std()
-    df = df[(df[col] >= mean - threshold * std) & (df[col] <= mean + threshold * std)]
-    return df
+    print(f"Data for {market_name} inserted into the database.")
 
 
 def compute_and_store_seasonality(market_name, conn):
@@ -202,9 +179,6 @@ def compute_and_store_seasonality(market_name, conn):
 
         # Round the seasonal percentage change to 2 decimal places
         df['Pct_Change'] = df['Pct_Change'].round(2)
-
-        # Remove 3 std outliers from the calculation
-        df = remove_outliers(df, 'Pct_Change', threshold=3)
 
         # Group by day of the year and calculate average percentage change
         avg_pct_change = df.groupby('Day_of_Year')['Pct_Change'].mean()

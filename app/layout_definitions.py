@@ -1584,7 +1584,7 @@ def create_layout(app):
                                         className='dropdown-menu-1',
                                         style={'width': '100%', 'marginBottom': '10px', 'backgroundColor': '#2b2b2b',
                                                'color': 'white', 'border': 'none'},
-                                        searchable=False
+                                        searchable=False,
                                     ),
                                     html.Div([
                                         html.Button('Prev. Market', id='prev-market-button', n_clicks=0),

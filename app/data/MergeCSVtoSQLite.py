@@ -42,7 +42,7 @@ def merge_csv_to_sqlite(historical_file, db_name, table_name):
 
 # Example usage
 merge_csv_to_sqlite(
-    historical_file='Ethereum Historical Data.csv',
+    historical_file='Bitcoin Historical Data.csv',
     db_name='markets_data.db',
-    table_name='ethereum_ohlc'
+    table_name='bitcoin_ohlc'
 )

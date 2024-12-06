@@ -52,12 +52,11 @@ def alter_table_schema(conn, table_name):
 
 def main():
     # Connect to the SQLite database
-    conn = sqlite3.connect('../data/markets_data.db')
+    conn = sqlite3.connect('../../data/markets_data.db')
 
     # Define the tables and columns to fix
     tables_and_columns = {
-        'cocoa_ohlc': ['Close', 'Open', 'High', 'Low'],
-        'gold_ohlc': ['Close', 'Open', 'High', 'Low']
+        'bitcoin_ohlc': ['Close', 'Open', 'High', 'Low'],
     }
 
     for table_name, columns in tables_and_columns.items():
