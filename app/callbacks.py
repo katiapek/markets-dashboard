@@ -741,13 +741,13 @@ def register_callbacks(app):
             # Prepare data for the yearly analysis table (Unoptimized)
             yearly_data = analysis_results['yearly_results']
 
-            # Prepare summaries for 15 years and 30 years
+            # Prepare summaries for 15 years and 30 years - No-Stop loss returns per year for Summary table
             summary_15 = analysis_results['15_year_summary']
             summary_30 = analysis_results['30_year_summary']
 
             # Calculate optimal stop-loss and exit for 15 and 30 years
             optimal_results_15y = analysis_results['optimal_results_15y']
-            optimal_results_30y = analysis_results['optimal_results_15y']
+            optimal_results_30y = analysis_results['optimal_results_30y']
 
             # Simulate trades with optimal S/L and exit for 15 and 30 years
             optimal_trades_results_15y = analysis_results['optimal_trades_results_15y']

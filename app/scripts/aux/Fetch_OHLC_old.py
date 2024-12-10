@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import sqlite3
 import pandas as pd
 import numpy as np
-from config import market_tickers  # Import the market_tickers dictionary
+from ..config import market_tickers  # Import the market_tickers dictionary
 
 
 def calculate_day_type_1(df):

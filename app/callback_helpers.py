@@ -262,6 +262,8 @@ def calculate_points_change(direction, open_price, close_price):
 def calculate_stop_loss_return(yearly_data, optimal_results, direction):
     """
     Calculate the stop-loss return for the yearly data based on the optimal stop-loss.
+    It calculates cumulative returns on the daily basis and provides Series to create
+    cumulative return charts for 15 and 30 years.
 
     Args:
         yearly_data (pd.DataFrame): Yearly OHLC data.
@@ -397,13 +399,23 @@ def calculate_max_gain(df, open_price, close_price, direction):
 
 
 def calculate_optimal_exit_and_stop_loss(analysis_results):
+    """
+        Calculates only the optimal Stop-Loss and Take Profit Exit for annual/seasonal trades
+        in date range chosen by the user
+        Args:
+            analysis_results (list): Yearly analysis results already form start date to end date
+        Returns:
+            dictionary: Dictionary with optimal stop-loss and exit parameters
+        """
+
     total_years = len(analysis_results)
     if total_years == 0:
         return {
             'optimal_stop_loss': 0,
             'optimal_exit': 0,
-            'win_rate': 0,
-            'points_gained': 0
+            'optimal_win_rate': 0,
+            'optimal_points_gained': 0,
+            'optimal_percentage_return': 0,
         }
 
     # Precompute reusable data
@@ -411,45 +423,53 @@ def calculate_optimal_exit_and_stop_loss(analysis_results):
     max_observed_gain = max(result['Max Gain (%)'] for result in analysis_results)
 
     # Optimize thresholds
-    stop_loss_thresholds = np.linspace(1, max_observed_drawdown, num=50)
-    exit_thresholds = np.linspace(1, max_observed_gain, num=50)
+    stop_loss_thresholds = np.linspace(0, max_observed_drawdown, num=50)
+    exit_thresholds = np.linspace(0, max_observed_gain, num=50)
 
-    best_combination = {'stop_loss': None, 'exit': None, 'win_rate': 0, 'points_gained': float('-inf')}
+    best_combination = {'stop_loss': None, 'exit': None, 'win_rate': 0, 'points_gained': float('-inf'),
+                        'cumulative_return': float('-inf'),}
 
     for stop_loss in stop_loss_thresholds:
         for exit_level in exit_thresholds:
-            total_points, wins = 0, 0
+            cumulative_return, total_points, wins = 0, 0, 0
             for result in analysis_results:
                 max_drawdown = result['Max Drawdown (%)']
                 max_drawdown_points = result['Max Drawdown (Points)']
                 max_gain = result['Max Gain (%)']
                 max_gain_points = result['Max Gain (Points)']
                 closing_points = result['Closing Points']
+                closing_percentage = result['Closing Percentage']
 
                 if max_drawdown >= stop_loss:
                     total_points += (-stop_loss / max_drawdown) * max_drawdown_points
+                    cumulative_return += -stop_loss
                 elif max_gain >= exit_level:
                     total_points += (exit_level / max_gain) * max_gain_points
+                    cumulative_return += exit_level
                     wins += 1
                 else:
                     total_points += closing_points
+                    cumulative_return += closing_percentage
                     if closing_points > 0:
                         wins += 1
 
             win_rate = (wins / total_years) * 100
-            if total_points > best_combination['points_gained']:
+
+            if cumulative_return > best_combination['cumulative_return']:
                 best_combination.update({
                     'stop_loss': stop_loss,
                     'exit': exit_level,
                     'win_rate': win_rate,
-                    'points_gained': total_points
+                    'points_gained': total_points,
+                    'cumulative_return': cumulative_return,
                 })
 
     return {
         'optimal_stop_loss': best_combination['stop_loss'],
         'optimal_exit': best_combination['exit'],
-        'win_rate': best_combination['win_rate'],
-        'points_gained': round(best_combination['points_gained'], 4)
+        'optimal_win_rate': best_combination['win_rate'],
+        'optimal_points_gained': round(best_combination['points_gained'], 4),
+        'optimal_percentage_return': best_combination['cumulative_return']
     }
 
 
@@ -468,7 +488,7 @@ def calculate_summary_statistics(analysis_results):
 
     # Filter wins and losses
     wins = [result for result in analysis_results if result['Closing Points'] > 0]
-    losses = [result for result in analysis_results if result['Closing Points'] <= 0]
+    # losses = [result for result in analysis_results if result['Closing Points'] <= 0]
 
     # Calculate win rate
     win_rate = (len(wins) / total_years) * 100
@@ -478,12 +498,6 @@ def calculate_summary_statistics(analysis_results):
     total_percent_gained = sum(result['Closing Percentage'] for result in wins)
 
     # Calculate optimal stop loss and exit
-    max_drawdowns = [result['Max Drawdown (Points)'] for result in analysis_results]
-    max_profits = [result['Max Gain (Points)'] for result in analysis_results]
-
-    # optimal_stop_loss = round(sum(max_drawdowns) / total_years, 4)
-    # optimal_exit = round(sum(max_profits) / total_years,4)
-
     optimal_calculations = calculate_optimal_exit_and_stop_loss(analysis_results)
 
     return {
@@ -492,8 +506,9 @@ def calculate_summary_statistics(analysis_results):
         'total_percent_gained': total_percent_gained,
         'optimal_stop_loss': optimal_calculations['optimal_stop_loss'],
         'optimal_exit': optimal_calculations['optimal_exit'],
-        'optimal_win_rate': optimal_calculations['win_rate'],
-        'optimal_points_gained': optimal_calculations['points_gained']
+        'optimal_win_rate': optimal_calculations['optimal_win_rate'],
+        'optimal_points_gained': optimal_calculations['optimal_points_gained'],
+        'optimal_percentage_return': optimal_calculations['optimal_percentage_return'],
     }
 
 
@@ -786,6 +801,8 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
     combined_data_15y['No_Stop_Returns'] = combined_data_15y['Close_Close_Pct_Change'].fillna(0)
     combined_data_30y['No_Stop_Returns'] = combined_data_30y['Close_Close_Pct_Change'].fillna(0)
 
+    combined_data_15y.to_csv('Combined_Data_15y.csv')
+
     # Invert returns for short trades
     if direction == 'Short':
         combined_data_15y['No_Stop_Returns'] *= -1
@@ -801,10 +818,6 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
 
         # Apply stop-loss/exit for 15-year data slice
         stop_loss_returns_15y = calculate_stop_loss_return(yearly_data_15y, optimal_results_15y, direction)
-
-        # CHECK
-        if year == 2018:
-            stop_loss_returns_15y.to_csv('stop_loss_returns.csv', index=False)
 
         # Ensure lengths match
         if len(stop_loss_returns_15y) == len(yearly_data_15y):
@@ -1685,8 +1698,8 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
                                                          end_day, optimal_results_30y, direction)
 
     # Calculate summary statistics
-    summary_15 = calculate_summary_statistics(analysis_results[:15])
-    summary_30 = calculate_summary_statistics(analysis_results[:30])
+    summary_15 = calculate_summary_statistics(analysis_results[:15], optimal_results_15y)
+    summary_30 = calculate_summary_statistics(analysis_results[:30], optimal_results_30y)
 
     # Day trading stats by year
     day_trading_stats, day_trading_stats_1, day_trading_stats_weekday, day_trading_stats_1_weekday = (
@@ -1732,7 +1745,9 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
 
 def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month, end_day, optimal_results, direction):
     """
-    Simulates trades with stop-loss and exit strategy applied, using the optimal results.
+    Simulates annual-seasonal trades with stop-loss and exit strategy applied, using the optimal results.
+    The results could be inserted in a yearly table to compare year-to-year performance of
+    no stop-loss vs. optimal stop-loss results.
     Args:
         analysis_results (list): Yearly analysis results.
         ohlc_data (pd.DataFrame): OHLC data for the market.

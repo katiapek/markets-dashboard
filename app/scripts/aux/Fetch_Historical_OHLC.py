@@ -49,7 +49,7 @@ def main():
     # for market_name, ticker in market_tickers.items():
     #     print(f"Fetching OHLC data for {market_name}...")
     #     fetch_ohlc_data(ticker, market_name, conn)
-    fetch_ohlc_data("^VIX", "VIX", conn)
+    fetch_ohlc_data("ETH=F", "Ethereum", conn)
 
     # Commit the changes and close the database connection
     conn.commit()

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import sqlite3
 import pandas as pd
 import numpy as np
-from config import market_tickers  # Import the market_tickers dictionary
+from app.scripts.config import market_tickers  # Import the market_tickers dictionary
 
 
 def calculate_day_type_1(df):
@@ -69,7 +69,9 @@ def calculate_percentage_changes(df):
     """
     Calculate percentage changes for Close-Close, Open-Close, Open-High, Open-Low, Close-High, Close-Low.
     """
-    df['Close_Close_Pct_Change'] = df['Close'].pct_change() * 100
+    print(f"Data_PCT_CHANGE: {df.head(10)}")
+
+    df['Close_Close_Pct_Change'] = ((df['Close']-df['Close'].shift(1)) / df['Close'].shift(1)) * 100
     df['Open_Close_Pct_Change'] = ((df['Close'] - df['Open']) / df['Open']) * 100
     df['Open_High_Pct_Change'] = ((df['High'] - df['Open']) / df['Open']) * 100
     df['Open_Low_Pct_Change'] = ((df['Low'] - df['Open']) / df['Open']) * 100
@@ -117,14 +119,14 @@ def fetch_ohlc_for_2024(ticker, market_name, conn):
     # If start_date is after end_date, no need to fetch
     if datetime.strptime(start_date, '%Y-%m-%d') > datetime.strptime(end_date, '%Y-%m-%d'):
         print(f"No new data to fetch for {market_name}.")
-        # return
+        return
 
     # Fetch OHLC data from yfinance
     data = yf.download(ticker, start=start_date, end=end_date, interval="1d")
 
     if data.empty:
         print(f"No new data fetched for {market_name}.")
-        # return
+        return
 
     # Reset the index to get the Date column
     data.reset_index(inplace=True)
@@ -134,10 +136,13 @@ def fetch_ohlc_for_2024(ticker, market_name, conn):
         data.columns = [col[0] for col in data.columns]
 
     # Rename columns to match the desired format
-    data.rename(columns={'Close': 'Close', 'Open': 'Open', 'High': 'High', 'Low': 'Low'}, inplace=True)
+    data.rename(columns={'Date': 'Date', 'Close': 'Close', 'Open': 'Open', 'High': 'High', 'Low': 'Low'}, inplace=True)
 
     # Ensure the correct column order
     data = data[['Date', 'Close', 'Open', 'High', 'Low']]
+
+    # Sort data by date
+    data.sort_values('Date', inplace=True)
 
     # Calculate percentage changes
     data = calculate_percentage_changes(data)
@@ -150,6 +155,7 @@ def fetch_ohlc_for_2024(ticker, market_name, conn):
     # Insert the new data into the database
     data.to_sql(table_name, conn, if_exists='append', index=False)
     print(f"New data for {market_name} appended to the database.")
+
 
 
 def remove_outliers(df, col, threshold=3):
@@ -314,15 +320,25 @@ def main():
     # Connect to the SQLite database
     conn = sqlite3.connect('../data/markets_data.db')
 
-    # Iterate over each market and fetch the data
+    # Iterate over each market and fetch the data for all markets:
     for market_name, ticker in market_tickers.items():
         print(f"Fetching OHLC data for {market_name}...")
         fetch_ohlc_for_2024(ticker, market_name, conn)
 
-        # Compute and store seasonal patterns
+        # Compute and store seasonal patterns for all
         compute_and_store_seasonality(market_name, conn)
 
+    # For one market:
+    # fetch_ohlc_for_2024('ETH=F', 'Ethereum', conn)
+
+    # For one:
+    # compute_and_store_seasonality('Ethereum', conn)
+
+    # For all
     compute_and_store_correlations(conn, market_tickers)
+
+    # For one:
+    # compute_and_store_correlations(conn, market_tickers)
 
     # Commit the changes and close the database connection
     conn.commit()
