@@ -1,17 +1,10 @@
 # callbacks.py
 
-from dash import Input, Output, State, ctx, html, dcc, callback_context
+from dash import Input, Output, State, ctx, callback_context
 import plotly.subplots as sp
 from layout_definitions import format_market_name
 from data_fetchers import (
-    SeasonalDataFetcher,
     OHLCDataFetcher,
-    OpenInterestDataFetcher,
-    OpenInterestPercentagesFetcher,
-    PositionsChangeDataFetcher,
-    NetPositionsDataFetcher,
-    PositionsChangeNetDataFetcher,
-    Index26WDataFetcher,
     CorrelationDataFetcher,
     fetch_ohlc_data_cached,
     fetch_active_subplot_data,
@@ -22,11 +15,6 @@ import os
 from callback_helpers import *
 from scripts.config import COLORS, market_tickers, TRACE_CONFIG
 
-import cProfile
-import pstats
-from io import StringIO
-
-profiler = cProfile.Profile()
 
 # Load environment variables from .env file
 load_dotenv()
@@ -394,9 +382,9 @@ def register_callbacks(app):
                     fig.update_yaxes(range=filtered_y_range, row=row_index, col=1, fixedrange=True)
 
             if subplot == 'Positions Change':
-                if report_type == 'legacy':
+                filtered_data = df[(df["Date"] >= x_range[0]) & (df["Date"] <= x_range[1])]
 
-                    filtered_data = df[(df["Date"] >= x_range[0]) & (df["Date"] <= x_range[1])]
+                if report_type == 'legacy':
 
                     set_bar_width = 70000000
                     add_trace(fig, filtered_data['Date'], filtered_data['pct_change_noncomm_long'],
@@ -416,7 +404,6 @@ def register_callbacks(app):
                               line_color=COLORS['comm_short'], chart_type='bar', bar_width=set_bar_width,
                               bar_offset=3 * set_bar_width)
                     # fig.update_yaxes(fixedrange=True)
-
 
                 elif report_type == 'disaggregated':
                     set_bar_width = 60000000
@@ -801,12 +788,12 @@ def register_callbacks(app):
             pdh_pdl_pdhl_high_vs_prev_high_dist = analysis_results['pdh_pdl_pdhl_high_vs_prev_high_dist']
 
             # Distribution Charts for 15 and 30 years
-            distribution_chart_15 = create_distribution_chart(yearly_data[:15], "15-Year Distribution")
+            distribution_chart_15 = create_distribution_chart(yearly_data[:15], "15-Year Returns")
             optimal_distribution_chart_15 = create_distribution_chart(optimal_trades_results_15y,
-                                                                      "15-Year Optimal Distribution")
-            distribution_chart_30 = create_distribution_chart(yearly_data[:30], "30-Year Distribution")
+                                                                      "15-Year Stop-Loss and Exit Returns")
+            distribution_chart_30 = create_distribution_chart(yearly_data[:30], "30-Year Returns ")
             optimal_distribution_chart_30 = create_distribution_chart(optimal_trades_results_30y,
-                                                                      "30-Year Optimal Distribution")
+                                                                      "30-Year Stop-Loss and Exit Returns")
 
             # Cumulative return charts for 15 and 30 years
             (fig_15y, fig_30y, daily_returns_15, daily_returns_30, daily_returns_15_stoploss, daily_returns_30_stoploss,

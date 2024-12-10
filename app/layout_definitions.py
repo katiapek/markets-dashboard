@@ -22,25 +22,25 @@ if user_tier == 'premium':
             {'label': '35 Years', 'value': 35}
         ],
         'ohlc': [
-            {'label': 'Show OHLC', 'value': 'OHLC'}
+            {'label': 'OHLC', 'value': 'OHLC'}
         ],
         'open_interest': [
-            {'label': 'Show Open Interest', 'value': 'Open Interest'}
+            {'label': 'Open Interest', 'value': 'Open Interest'}
         ],
         'oi_percentages': [
-            {'label': 'Show % of OI', 'value': 'OI Percentages'}
+            {'label': '% of OI', 'value': 'OI Percentages'}
         ],
         'positions_change': [
-            {'label': 'Show % Change in Positions', 'value': 'Positions Change'}
+            {'label': '% Change in Positions', 'value': 'Positions Change'}
         ],
         'net_positions': [
-            {'label': 'Show Net Positions', 'value': 'Net Positions'}
+            {'label': 'Net Positions', 'value': 'Net Positions'}
         ],
         'net_positions_change': [
-            {'label': 'Show % Change in Net Positions', 'value': 'Net Positions Change'}
+            {'label': '% Change in Net Positions', 'value': 'Net Positions Change'}
         ],
         'index_26w': [
-            {'label': 'Show 26-Week Index', 'value': '26W Index'}
+            {'label': '26-Week Index', 'value': '26W Index'}
         ]
     }
 else:
@@ -50,25 +50,25 @@ else:
             {'label': '35 Years (Premium)', 'value': 1}
         ],
         'ohlc': [
-            {'label': 'Show OHLC', 'value': 'OHLC'}
+            {'label': 'OHLC', 'value': 'OHLC'}
         ],
         'open_interest': [
-            {'label': 'Show Open Interest', 'value': 'Open Interest'}
+            {'label': 'Open Interest', 'value': 'Open Interest'}
         ],
         'oi_percentages': [
-            {'label': 'Show % of OI', 'value': 'OI Percentages'}
+            {'label': '% of OI', 'value': 'OI Percentages'}
         ],
         'positions_change': [
-            {'label': 'Show % Change in Positions', 'value': 'Positions Change'}
+            {'label': '% Change in Positions', 'value': 'Positions Change'}
         ],
         'net_positions': [
-            {'label': 'Show Net Positions', 'value': 'Net Positions'}
+            {'label': 'Net Positions', 'value': 'Net Positions'}
         ],
         'net_positions_change': [
-            {'label': 'Show % Change in Net Positions', 'value': 'Net Positions Change'}
+            {'label': '% Change in Net Positions', 'value': 'Net Positions Change'}
         ],
         'index_26w': [
-            {'label': 'Show 26-Week Index', 'value': '26W Index'}
+            {'label': '26-Week Index', 'value': '26W Index'}
         ]
     }
 
@@ -274,6 +274,30 @@ def create_day_trading_stats_section():
                                 {'name': 'PD-nHL %', 'id': 'PD-nHL %'},
                             ],
                             data=[],
+                            tooltip_header={
+                                "D UP": "Days where the Close was higher than the Open",
+                                "D UP %": "Percentage of D UP days out of Total Days."
+                                          "\nD UP % + D DN % ≈ 100%",
+                                "D DN": "Days where the Close was lower than the Open",
+                                "D DN %": "Percentage of D-DN days out of Total Days."
+                                          "\nD UP % + D DN % ≈ 100%",
+                                "PD-H": "Days where the High was not lower than the Previous Day's High and "
+                                        "the Low was higher than the Previous Day's Low.",
+                                "PD-H %": "Percentage of PD-H days out of Total Days."
+                                          "\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
+                                "PD-L": "Days where the Low was not higher than the Previous Day's Low and "
+                                        "the High was lower than the Previous Day's High.",
+                                "PD-L %": "Percentage of PD-L days out of Total Days."
+                                          "\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
+                                "PD-HL": "Days where the High was not lower than the Previous Day's High, and "
+                                         "the Low was not higher than the Previous Day's Low (Outside bar)",
+                                "PD-HL %": "Percentage of PD-HL days out of Total Days."
+                                          "\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
+                                "PD-nHL": "Days where the High was lower than the Previous Day's High and "
+                                          "the Low was higher than the Previous Day's Low (Inside bar)",
+                                "PD-nHL %": "Percentage of PD-nHL days out of Total Days."
+                                            "\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
+                            },
                             style_header={
                                 'backgroundColor': '#333',
                                 'color': 'white',
@@ -289,6 +313,12 @@ def create_day_trading_stats_section():
                                 'fontSize': '10px',
                                 'textAlign': 'center'
                             },
+                            css=[{
+                                'selector': '.dash-table-tooltip',
+                                'rule': 'background-color: #1e1e1e; font-family: monospace; color: white; white-space: pre-line;'
+                            }],
+                            tooltip_delay=300,  # Delay before showing the tooltip
+                            tooltip_duration=400000000,  # Duration the tooltip stays visible
                             style_table={'overflowX': 'scroll'}
                         )
                     ])
@@ -325,6 +355,30 @@ def create_day_trading_stats_weekday_section():
                                 {'name': 'PD-nHL %', 'id': 'PD-nHL %'},
                             ],
                             data=[],
+                            tooltip_header={
+                                "D UP": "Days where the Close was higher than the Open",
+                                "D UP %": "Percentage of D UP days out of Total Days."
+                                          "\nD UP % + D DN % ≈ 100%",
+                                "D DN": "Days where the Close was lower than the Open",
+                                "D DN %": "Percentage of D-DN days out of Total Days."
+                                          "\nD UP % + D DN % ≈ 100%",
+                                "PD-H": "Days where the High was not lower than the Previous Day's High and "
+                                        "the Low was higher than the Previous Day's Low.",
+                                "PD-H %": "Percentage of PD-H days out of Total Days."
+                                          "\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
+                                "PD-L": "Days where the Low was not higher than the Previous Day's Low and "
+                                        "the High was lower than the Previous Day's High.",
+                                "PD-L %": "Percentage of PD-L days out of Total Days."
+                                          "\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
+                                "PD-HL": "Days where the High was not lower than the Previous Day's High, and "
+                                         "the Low was not higher than the Previous Day's Low (Outside bar)",
+                                "PD-HL %": "Percentage of PD-HL days out of Total Days."
+                                           "\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
+                                "PD-nHL": "Days where the High was lower than the Previous Day's High and "
+                                          "the Low was higher than the Previous Day's Low (Inside bar)",
+                                "PD-nHL %": "Percentage of PD-nHL days out of Total Days."
+                                            "\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
+                            },
                             style_header={
                                 'backgroundColor': '#333',
                                 'color': 'white',
@@ -340,6 +394,12 @@ def create_day_trading_stats_weekday_section():
                                 'fontSize': '10px',
                                 'textAlign': 'center'
                             },
+                            css=[{
+                                'selector': '.dash-table-tooltip',
+                                'rule': 'background-color: #1e1e1e; font-family: monospace; color: white; white-space: pre-line;'
+                            }],
+                            tooltip_delay=300,  # Delay before showing the tooltip
+                            tooltip_duration=400000000,  # Duration the tooltip stays visible
                             style_table={'overflowX': 'scroll'}
                         )
                     ])
@@ -376,6 +436,26 @@ def create_day_trading_stats_1_section():
                                 {'name': 'SIBI %', 'id': 'SIBI %'},
                             ],
                             data=[],
+                            tooltip_header={
+                                "CaPD-H": "PD-H Days where Close was above the Previous Day's High."
+                                          "\n(Closed above PD-H)",
+                                "CaPD-H %": "Percentage of CaPD-H days out of Total Days.",
+                                "CbPD-L": "PD-L Days where Close was below the Previous Day's Low"
+                                          "\n(Closed below the PD-L)",
+                                "CbPD-L %": "Percentage of CbPD-L days out of Total Days.",
+                                "CaPD-HL": "PD-HL Days where the Close was above the Previous Day's High"
+                                           "\n(Closed above PD-HL)",
+                                "CaPD-HL %": "Percentage of CaPD-HL days out of Total Days.",
+                                "CbPD-HL": "PD-HL Days where the Close was below the Previous Day's Low"
+                                           "\n(Closed below PD-HL)",
+                                "CbPD-HL %": "Percentage of CbPD-HL days out of Total Days.",
+                                "BISI": "Days where Previous Day's High is lower than the Next Day's Low"
+                                        "\n(Buyside Imbalance Sellside Inefficiency)",
+                                "BISI %": "Percentage of BISI days out of Total Days.",
+                                "SIBI": "Days where Previous Day's Low is higher than the Next Day's High"
+                                        "\n(Sellside Imbalance Buyside Inefficiency)",
+                                "SIBI %": "Percentage of SIBI days out of Total Days.",
+                            },
                             style_header={
                                 'backgroundColor': '#333',
                                 'color': 'white',
@@ -391,6 +471,12 @@ def create_day_trading_stats_1_section():
                                 'fontSize': '10px',
                                 'textAlign': 'center'
                             },
+                            css=[{
+                                'selector': '.dash-table-tooltip',
+                                'rule': 'background-color: #1e1e1e; font-family: monospace; color: white; white-space: pre-line;'
+                            }],
+                            tooltip_delay=300,  # Delay before showing the tooltip
+                            tooltip_duration=400000000,  # Duration the tooltip stays visible
                             style_table={'overflowX': 'scroll'}
                         )
                     ])
@@ -427,6 +513,26 @@ def create_day_trading_stats_1_weekday_section():
                                 {'name': 'SIBI %', 'id': 'SIBI %'},
                             ],
                             data=[],
+                            tooltip_header={
+                                "CaPD-H": "PD-H Days where Close was above the Previous Day's High."
+                                          "\n(Closed above PD-H)",
+                                "CaPD-H %": "Percentage of CaPD-H days out of Total Days.",
+                                "CbPD-L": "PD-L Days where Close was below the Previous Day's Low"
+                                          "\n(Closed below the PD-L)",
+                                "CbPD-L %": "Percentage of CbPD-L days out of Total Days.",
+                                "CaPD-HL": "PD-HL Days where the Close was above the Previous Day's High"
+                                           "\n(Closed above PD-HL)",
+                                "CaPD-HL %": "Percentage of CaPD-HL days out of Total Days.",
+                                "CbPD-HL": "PD-HL Days where the Close was below the Previous Day's Low"
+                                           "\n(Closed below PD-HL)",
+                                "CbPD-HL %": "Percentage of CbPD-HL days out of Total Days.",
+                                "BISI": "Days where Previous Day's High is lower than the Next Day's Low"
+                                        "\n(Buyside Imbalance Sellside Inefficiency)",
+                                "BISI %": "Percentage of BISI days out of Total Days.",
+                                "SIBI": "Days where Previous Day's Low is higher than the Next Day's High"
+                                        "\n(Sellside Imbalance Buyside Inefficiency)",
+                                "SIBI %": "Percentage of SIBI days out of Total Days.",
+                            },
                             style_header={
                                 'backgroundColor': '#333',
                                 'color': 'white',
@@ -442,9 +548,57 @@ def create_day_trading_stats_1_weekday_section():
                                 'fontSize': '10px',
                                 'textAlign': 'center'
                             },
+                            css=[{
+                                'selector': '.dash-table-tooltip',
+                                'rule': 'background-color: #1e1e1e; font-family: monospace; color: white; white-space: pre-line;'
+                            }],
+                            tooltip_delay=300,  # Delay before showing the tooltip
+                            tooltip_duration=400000000,  # Duration the tooltip stays visible
                             style_table={'overflowX': 'scroll'}
                         )
                     ])
+
+
+def create_day_analysis_dist_legend():
+    return html.Div(
+        html.P([
+            "Distribution Charts Lines Legend: ",
+            html.Span("95th percentile", style={'color': 'Salmon'}),
+            ", ",
+            html.Span("70th percentile", style={'color': 'CornFlowerBlue'}),
+        ], style={
+            'fontWeight': 'bold',
+            'color': 'white',
+            'fontFamily': "'Press Start 2P', monospace",
+            'fontSize': '12px',
+            'backgroundColor': '#1e1e1e',
+            'padding': '10px',
+            'borderRadius': '5px',
+            'marginBottom': '20px',
+        })
+    )
+
+
+def create_day_analysis_scatter_legend():
+    return html.Div(
+        html.P([
+            "Scatter Charts Lines Legend: ",
+            html.Span("Optimal Stop Loss", style={'color': 'Salmon'}),
+            ", ",
+            html.Span("Optimal Exit", style={'color': 'CornFlowerBlue'}),
+            ", ",
+            html.Span("Expected Return", style={'color': 'Aquamarine'}),
+        ], style={
+            'fontWeight': 'bold',
+            'color': 'white',
+            'fontFamily': "'Press Start 2P', monospace",
+            'fontSize': '12px',
+            'backgroundColor': '#1e1e1e',
+            'padding': '10px',
+            'borderRadius': '5px',
+            'marginBottom': '20px',
+        })
+    )
 
 
 def create_dup_analysis_section():
@@ -458,7 +612,7 @@ def create_dup_analysis_section():
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
                         html.H3("D-UP Day Analysis", style={'textAlign': 'center'}),
-
+                        html.Div(create_day_analysis_dist_legend()),
                         # Distribution Plots
                         html.Div([
 
@@ -497,6 +651,7 @@ def create_dup_analysis_section():
                         ]),
 
                         # Scatter Plots
+                        html.Div(create_day_analysis_scatter_legend()),
                         html.Div([
                             html.Div([
                                 dcc.Graph(id='dup-open-low-vs-close-scatter',
@@ -524,6 +679,7 @@ def create_ddown_analysis_section():
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
                         html.H3("D-DN Day Analysis", style={'textAlign': 'center'}),
+                        html.Div(create_day_analysis_dist_legend()),
 
                         # Distribution Plots
                         html.Div([
@@ -562,7 +718,10 @@ def create_ddown_analysis_section():
                         ]),
 
                         # Scatter Plots
+                        html.Div(create_day_analysis_scatter_legend()),
+
                         html.Div([
+
                             html.Div([
                                 dcc.Graph(id='ddown-open-low-vs-close-scatter',
                                           config={'displayModeBar': False, 'staticPlot': True}),
@@ -589,6 +748,7 @@ def create_pdh_analysis_section():
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
                         html.H3("PD-H Day Analysis", style={'textAlign': 'center'}),
+                        html.Div(create_day_analysis_dist_legend()),
 
                         # Distribution Plots
                         html.Div([
@@ -618,7 +778,10 @@ def create_pdh_analysis_section():
                         ]),
 
                         # Scatter Plots
+                        html.Div(create_day_analysis_scatter_legend()),
+
                         html.Div([
+
                             html.Div([
                                 dcc.Graph(id='pdh-open-low-vs-close-scatter',
                                           config={'displayModeBar': False, 'staticPlot': True}),
@@ -645,6 +808,7 @@ def create_pdl_analysis_section():
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
                         html.H3("PD-L Day Analysis", style={'textAlign': 'center'}),
+                        html.Div(create_day_analysis_dist_legend()),
 
                         # Distribution Plots
                         html.Div([
@@ -674,7 +838,10 @@ def create_pdl_analysis_section():
                         ]),
 
                         # Scatter Plots
+                        html.Div(create_day_analysis_scatter_legend()),
+
                         html.Div([
+
                             html.Div([
                                 dcc.Graph(id='pdl-open-low-vs-close-scatter',
                                           config={'displayModeBar': False, 'staticPlot': True}),
@@ -701,6 +868,7 @@ def create_pdhl_analysis_section():
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
                         html.H3("PD-HL Day Analysis", style={'textAlign': 'center'}),
+                        html.Div(create_day_analysis_dist_legend()),
 
                         # Distribution Plots
                         html.Div([
@@ -739,8 +907,11 @@ def create_pdhl_analysis_section():
                         ]),
 
                         # Scatter Plots
+                        html.Div(create_day_analysis_scatter_legend()),
+
                         html.Div([
                             html.Div([
+
                                 dcc.Graph(id='pdhl-open-low-vs-close-scatter',
                                           config={'displayModeBar': False, 'staticPlot': True}),
                             ], style={'width': '50%', 'display': 'inline-block'}),
@@ -766,6 +937,7 @@ def create_pdh_pdl_pdhl_analysis_section():
                            'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
                     children=[
                         html.H3("PD-H, PD-L, PD-HL Day Analysis", style={'textAlign': 'center'}),
+                        html.Div(create_day_analysis_dist_legend()),
 
                         # Distribution Plots
                         html.Div([
@@ -804,7 +976,10 @@ def create_pdh_pdl_pdhl_analysis_section():
                         ]),
 
                         # Scatter Plots
+                        html.Div(create_day_analysis_scatter_legend()),
+
                         html.Div([
+
                             html.Div([
                                 dcc.Graph(id='pdh-pdl-pdhl-open-low-vs-close-scatter',
                                           config={'displayModeBar': False, 'staticPlot': True}),
@@ -825,7 +1000,7 @@ def create_correlation_section():
     Creates a section for displaying correlation tables for 180 days and 15 years with market names vertically.
     """
     return html.Div(children=[
-        html.H3("Market Correlation Analysis",
+        html.H3("Market Correlation",
                 style={'textAlign': 'center', 'color': 'white', 'fontFamily': "'Press Start 2P', monospace"}),
 
         # 180 Days Correlation Table
@@ -946,18 +1121,24 @@ def create_layout(app):
                         ),
                     ),
 
-                    # Opportunity analysis section below the main chart
-                    html.Div(
-                        children=[
-                            create_analysis_section(),
-                            dcc.Loading(
-                                id='loading-opportunity',
-                                children=[html.Div(id='opportunity-output')],
-                                type='default'
-                            )
-                        ],
-                        style={'marginTop': '20px'}
+                    dcc.Loading(
+                        id='loading-opportunity',
+                        children=[create_analysis_section(), html.Div(id='opportunity-output')],
+                        type='circle'
                     ),
+
+                    # Opportunity analysis section below the main chart
+                    # html.Div(
+                    #     children=[
+                    #         create_analysis_section(),
+                    #         dcc.Loading(
+                    #             id='loading-opportunity',
+                    #             children=[html.Div(id='opportunity-output')],
+                    #             type='circle'
+                    #         )
+                    #     ],
+                    #     style={'marginTop': '20px'}
+                    # ),
 
                     # Day Trading Starts below the analysis section
                     html.Div(
@@ -966,7 +1147,7 @@ def create_layout(app):
                             dcc.Loading(
                                 id='day-trading-stats',
                                 children=[html.Div(id='day-trading-stats-output')],
-                                type='default'
+                                type='circle'
                             )
                         ],
                         style={'marginTop': '20px'}
@@ -979,7 +1160,7 @@ def create_layout(app):
                             dcc.Loading(
                                 id='day-trading-stats-weekday',
                                 children=[html.Div(id='day-trading-stats-weekday-output')],
-                                type='default'
+                                type='circle'
                             )
                         ],
                         style={'marginTop': '20px'}
@@ -992,7 +1173,7 @@ def create_layout(app):
                             dcc.Loading(
                                 id='day-trading-stats-1',
                                 children=[html.Div(id='day-trading-stats-1-output')],
-                                type='default'
+                                type='circle'
                             )
                         ],
                         style={'marginTop': '20px'}
@@ -1005,88 +1186,125 @@ def create_layout(app):
                             dcc.Loading(
                                 id='day-trading-stats-1-weekday',
                                 children=[html.Div(id='day-trading-stats-1-weekday-output')],
-                                type='default'
+                                type='circle'
                             )
                         ],
                         style={'marginTop': '20px'}
                     ),
 
-                    # Create D-UP analysis section
-                    html.Div(
-                        children=[
-                            create_dup_analysis_section(),
-                            dcc.Loading(
-                                id='dup-analysis-loading',
-                                children=[html.Div(id='dup-analysis-output')],
-                                type='default'
-                            )
-                        ],
-                        style={'marginTop': '20px'}
+
+                    # # Create D-UP analysis section
+                    # html.Div(
+                    #     children=[
+                    #         create_dup_analysis_section(),
+                    #         dcc.Loading(
+                    #             id='dup-analysis-loading',
+                    #             children=[html.Div(id='dup-analysis-output')],
+                    #             type='circle'
+                    #         )
+                    #     ],
+                    #     style={'marginTop': '20px'}
+                    # ),
+
+                    dcc.Loading(
+                        id='loading-dup-analysis-output',
+                        children=[create_dup_analysis_section(), html.Div(id='dup-analysis-output')],
+                        type='circle'
                     ),
 
-                    # Create D-DOWN analysis section
-                    html.Div(
-                        children=[
-                            create_ddown_analysis_section(),
-                            dcc.Loading(
-                                id='ddown-analysis-loading',
-                                children=[html.Div(id='ddown-analysis-output')],
-                                type='default'
-                            )
-                        ],
-                        style={'marginTop': '20px'}
+                    # # Create D-DOWN analysis section
+                    # html.Div(
+                    #     children=[
+                    #         create_ddown_analysis_section(),
+                    #         dcc.Loading(
+                    #             id='ddown-analysis-loading',
+                    #             children=[html.Div(id='ddown-analysis-output')],
+                    #             type='circle'
+                    #         )
+                    #     ],
+                    #     style={'marginTop': '20px'}
+                    # ),
+
+                    dcc.Loading(
+                        id='loading-ddown-analysis-output',
+                        children=[create_ddown_analysis_section(), html.Div(id='ddown-analysis-output')],
+                        type='circle'
                     ),
 
-                    # Create PD-H analysis section
-                    html.Div(
-                        children=[
-                            create_pdh_analysis_section(),
-                            dcc.Loading(
-                                id='pdh-analysis-loading',
-                                children=[html.Div(id='pdh-analysis-output')],
-                                type='default'
-                            )
-                        ],
-                        style={'marginTop': '20px'}
+                    # # Create PD-H analysis section
+                    # html.Div(
+                    #     children=[
+                    #         create_pdh_analysis_section(),
+                    #         dcc.Loading(
+                    #             id='pdh-analysis-loading',
+                    #             children=[html.Div(id='pdh-analysis-output')],
+                    #             type='circle'
+                    #         )
+                    #     ],
+                    #     style={'marginTop': '20px'}
+                    # ),
+
+                    dcc.Loading(
+                        id='loading-pdh-analysis-output',
+                        children=[create_pdh_analysis_section(), html.Div(id='pdh-analysis-output')],
+                        type='circle'
                     ),
 
-                    # Create PD-L analysis section
-                    html.Div(
-                        children=[
-                            create_pdl_analysis_section(),
-                            dcc.Loading(
-                                id='pdl-analysis-loading',
-                                children=[html.Div(id='pdl-analysis-output')],
-                                type='default'
-                            )
-                        ],
-                        style={'marginTop': '20px'}
+                    # # Create PD-L analysis section
+                    # html.Div(
+                    #     children=[
+                    #         create_pdl_analysis_section(),
+                    #         dcc.Loading(
+                    #             id='pdl-analysis-loading',
+                    #             children=[html.Div(id='pdl-analysis-output')],
+                    #             type='circle'
+                    #         )
+                    #     ],
+                    #     style={'marginTop': '20px'}
+                    # ),
+
+                    dcc.Loading(
+                        id='loading-pdl-analysis-output',
+                        children=[create_pdl_analysis_section(), html.Div(id='pdl-analysis-output')],
+                        type='circle'
                     ),
 
-                    # Create PD-HL analysis section
-                    html.Div(
-                        children=[
-                            create_pdhl_analysis_section(),
-                            dcc.Loading(
-                                id='pdhl-analysis-loading',
-                                children=[html.Div(id='pdhl-analysis-output')],
-                                type='default'
-                            )
-                        ],
-                        style={'marginTop': '20px'}
+                    # # Create PD-HL analysis section
+                    # html.Div(
+                    #     children=[
+                    #         create_pdhl_analysis_section(),
+                    #         dcc.Loading(
+                    #             id='pdhl-analysis-loading',
+                    #             children=[html.Div(id='pdhl-analysis-output')],
+                    #             type='circle'
+                    #         )
+                    #     ],
+                    #     style={'marginTop': '20px'}
+                    # ),
+
+                    dcc.Loading(
+                        id='loading-pdhl-analysis-output',
+                        children=[create_pdhl_analysis_section(), html.Div(id='pdhl-analysis-output')],
+                        type='circle'
                     ),
 
-                    # Create PD-H, PD-L, PD-HL analysis section
-                    html.Div(
-                        children=[
-                            create_pdh_pdl_pdhl_analysis_section(),
-                            dcc.Loading(
-                                id='pdh-pdl-pdhl-analysis-loading',
-                                children=[html.Div(id='pdh-pdl-pdhl-analysis-output')],
-                                type='default'
-                            )
-                        ],
-                        style={'marginTop': '20px'}
+                    # # Create PD-H, PD-L, PD-HL analysis section
+                    # html.Div(
+                    #     children=[
+                    #         create_pdh_pdl_pdhl_analysis_section(),
+                    #         dcc.Loading(
+                    #             id='pdh-pdl-pdhl-analysis-loading',
+                    #             children=[html.Div(id='pdh-pdl-pdhl-analysis-output')],
+                    #             type='circle'
+                    #         )
+                    #     ],
+                    #     style={'marginTop': '20px'}
+                    # ),
+
+                    dcc.Loading(
+                        id='loading-pdh_pdl_pdhl-analysis-output',
+                        children=[create_pdh_pdl_pdhl_analysis_section(), html.Div(id='pdh_pdl_pdhl-analysis-output')],
+                        type='circle'
                     ),
 
                     # Create Correlation Tables section
@@ -1096,7 +1314,7 @@ def create_layout(app):
                             dcc.Loading(
                                 id='correlation-loading',
                                 children=[html.Div(id='correlation-output')],
-                                type='default'
+                                type='circle'
                             )
                         ],
                         style={'marginTop': '20px'}
@@ -1489,7 +1707,7 @@ def create_layout(app):
 
                 ],
             ),
-    ])
+        ])
     else:
         app.layout = html.Div(style={'display': 'flex'}, children=[
             html.Div(
@@ -1928,4 +2146,3 @@ def create_layout(app):
                 ],
             ),
         ])
-

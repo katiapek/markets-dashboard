@@ -16,6 +16,10 @@ img, video, canvas {
     overflow: hidden !important;
 }
 
+h3 {
+    margin-top: 50px;
+}
+
 #combined-chart {
     height: 100vh;
     border: 1vh;
@@ -244,7 +248,6 @@ dcc.Graph, dcc.Checklist  {
 }
 
 
-
 /* Ensure the dropdown has a dark background on page load */
 .dropdown-menu-1 {
     background-color: #1e1e1e !important; /* Dark background color */
@@ -364,4 +367,9 @@ dcc.Graph, dcc.Checklist  {
     box-shadow: none !important; /* Remove default shadow */
     background-color: #333 !important; /* Match background color */
     color: white;
+}
+
+.dash-table-tooltip {
+    backgroundColor: #1e1e1e,
+    color: 'white'
 }

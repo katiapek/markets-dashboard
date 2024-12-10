@@ -1113,6 +1113,7 @@ def calculate_percentiles(day_data, column):
 
     return lower_70, upper_70, lower_95, upper_95
 
+
 def create_distributions(day_data, day_type="None"):
     distributions = {}
     open_high_col = "Open_High_Pct_Change"
@@ -1202,6 +1203,7 @@ def create_distribution_chart(yearly_data, title="Distribution of Returns"):
 
     fig.update_layout(
         title=title,
+        title_font_size=12,
         xaxis_title='Return (%)',
         yaxis_title='Frequency',
         plot_bgcolor='#1e1e1e',
