@@ -276,49 +276,45 @@ def calculate_stop_loss_return(yearly_data, optimal_results, direction):
     stop_loss_returns = []
     stop_loss_or_take_profit = False
 
+    first_open = yearly_data.iloc[0]['Open']
+
+    # Ensure first_open is a float
+    try:
+        first_open = float(first_open)
+        print(f"FIRST_OPEN: {first_open} on {yearly_data.iloc[0]['Date']}")
+    except ValueError:
+        print(f"Error: 'Open' value {first_open} is not a valid float.")
+
+    # Calculate the stop-loss and take-profit prices
+    if direction == 'Long':
+        stop_loss_price = first_open * (1 - optimal_results['optimal_stop_loss'] / 100)
+        take_profit_price = first_open * (1 + optimal_results['optimal_exit'] / 100)
+    else:
+        stop_loss_price = first_open * (1 + optimal_results['optimal_stop_loss'] / 100)
+        take_profit_price = first_open * (1 - optimal_results['optimal_exit'] / 100)
+
+    print(f"STOP_LOSS_PRICE: {stop_loss_price}, {optimal_results['optimal_stop_loss']}")
+
     # Loop through each trade in yearly data
     for i, row in yearly_data.iterrows():
         if stop_loss_or_take_profit:
             stop_loss_returns.append(0)  # Append 0 for all subsequent days after trade closure
             continue
 
-        first_open = row['Open']
-
-        # Ensure first_open is a float
-        try:
-            first_open = float(first_open)
-        except ValueError:
-            print(f"Error: 'Open' value {first_open} is not a valid float.")
-            continue
-
-        # Calculate the stop-loss and take-profit prices
-        if direction == 'Long':
-            stop_loss_price = first_open * (1 - optimal_results['optimal_stop_loss'] / 100)
-            take_profit_price = first_open * (1 + optimal_results['optimal_exit'] / 100)
-        else:
-            stop_loss_price = first_open * (1 + optimal_results['optimal_stop_loss'] / 100)
-            take_profit_price = first_open * (1 - optimal_results['optimal_exit'] / 100)
-
-        # Track the cumulative return for this trade
-        daily_return = 0
-
-        # Evaluate trade outcome based on daily price range
-        # if stop_loss_or_take_profit:
-        #     daily_return = 0
         if direction == 'Long':
             if row['Low'] <= stop_loss_price:  # Stop-loss hit
-                daily_return = (stop_loss_price - row['Open']) / first_open * 100
+                daily_return = (stop_loss_price - row['Open']) / row['Open'] * 100
             elif row['High'] >= take_profit_price:  # Take-profit hit
-                daily_return = (take_profit_price - row['Open']) / first_open * 100
+                daily_return = (take_profit_price - row['Open']) / row['Open'] * 100
             else:  # Neither hit, close at the end of the day
-                daily_return = (row['Close'] - row['Open']) / first_open * 100
+                daily_return = row['Close_Close_Pct_Change']
         else:  # Short direction
             if row['High'] >= stop_loss_price:  # Stop-loss hit
-                daily_return = (row['Open'] - stop_loss_price) / first_open * 100
+                daily_return = (row['Open'] - stop_loss_price) / row['Open'] * 100
             elif row['Low'] <= take_profit_price:  # Take-profit hit
-                daily_return = (row['Open'] - take_profit_price) / first_open * 100
+                daily_return = (row['Open'] - take_profit_price) / row['Open'] * 100
             else:  # Neither hit, close at the end of the day
-                daily_return = (row['Open'] - row['Close']) / first_open * 100
+                daily_return = row['Close_Close_Pct_Change'] * (-1)
 
         # Append the return for this trade
         stop_loss_returns.append(daily_return)
@@ -488,15 +484,13 @@ def calculate_summary_statistics(analysis_results, optimal_results):
 
     # Filter wins and losses
     wins = [result for result in analysis_results if result['Closing Points'] > 0]
-    # losses = [result for result in analysis_results if result['Closing Points'] <= 0]
 
     # Calculate win rate
     win_rate = (len(wins) / total_years) * 100
 
     # Calculate total points and percent gained
-    total_points_gained = sum(result['Closing Points'] for result in wins)
-    total_percent_gained = sum(result['Closing Percentage'] for result in wins)
-
+    total_points_gained = sum(result['Closing Points'] for result in analysis_results)
+    total_percent_gained = sum(result['Closing Percentage'] for result in analysis_results)
 
     return {
         'win_rate': win_rate,
@@ -795,11 +789,15 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
     combined_data_15y.sort_values('Date', inplace=True)
     combined_data_30y.sort_values('Date', inplace=True)
 
+    # Format dates to exclude the time component
+    combined_data_15y['Formatted_Date'] = combined_data_15y['Date'].dt.strftime('%Y-%m-%d')
+    combined_data_30y['Formatted_Date'] = combined_data_30y['Date'].dt.strftime('%Y-%m-%d')
+
     # Calculate daily returns for no stop-loss for both periods
     combined_data_15y['No_Stop_Returns'] = combined_data_15y['Close_Close_Pct_Change'].fillna(0)
     combined_data_30y['No_Stop_Returns'] = combined_data_30y['Close_Close_Pct_Change'].fillna(0)
 
-    combined_data_15y.to_csv('Combined_Data_15y.csv')
+    # combined_data_15y.to_csv('Combined_Data_15y.csv')
 
     # Invert returns for short trades
     if direction == 'Short':
@@ -846,28 +844,30 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
     combined_data_15y['Cumulative_No_Stop'] = combined_data_15y['No_Stop_Returns'].cumsum()
     combined_data_15y['Cumulative_Stop_Loss'] = combined_data_15y['Stop_Loss_Returns'].cumsum()
 
+    combined_data_15y.to_csv('Combined_Data_15y_CUMULATIVE.csv')
+
     combined_data_30y['Cumulative_No_Stop'] = combined_data_30y['No_Stop_Returns'].cumsum()
     combined_data_30y['Cumulative_Stop_Loss'] = combined_data_30y['Stop_Loss_Returns'].cumsum()
 
     # Plotting for the 15-year data
     fig_15y = go.Figure()
     fig_15y.add_trace(
-        go.Scatter(x=combined_data_15y['Date'], y=combined_data_15y['Cumulative_No_Stop'], mode='lines',
+        go.Scatter(x=combined_data_15y['Formatted_Date'], y=combined_data_15y['Cumulative_No_Stop'], mode='lines',
                    name='No Stop-Loss (15 Years)', line=dict(color='CornflowerBlue'))
     )
     fig_15y.add_trace(
-        go.Scatter(x=combined_data_15y['Date'], y=combined_data_15y['Cumulative_Stop_Loss'], mode='lines',
+        go.Scatter(x=combined_data_15y['Formatted_Date'], y=combined_data_15y['Cumulative_Stop_Loss'], mode='lines',
                    name='With Stop-Loss/Optimal Exit (15 Years)', line=dict(color='Salmon'))
     )
 
     # Plotting for the 30-year data
     fig_30y = go.Figure()
     fig_30y.add_trace(
-        go.Scatter(x=combined_data_30y['Date'], y=combined_data_30y['Cumulative_No_Stop'], mode='lines',
+        go.Scatter(x=combined_data_30y['Formatted_Date'], y=combined_data_30y['Cumulative_No_Stop'], mode='lines',
                    name='No Stop-Loss (30 Years)', line=dict(color='CornflowerBlue'))
     )
     fig_30y.add_trace(
-        go.Scatter(x=combined_data_30y['Date'], y=combined_data_30y['Cumulative_Stop_Loss'], mode='lines',
+        go.Scatter(x=combined_data_30y['Formatted_Date'], y=combined_data_30y['Cumulative_Stop_Loss'], mode='lines',
                    name='With Stop-Loss/Optimal Exit (30 Years)', line=dict(color='Salmon'))
     )
 
@@ -884,6 +884,7 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
             combined_data_15y['Cumulative_No_Stop'], combined_data_15y['Cumulative_Stop_Loss'],  # Cumulative returns
             combined_data_30y['Cumulative_No_Stop'], combined_data_30y['Cumulative_Stop_Loss']  # Cumulative returns
             )
+
 
 def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None,
                          expected_return_stop_loss=None, expected_return_exit=None, add_distribution_annotations=True,
@@ -1707,7 +1708,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     return {
         'yearly_results': analysis_results,
         'optimal_results_15y': optimal_results_15y,
-        'optimal_results_30y': optimal_results_15y,
+        'optimal_results_30y': optimal_results_30y,
         'optimal_trades_results_15y': optimal_trades_results_15y,
         'optimal_trades_results_30y': optimal_trades_results_30y,
         '15_year_summary': summary_15,
@@ -1860,7 +1861,9 @@ def update_cumulative_chart_layout(fig, title):
             font_color='white'
         ),
         xaxis=dict(
-            showgrid=False  # Remove vertical grid lines
+            showgrid=False,  # Remove vertical grid lines
+            type='category',
+            showticklabels=False
         ),
         yaxis=dict(
             showgrid=True,  # Keep horizontal grid lines
