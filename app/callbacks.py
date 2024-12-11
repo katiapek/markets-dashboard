@@ -858,20 +858,24 @@ def register_callbacks(app):
             day_trading_stats_weekday = stats_weekday_df.to_dict('records')
             day_trading_stats_1_weekday = stats_1_weekday_df.to_dict('records')
 
+            summary_15_text = (
+                f"15-Year Summary:\n"
+                f"No stop-loss: Win Rate: {summary_15['win_rate']:.2f}%, Points Gained: {summary_15['total_points_gained']}, % Gained: {summary_15['total_percent_gained']:.2f}% \n"
+                f"Stop loss and exit: Optimal S/L: {summary_15['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_15['optimal_exit']:.2f}%\n"
+                f"Optimal Win Rate: {summary_15['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_15['optimal_points_gained']}, Optimal % Gained: {summary_15['optimal_percent_gained']:.2f}%"
+            )
+
+            summary_30_text = (
+                f"30-Year Summary:\n"
+                f"Win Rate: {summary_30['win_rate']:.2f}%, Points Gained: {summary_30['total_points_gained']} % Gained: {summary_30['total_percent_gained']:.2f}% \n"
+                f"Stop loss and exit: Optimal S/L: {summary_30['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_30['optimal_exit']:.2f}%\n"
+                f"Optimal Win Rate: {summary_30['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_30['optimal_points_gained']}, Optimal % Gained: {summary_30['optimal_percent_gained']:.2f}%"
+            )
+
             return (
                 yearly_data,  # Unoptimized data for the yearly analysis table
-                f"15-Year Summary: Win Rate: "
-                f"{summary_15['win_rate']:.2f}%, Points Gained: {summary_15['total_points_gained']}, "
-                f"Optimal S/L: "
-                f"{summary_15['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_15['optimal_exit']:.2f}%, "
-                f"Optimal Win Rate: "
-                f"{summary_15['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_15['optimal_points_gained']}",
-                f"30-Year Summary: Win Rate: "
-                f"{summary_30['win_rate']:.2f}%, Points Gained: {summary_30['total_points_gained']}, "
-                f"Optimal S/L: "
-                f"{summary_30['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_30['optimal_exit']:.2f}%, "
-                f"Optimal Win Rate: "
-                f"{summary_30['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_30['optimal_points_gained']}",
+                summary_15_text,
+                summary_30_text,
                 distribution_chart_15,  # Unoptimized distribution chart for 15 years
                 optimal_distribution_chart_15,  # Optimized distribution chart for 15 years
                 distribution_chart_30,  # Unoptimized distribution chart for 30 years

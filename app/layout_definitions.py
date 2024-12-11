@@ -189,12 +189,12 @@ def create_analysis_section():
                                  style={'marginTop': '20px', 'backgroundColor': '#333',
                                         'padding': '10px',
                                         'borderRadius': '5px', 'fontFamily': "'Press Start 2P', monospace",
-                                        'fontSize': '10px'}, ),
+                                        'fontSize': '10px', 'whiteSpace': 'pre-line'}, ),
                         html.Div(id='30-year-summary', children="30-Year Summary: ",
                                  style={'marginTop': '20px', 'backgroundColor': '#333',
                                         'padding': '10px',
                                         'borderRadius': '5px', 'fontFamily': "'Press Start 2P', monospace",
-                                        'fontSize': '10px'}),
+                                        'fontSize': '10px', 'whiteSpace': 'pre-line'}),
 
                         # Container for the distribution charts in a row
                         html.Div([

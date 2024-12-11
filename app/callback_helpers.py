@@ -423,8 +423,8 @@ def calculate_optimal_exit_and_stop_loss(analysis_results):
     max_observed_gain = max(result['Max Gain (%)'] for result in analysis_results)
 
     # Optimize thresholds
-    stop_loss_thresholds = np.linspace(0, max_observed_drawdown, num=50)
-    exit_thresholds = np.linspace(0, max_observed_gain, num=50)
+    stop_loss_thresholds = np.linspace(0.1, max_observed_drawdown, num=50)
+    exit_thresholds = np.linspace(0.1, max_observed_gain, num=50)
 
     best_combination = {'stop_loss': None, 'exit': None, 'win_rate': 0, 'points_gained': float('-inf'),
                         'cumulative_return': float('-inf'),}
@@ -473,7 +473,7 @@ def calculate_optimal_exit_and_stop_loss(analysis_results):
     }
 
 
-def calculate_summary_statistics(analysis_results):
+def calculate_summary_statistics(analysis_results, optimal_results):
     total_years = len(analysis_results)
     if total_years == 0:
         return {
@@ -497,18 +497,16 @@ def calculate_summary_statistics(analysis_results):
     total_points_gained = sum(result['Closing Points'] for result in wins)
     total_percent_gained = sum(result['Closing Percentage'] for result in wins)
 
-    # Calculate optimal stop loss and exit
-    optimal_calculations = calculate_optimal_exit_and_stop_loss(analysis_results)
 
     return {
         'win_rate': win_rate,
         'total_points_gained': round(total_points_gained, 4),
         'total_percent_gained': total_percent_gained,
-        'optimal_stop_loss': optimal_calculations['optimal_stop_loss'],
-        'optimal_exit': optimal_calculations['optimal_exit'],
-        'optimal_win_rate': optimal_calculations['optimal_win_rate'],
-        'optimal_points_gained': optimal_calculations['optimal_points_gained'],
-        'optimal_percentage_return': optimal_calculations['optimal_percentage_return'],
+        'optimal_stop_loss': optimal_results['optimal_stop_loss'],
+        'optimal_exit': optimal_results['optimal_exit'],
+        'optimal_win_rate': optimal_results['optimal_win_rate'],
+        'optimal_points_gained': optimal_results['optimal_points_gained'],
+        'optimal_percent_gained': optimal_results['optimal_percentage_return'],
     }
 
 
