@@ -1,5 +1,5 @@
 # config.py
-db_path_str = '/Users/kamil/PycharmProjects/MarketsDashboard/app/data/markets_data.db'
+db_path_str = 'app/data/markets_data.db'
 
 COLORS = {
     'open_interest': 'orange',
