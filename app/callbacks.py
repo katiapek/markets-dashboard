@@ -277,13 +277,36 @@ def register_callbacks(app):
 
         ohlc_df = fetch_ohlc_data_cached(stored_market, current_year)
 
+        if ohlc_df.empty:
+            fig.update_layout(
+                plot_bgcolor="#1e1e1e",
+                paper_bgcolor="#1e1e1e",
+                xaxis=dict(visible=False),  # Hide x-axis
+                yaxis=dict(visible=False),  # Hide y-axis
+                font=dict(
+                    family="'Press Start 2P', monospace",
+                    size=10,
+                    color='white'),
+            )
+            fig.add_annotation(
+                text=f"No data available for {stored_market} year {current_year}.",
+                x=0.5,  # Center horizontally
+                y=0.5,  # Center vertically
+                xref="paper",  # Use paper coordinates (relative to the canvas)
+                yref="paper",  # Use paper coordinates (relative to the canvas)
+                showarrow=False,  # No arrow for the annotation
+                font=dict(size=20, color="white"),  # Customize font size and color
+                align="center"  # Center the text alignment
+            )
+            return fig
+
         # Initial Range Configuration
         initial_x_range = [ohlc_df["Date"].iloc[0], ohlc_df["Date"].iloc[-1]]
         initial_y_range = [ohlc_df["Low"].min(), ohlc_df["High"].max()]
 
         # Determine if reset is needed (via year change)
-        ctx = callback_context
-        triggered_prop = ctx.triggered[0]['prop_id'] if ctx.triggered else None
+        ctx_graph_reset = callback_context
+        triggered_prop = ctx_graph_reset.triggered[0]['prop_id'] if ctx_graph_reset.triggered else None
         reset_required = triggered_prop in ['current-year.data']
 
         # Default Ranges
@@ -585,7 +608,6 @@ def register_callbacks(app):
             return ''
         return 'collapsed' if n_clicks % 2 == 1 else ''
 
-
     @app.callback(
         Output('current-year', 'data'),
         [Input('prev-year-button', 'n_clicks'),
@@ -736,7 +758,7 @@ def register_callbacks(app):
                 return [], "No data available for 15-Year Summary", "No data available for 30-Year Summary", {}, {}
 
             # Perform analysis on the fetched OHLC data (Unoptimized results)
-            analysis_results = perform_analysis(stored_market, start_date, end_date, direction, ohlc_data_all_years)
+            analysis_results = perform_analysis(start_date, end_date, direction, ohlc_data_all_years)
 
             # Prepare data for the yearly analysis table (Unoptimized)
             yearly_data = analysis_results['yearly_results']
@@ -799,7 +821,7 @@ def register_callbacks(app):
             (fig_15y, fig_30y, daily_returns_15, daily_returns_30, daily_returns_15_stoploss, daily_returns_30_stoploss,
              cum_returns_no_stop_15, cum_returns_stop_15, cum_returns_no_stop_30, cum_returns_stop_30) = (
                 create_cumulative_return_charts(start_month, start_day, end_month, end_day, direction,
-                                                ohlc_data_all_years, 15,
+                                                ohlc_data_all_years,
                                                 optimal_results_15y, optimal_results_30y
                                                 ))
 
@@ -860,16 +882,29 @@ def register_callbacks(app):
 
             summary_15_text = (
                 f"15-Year Summary:\n"
-                f"No stop-loss: Win Rate: {summary_15['win_rate']:.2f}%, Points Gained: {summary_15['total_points_gained']}, % Gained: {summary_15['total_percent_gained']:.2f}% \n"
-                f"Stop loss and exit: Optimal S/L: {summary_15['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_15['optimal_exit']:.2f}%\n"
-                f"Optimal Win Rate: {summary_15['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_15['optimal_points_gained']}, Optimal % Gained: {summary_15['optimal_percent_gained']:.2f}%"
+                f"No stop-loss: Win Rate: "
+                f"{summary_15['win_rate']:.2f}%, "
+                f"Points Gained: {summary_15['total_points_gained']}, "
+                f"% Gained: {summary_15['total_percent_gained']:.2f}% \n"
+                f"Stop loss and exit: "
+                f"Optimal S/L: {summary_15['optimal_stop_loss']:.2f}%, "
+                f"Optimal Exit: {summary_15['optimal_exit']:.2f}%\n"
+                f"Optimal Win Rate: {summary_15['optimal_win_rate']:.2f}%, "
+                f"Optimal Points Gained: {summary_15['optimal_points_gained']}, "
+                f"Optimal % Gained: {summary_15['optimal_percent_gained']:.2f}%"
             )
 
             summary_30_text = (
                 f"30-Year Summary:\n"
-                f"Win Rate: {summary_30['win_rate']:.2f}%, Points Gained: {summary_30['total_points_gained']} % Gained: {summary_30['total_percent_gained']:.2f}% \n"
-                f"Stop loss and exit: Optimal S/L: {summary_30['optimal_stop_loss']:.2f}%, Optimal Exit: {summary_30['optimal_exit']:.2f}%\n"
-                f"Optimal Win Rate: {summary_30['optimal_win_rate']:.2f}%, Optimal Points Gained: {summary_30['optimal_points_gained']}, Optimal % Gained: {summary_30['optimal_percent_gained']:.2f}%"
+                f"Win Rate: {summary_30['win_rate']:.2f}%, "
+                f"Points Gained: {summary_30['total_points_gained']},"
+                f" % Gained: {summary_30['total_percent_gained']:.2f}% \n"
+                f"Stop loss and exit: "
+                f"Optimal S/L: {summary_30['optimal_stop_loss']:.2f}%, "
+                f"Optimal Exit: {summary_30['optimal_exit']:.2f}%\n"
+                f"Optimal Win Rate: {summary_30['optimal_win_rate']:.2f}%, "
+                f"Optimal Points Gained: {summary_30['optimal_points_gained']}, "
+                f"Optimal % Gained: {summary_30['optimal_percent_gained']:.2f}%"
             )
 
             return (
@@ -972,6 +1007,5 @@ def register_callbacks(app):
         # Dynamically define columns
         correlation_180d_columns = [{'name': col, 'id': col} for col in correlation_180d.columns]
         correlation_15y_columns = [{'name': col, 'id': col} for col in correlation_15y.columns]
-
 
         return correlation_180d_data, correlation_180d_columns, correlation_15y_data, correlation_15y_columns

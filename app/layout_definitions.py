@@ -315,7 +315,11 @@ def create_day_trading_stats_section():
                             },
                             css=[{
                                 'selector': '.dash-table-tooltip',
-                                'rule': 'background-color: #1e1e1e; font-family: monospace; color: white; white-space: pre-line;'
+                                'rule':
+                                    'background-color: #1e1e1e; '
+                                    'font-family: monospace; '
+                                    'color: white; '
+                                    'white-space: pre-line;'
                             }],
                             tooltip_delay=300,  # Delay before showing the tooltip
                             tooltip_duration=400000000,  # Duration the tooltip stays visible
@@ -396,7 +400,10 @@ def create_day_trading_stats_weekday_section():
                             },
                             css=[{
                                 'selector': '.dash-table-tooltip',
-                                'rule': 'background-color: #1e1e1e; font-family: monospace; color: white; white-space: pre-line;'
+                                'rule': 'background-color: #1e1e1e;'
+                                        ' font-family: monospace; '
+                                        'color: white; '
+                                        'white-space: pre-line;'
                             }],
                             tooltip_delay=300,  # Delay before showing the tooltip
                             tooltip_duration=400000000,  # Duration the tooltip stays visible
@@ -473,7 +480,10 @@ def create_day_trading_stats_1_section():
                             },
                             css=[{
                                 'selector': '.dash-table-tooltip',
-                                'rule': 'background-color: #1e1e1e; font-family: monospace; color: white; white-space: pre-line;'
+                                'rule': 'background-color: #1e1e1e; '
+                                        'font-family: monospace; '
+                                        'color: white; '
+                                        'white-space: pre-line;'
                             }],
                             tooltip_delay=300,  # Delay before showing the tooltip
                             tooltip_duration=400000000,  # Duration the tooltip stays visible
@@ -550,7 +560,10 @@ def create_day_trading_stats_1_weekday_section():
                             },
                             css=[{
                                 'selector': '.dash-table-tooltip',
-                                'rule': 'background-color: #1e1e1e; font-family: monospace; color: white; white-space: pre-line;'
+                                'rule': 'background-color: #1e1e1e; '
+                                        'font-family: monospace; '
+                                        'color: white; '
+                                        'white-space: pre-line;'
                             }],
                             tooltip_delay=300,  # Delay before showing the tooltip
                             tooltip_duration=400000000,  # Duration the tooltip stays visible

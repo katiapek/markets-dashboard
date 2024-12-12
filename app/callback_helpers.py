@@ -6,9 +6,7 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from datetime import timedelta
 from dash import html
-from scripts.config import market_tickers, DEFAULT_MARKET, DEFAULT_YEAR
-import cProfile
-import pstats
+from scripts.config import DEFAULT_MARKET  # market_tickers, DEFAULT_YEAR
 
 
 def add_trace(fig, x, y, trace_name, row, col, mode='lines', line_color=None, secondary_y=False, chart_type='line',
@@ -28,7 +26,12 @@ def add_trace(fig, x, y, trace_name, row, col, mode='lines', line_color=None, se
         line_color: Color of the line or bar.
         secondary_y: Boolean to use the secondary y-axis.
         chart_type: Type of chart ('line' or 'bar').
+        opacity: float between 0 and 1 - transparency
         hide_yaxis_ticks: Boolean to indicate whether to hide the y-axis ticks for this trace.
+        bar_width: ticks width of the bar for bar chart
+        bar_offset: ticks - space between bars in bar chart
+        show_legend: Boolean - hide or show legend for the trace
+        disable_hover: Boolean - allow to show data on hover
     """
     if chart_type == 'line':
         trace = go.Scatter(x=x, y=y, mode=mode, name=trace_name, line=dict(color=line_color), showlegend=show_legend,
@@ -281,7 +284,6 @@ def calculate_stop_loss_return(yearly_data, optimal_results, direction):
     # Ensure first_open is a float
     try:
         first_open = float(first_open)
-        print(f"FIRST_OPEN: {first_open} on {yearly_data.iloc[0]['Date']}")
     except ValueError:
         print(f"Error: 'Open' value {first_open} is not a valid float.")
 
@@ -292,8 +294,6 @@ def calculate_stop_loss_return(yearly_data, optimal_results, direction):
     else:
         stop_loss_price = first_open * (1 + optimal_results['optimal_stop_loss'] / 100)
         take_profit_price = first_open * (1 - optimal_results['optimal_exit'] / 100)
-
-    print(f"STOP_LOSS_PRICE: {stop_loss_price}, {optimal_results['optimal_stop_loss']}")
 
     # Loop through each trade in yearly data
     for i, row in yearly_data.iterrows():
@@ -354,7 +354,7 @@ def calculate_risk_metrics(daily_returns, cumulative_returns):
     }
 
 
-def calculate_max_drawdown(df, open_price, close_price, direction):
+def calculate_max_drawdown(df, open_price, direction):
     """
     Calculate the maximum drawdown in points and percentage.
     """
@@ -374,7 +374,7 @@ def calculate_max_drawdown(df, open_price, close_price, direction):
     return {'points': drawdown_points, 'percentage': drawdown_percentage}
 
 
-def calculate_max_gain(df, open_price, close_price, direction):
+def calculate_max_gain(df, open_price, direction):
     """
     Calculate the maximum gain in points and percentage.
     """
@@ -423,7 +423,7 @@ def calculate_optimal_exit_and_stop_loss(analysis_results):
     exit_thresholds = np.linspace(0.1, max_observed_gain, num=50)
 
     best_combination = {'stop_loss': None, 'exit': None, 'win_rate': 0, 'points_gained': float('-inf'),
-                        'cumulative_return': float('-inf'),}
+                        'cumulative_return': float('-inf'), }
 
     for stop_loss in stop_loss_thresholds:
         for exit_level in exit_thresholds:
@@ -599,14 +599,13 @@ def compute_day_trading_stats(df):
     return stats, stats_1, stats_weekdays, stats_1_weekdays
 
 
-def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, group_by='year'):
+def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date):
     """
     Computes day trading statistics for each year in the OHLC data, filtered by the given date range.
     Args:
         ohlc_data (pd.DataFrame): DataFrame containing 'Date', 'Open', 'High', 'Low', 'Close' columns.
         start_date (str): Start date of the date range (from the Date-Picker).
         end_date (str): End date of the date range (from the Date-Picker).
-        group_by (str): Whether to group by 'year' (only grouping by year is allowed for now).
 
     Returns:
         tuple: Contains yearly stats DataFrames, extended stats DataFrames, weekday stats DataFrames.
@@ -746,7 +745,7 @@ def compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, gro
     return stats_df, stats_1_df, weekday_summary_df, weekday_summary_1_df
 
 
-def create_cumulative_return_charts(start_month, start_day, end_month, end_day, direction, ohlc_data, num_years,
+def create_cumulative_return_charts(start_month, start_day, end_month, end_day, direction, ohlc_data,
                                     optimal_results_15y, optimal_results_30y):
     """
     Function to create cumulative return charts for both scenarios (with and without stop-loss/optimal exit)
@@ -888,7 +887,7 @@ def create_cumulative_return_charts(start_month, start_day, end_month, end_day, 
 
 def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, best_exit_level=None,
                          expected_return_stop_loss=None, expected_return_exit=None, add_distribution_annotations=True,
-                         use_gl = True,
+                         use_gl=True,
                          n_clusters=3):
     """
     Create scatter plots with clustering for better visualization.
@@ -898,6 +897,10 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
         direction (str): "Long" or "Short" for the trade direction.
         best_stop_loss_level (float): Optimal stop-loss level.
         best_exit_level (float): Optimal take-profit level.
+        expected_return_stop_loss (float): Expected return when optimal stop-loss is applied
+        expected_return_exit (float): Expecet retunr when both optimal stop-loss and exit are applied
+        add_distribution_annotations (Boolean): Adding annotations to the chart
+        use_gl (Boolean): Use GL for scatter charts
         n_clusters (int): Number of clusters for K-Means clustering.
 
     Returns:
@@ -923,7 +926,7 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
         yaxis_title_1 = 'Open-Close % Change'
         yaxis_title_2 = 'Open-Low % Change'
 
-    def add_scatter_with_clustering(fig, x, y, xaxis_title, yaxis_title, title):
+    def add_scatter_with_clustering(fig, x, y, xaxis_title, yaxis_title):
         # Perform K-Means clustering
         data = np.column_stack((x, y))
         # Remove rows with NaN values
@@ -978,7 +981,7 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
         day_data[y_col_1],
         xaxis_title_1,
         yaxis_title_1,
-        f'{xaxis_title_1} vs {yaxis_title_1} (Clustering)'
+        # f'{xaxis_title_1} vs {yaxis_title_1} (Clustering)'
     )
 
     # Add optimal stop-loss level as a vertical line
@@ -1010,7 +1013,7 @@ def create_scatter_plots(day_data, direction="Long", best_stop_loss_level=None, 
         day_data[y_col_2],
         xaxis_title_2,
         yaxis_title_2,
-        f'{xaxis_title_2} vs {yaxis_title_2} (Clustering)'
+        # f'{xaxis_title_2} vs {yaxis_title_2} (Clustering)'
     )
 
     # Add optimal stop-loss and exit levels as lines for Scatter Plot 2
@@ -1106,6 +1109,7 @@ def create_high_low_vs_prev_distribution(day_data, day_type="pdh"):
 
         return fig_high, fig_low
 
+
 def calculate_percentiles(day_data, column):
     """
     Calculate percentiles for a given column in the day data.
@@ -1196,7 +1200,7 @@ def create_distribution_chart(yearly_data, title="Distribution of Returns"):
 
     Args:
         yearly_data (list[dict]): List of dictionaries containing yearly analysis data.
-
+        title (String): Add title to the chart
     Returns:
         go.Figure: A Plotly figure representing the distribution of returns.
     """
@@ -1437,7 +1441,6 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
     best_exit_level = None
     max_net_return = -float('inf')
     trades_with_take_profit_exit = None
-    trades_with_stop_loss_exit = None
     trades_with_no_exit = None
 
     # Choose columns based on direction
@@ -1465,9 +1468,9 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
                 (day_data[stop_loss_col] > best_stop_loss_level) &
                 (day_data[exit_col] < take_profit_level)
                 ]
-            trades_with_stop_loss_exit = day_data[
-                (day_data[stop_loss_col] < best_stop_loss_level)
-            ]
+            # trades_with_stop_loss_exit = day_data[
+            #     (day_data[stop_loss_col] < best_stop_loss_level)
+            # ]
         else:
             trades_with_take_profit_exit = day_data[
                 (day_data[stop_loss_col] < best_stop_loss_level) &
@@ -1477,13 +1480,12 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
                 (day_data[stop_loss_col] < best_stop_loss_level) &
                 (day_data[exit_col] > take_profit_level)
                 ]
-            trades_with_stop_loss_exit = day_data[
-                (day_data[stop_loss_col] > best_stop_loss_level)
-            ]
+            # trades_with_stop_loss_exit = day_data[
+            #     (day_data[stop_loss_col] > best_stop_loss_level)
+            # ]
 
         # Calculate net return
         net_return_take_profit_exit = len(trades_with_take_profit_exit) * take_profit_level
-        net_return_stop_loss_exit = len(trades_with_stop_loss_exit) * best_stop_loss_level
         net_return_no_exit = trades_with_no_exit[close_pct_col].sum()
         if direction == 'Long':
             total_net_return = net_return_take_profit_exit + net_return_no_exit  # + net_return_stop_loss_exit
@@ -1509,7 +1511,7 @@ def optimize_stop_loss_and_exit(day_data, best_stop_loss_level, direction="Long"
     return best_exit_level, expected_return
 
 
-def perform_analysis(market, start_date, end_date, direction, ohlc_data):
+def perform_analysis(start_date, end_date, direction, ohlc_data):
     """
     Perform analysis on OHLC data for a given market, start/end date range, and direction (Long/Short),
     including yearly results, optimal trades, day trading stats, and PD-H analysis.
@@ -1533,7 +1535,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     pdh_days_all_years = pd.DataFrame()
     pdl_days_all_years = pd.DataFrame()
     pdhl_days_all_years = pd.DataFrame()
-    pdh_pdl_pdhl_days_all_years = pd.DataFrame()
+    # pdh_pdl_pdhl_days_all_years = pd.DataFrame()
 
     # Perform yearly analysis and accumulate filtered data for each day type
     for year in unique_years:
@@ -1562,8 +1564,8 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
             continue
 
         points_change, percentage_change = calculate_points_change(direction, open_price, close_price)
-        max_drawdown = calculate_max_drawdown(filtered_yearly_data, open_price, close_price, direction)
-        max_gain = calculate_max_gain(filtered_yearly_data, open_price, close_price, direction)
+        max_drawdown = calculate_max_drawdown(filtered_yearly_data, open_price, direction)
+        max_gain = calculate_max_gain(filtered_yearly_data, open_price, direction)
 
         analysis_results.append({
             'Year': year,
@@ -1580,7 +1582,8 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
 
         # Filter columns for dup and ddown analysis
         filtered_yearly_data_for_dup_ddown = filtered_yearly_data[['Open_Low_Pct_Change', 'Open_High_Pct_Change',
-                                                                   'Open_Close_Pct_Change', 'Close', 'Open', 'Day_Type_1',
+                                                                   'Open_Close_Pct_Change', 'Close', 'Open',
+                                                                   'Day_Type_1',
                                                                    'PDH_High_Pct_Change', 'PDL_Low_Pct_Change']]
 
         # Filter columns for pdh, pdl, and pdhl analysis
@@ -1702,7 +1705,7 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
 
     # Day trading stats by year
     day_trading_stats, day_trading_stats_1, day_trading_stats_weekday, day_trading_stats_1_weekday = (
-        compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date, group_by='year'))
+        compute_day_trading_stats_for_all_years(ohlc_data, start_date, end_date))
 
     # Return analysis results and PD-H analysis data
     return {
@@ -1742,7 +1745,8 @@ def perform_analysis(market, start_date, end_date, direction, ohlc_data):
     }
 
 
-def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month, end_day, optimal_results, direction):
+def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day, end_month, end_day, optimal_results,
+                            direction):
     """
     Simulates annual-seasonal trades with stop-loss and exit strategy applied, using the optimal results.
     The results could be inserted in a yearly table to compare year-to-year performance of
@@ -1750,7 +1754,10 @@ def simulate_optimal_trades(analysis_results, ohlc_data, start_month, start_day,
     Args:
         analysis_results (list): Yearly analysis results.
         ohlc_data (pd.DataFrame): OHLC data for the market.
-        start_month, start_day, end_month, end_day (int): Date range for the analysis.
+        start_month (int),
+        start_day (int),
+        end_month (int),
+        end_day (int): Four parameters defining the range of time
         optimal_results (dict): Optimal stop-loss and exit strategy values.
         direction (str): Direction of the trade ('Long' or 'Short').
     Returns:
