@@ -5,7 +5,6 @@ from scripts.config import db_path_str
 from datetime import timedelta
 from dateutil import parser
 from functools import lru_cache
-import psycopg2
 from sqlalchemy import create_engine, text
 import os
 
