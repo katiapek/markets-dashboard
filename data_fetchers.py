@@ -1,24 +1,26 @@
 # data_fetchers.py
 
-import os
 import pandas as pd
 from scripts.config import db_path_str
 from datetime import timedelta
 from dateutil import parser
 from functools import lru_cache
 import psycopg2
-
+from sqlalchemy import create_engine, text
+import os
 
 # Set the database path
 db_path = os.environ[db_path_str]
+# Create SQLAlchemy Engine
+engine = create_engine(db_path)
 
 @lru_cache(maxsize=10)
-def fetch_ohlc_data_cached(market, year):
+def fetch_ohlc_data_cached(market, start_date, end_date):
     """
     Fetches and caches OHLC data for a specific market and year.
     """
-    start_date = f"{year}-01-01"
-    end_date = f"{year}-12-31"
+    # start_date = f"{year}-01-01"
+    # end_date = f"{year}-12-31"
     return OHLCDataFetcher.fetch_ohlc_data_by_range(market, start_date, end_date)
 
 
@@ -78,14 +80,10 @@ class BaseDataFetcher:
         Returns:
             pd.DataFrame: DataFrame containing the fetched data.
         """
-        conn = psycopg2.connect(db_path, sslmode='require')
-        try:
-            df = pd.read_sql(query, conn, params=params)
-        except Exception as e:
-            print(f"Error fetching data: {e}")
-            df = pd.DataFrame()
-        finally:
-            conn.close()
+
+        # Fetch data using SQLAlchemy Engine
+        with engine.connect() as connection:
+            df = pd.read_sql(text(query), connection, params=params)
         return df
 
 
@@ -172,8 +170,8 @@ class OHLCDataFetcher(BaseDataFetcher):
         table_name = f"{market.lower().replace(' ', '_')}_ohlc"
         print(f"Fetching OHLC from table: {table_name} for date range: {start_date} to {end_date}")
 
-        query = f"SELECT * FROM {table_name} WHERE Date BETWEEN %s AND %s"
-        params = (f'{start_date} 00:00:00', f'{end_date} 23:59:59')
+        query = f"SELECT * FROM {table_name} WHERE date BETWEEN :start_date AND :end_date"
+        params = {'start_date': f'{start_date} 00:00:00', 'end_date': f'{end_date} 23:59:59'}
 
         df = OHLCDataFetcher.fetch_data(query, params)
 
@@ -213,9 +211,9 @@ class OpenInterestDataFetcher(BaseDataFetcher):
         query = f"""
         SELECT {columns}
         FROM {table_name}
-        WHERE report_date_as_yyyy_mm_dd BETWEEN %s AND %s
+        WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = (f'{year}-01-01', f'{year}-12-31')
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
         df = OpenInterestDataFetcher.fetch_data(query, params)
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'], format="%Y-%m-%d %H:%M:%S")
@@ -296,9 +294,9 @@ class OpenInterestPercentagesFetcher(BaseDataFetcher):
         query = f"""
         SELECT {columns}
         FROM {table_name}
-        WHERE report_date_as_yyyy_mm_dd BETWEEN %s AND %s
+        WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = (f'{year}-01-01', f'{year}-12-31')
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
         df = OpenInterestPercentagesFetcher.fetch_data(query, params)
 
         if not df.empty:
@@ -381,9 +379,9 @@ class PositionsChangeDataFetcher(BaseDataFetcher):
         query = f"""
         SELECT {columns}
         FROM {table_name}
-        WHERE report_date_as_yyyy_mm_dd BETWEEN %s AND %s
+        WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = (f'{year}-01-01', f'{year}-12-31')
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
         df = PositionsChangeDataFetcher.fetch_data(query, params)
 
         if not df.empty:
@@ -456,9 +454,9 @@ class NetPositionsDataFetcher(BaseDataFetcher):
         query = f"""
         SELECT {columns}
         FROM {table_name}
-        WHERE report_date_as_yyyy_mm_dd BETWEEN %s AND %s
+        WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = (f'{year}-01-01', f'{year}-12-31')
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
         df = NetPositionsDataFetcher.fetch_data(query, params)
 
         if not df.empty:
@@ -531,9 +529,9 @@ class PositionsChangeNetDataFetcher(BaseDataFetcher):
         query = f"""
         SELECT {columns}
         FROM {table_name}
-        WHERE report_date_as_yyyy_mm_dd BETWEEN %s AND %s
+        WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = (f'{year}-01-01', f'{year}-12-31')
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
         df = PositionsChangeNetDataFetcher.fetch_data(query, params)
 
         if not df.empty:
@@ -547,6 +545,7 @@ class PositionsChangeNetDataFetcher(BaseDataFetcher):
             df['date'] = df['report_date_as_yyyy_mm_dd']
             df.sort_values(by='date', inplace=True)
         return df
+
 
 class Index26WDataFetcher(BaseDataFetcher):
     """
@@ -604,9 +603,9 @@ class Index26WDataFetcher(BaseDataFetcher):
         query = f"""
         SELECT {columns}
         FROM {table_name}
-        WHERE report_date_as_yyyy_mm_dd BETWEEN %s AND %s
+        WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = (f'{year}-01-01', f'{year}-12-31')
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
         df = Index26WDataFetcher.fetch_data(query, params)
 
         if not df.empty:

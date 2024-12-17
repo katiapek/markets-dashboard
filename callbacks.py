@@ -4,7 +4,6 @@ from dash import Input, Output, State, ctx, callback_context
 import plotly.subplots as sp
 from layout_definitions import format_market_name
 from data_fetchers import (
-    OHLCDataFetcher,
     CorrelationDataFetcher,
     fetch_ohlc_data_cached,
     fetch_active_subplot_data,
@@ -257,7 +256,7 @@ def register_callbacks(app):
          Input('ohlc-checklist', 'value'),
          Input('stored-market', 'data'),
          Input('current-year', 'data'),
-         Input("combined-chart", "relayoutData"),
+         Input('combined-chart', 'relayoutData'),
          ],
         prevent_initial_call=False
     )
@@ -275,7 +274,9 @@ def register_callbacks(app):
         fig = sp.make_subplots(rows=num_rows, cols=1, shared_xaxes=True, vertical_spacing=0.0, specs=specs,
                                row_heights=row_heights)
 
-        ohlc_df = fetch_ohlc_data_cached(stored_market, current_year)
+        start_date_str = f"{current_year}-01-01"
+        end_date_str = f"{current_year}-12-31"
+        ohlc_df = fetch_ohlc_data_cached(stored_market, start_date_str, end_date_str)
 
         if ohlc_df.empty:
             fig.update_layout(
@@ -749,7 +750,7 @@ def register_callbacks(app):
                 year = current_year - year_offset
                 start_date_str = f'{year}-{start_month:02d}-{start_day:02d}'
                 end_date_str = f'{current_year}-{end_month:02d}-{end_day:02d}'
-                ohlc_data_year = OHLCDataFetcher.fetch_ohlc_data_by_range(stored_market, start_date_str, end_date_str)
+                ohlc_data_year = fetch_ohlc_data_cached(stored_market, start_date_str, end_date_str)
 
                 if not ohlc_data_year.empty:
                     ohlc_data_all_years = pd.concat([ohlc_data_all_years, ohlc_data_year], ignore_index=True)
