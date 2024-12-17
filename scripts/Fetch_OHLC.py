@@ -347,21 +347,21 @@ def main():
     engine = create_engine(os.environ[db_path_str])
 
     # Iterate over each market and fetch the data for all markets:
-    # for market_name, ticker in market_tickers.items():
-    #     print(f"Fetching OHLC data for {market_name}...")
-    #     fetch_ohlc_for_2024(ticker, market_name, conn)
-    #
-    #     # Compute and store seasonal patterns for all
-    #     compute_and_store_seasonality(market_name, conn)
+    for market_name, ticker in market_tickers.items():
+        print(f"Fetching OHLC data for {market_name}...")
+        fetch_ohlc_for_2024(ticker, market_name, engine)
+
+        # Compute and store seasonal patterns for all
+        compute_and_store_seasonality(market_name, engine)
 
     # For all
     compute_and_store_correlations(engine, market_tickers)
 
     # For one market:
-    fetch_ohlc_for_2024('ETH=F', 'Ethereum', engine)
+    # fetch_ohlc_for_2024('ETH=F', 'Ethereum', engine)
 
     # For one:
-    compute_and_store_seasonality('Ethereum', engine)
+    # compute_and_store_seasonality('Ethereum', engine)
 
 
 
