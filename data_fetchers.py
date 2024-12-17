@@ -7,11 +7,14 @@ from dateutil import parser
 from functools import lru_cache
 from sqlalchemy import create_engine, text
 import os
+from urllib.parse import urlparse
 
 # Set the database path
 db_path = os.environ[db_path_str]
 # Create SQLAlchemy Engine
-engine = create_engine(db_path)
+# engine = create_engine(db_path)
+db_url = os.environ.get("DATABASE_URL").replace("postgres://", "postgresql+psycopg2://", 1)
+engine = create_engine(db_url)
 
 @lru_cache(maxsize=10)
 def fetch_ohlc_data_cached(market, start_date, end_date):
