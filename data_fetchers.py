@@ -10,10 +10,10 @@ import os
 from urllib.parse import urlparse
 
 # Set the database path
-db_path = os.environ[db_path_str]
+# db_path = os.environ[db_path_str]
 # Create SQLAlchemy Engine
 # engine = create_engine(db_path)
-db_url = os.environ.get("DATABASE_URL").replace("postgres://", "postgresql+psycopg2://", 1)
+db_url = os.environ.get(db_path_str).replace("postgres://", "postgresql+psycopg2://", 1)
 engine = create_engine(db_url)
 
 @lru_cache(maxsize=10)

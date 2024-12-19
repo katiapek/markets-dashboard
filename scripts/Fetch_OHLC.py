@@ -147,7 +147,6 @@ def fetch_ohlc_for_2024(ticker, market_name, conn):
     # Sort data by date
     data.sort_values('date', inplace=True)
 
-    print(f"DATA: {data}")
     # Calculate percentage changes
     data = calculate_percentage_changes(data)
 
@@ -156,13 +155,13 @@ def fetch_ohlc_for_2024(ticker, market_name, conn):
     data['day_type_2'] = calculate_day_type_2(data)
     data['weekday'] = data['date'].dt.day_name()
 
+    # Don't insert first row - it's only used for calculations when .shift(1) needed
     data_to_insert = data.iloc[1:]
 
     # Create SQLAlchemy engine and insert data
     engine = create_engine(os.environ[db_path_str])
     data_to_insert.to_sql(table_name, engine, if_exists='append', index=False)
     print(f"New data for {market_name} appended to the database.")
-
 
 
 def remove_outliers(df, col, threshold=3):
