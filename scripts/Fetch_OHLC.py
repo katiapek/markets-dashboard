@@ -343,8 +343,8 @@ def store_correlation_in_db(correlation_df, engine, table_name):
 
 
 def main():
-    # Connect to the database
-    engine = create_engine(os.environ[db_path_str])
+    # Create the database engine
+    engine = create_engine(db_path)
 
     # Iterate over each market and fetch the data for all markets:
     for market_name, ticker in market_tickers.items():
