@@ -1,4 +1,10 @@
 import subprocess
+import datetime
+
+# Check if today is Friday in UTC
+if datetime.datetime.now(datetime.timezone.utc).weekday() != 4:  # 4 is Friday
+    print("Today is not Friday. Exiting script.")
+    exit()
 
 # List of scripts to run in order
 scripts_to_run = [
