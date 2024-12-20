@@ -10,8 +10,10 @@ import psycopg2
 from sqlalchemy import create_engine
 from sqlalchemy.sql import text
 
-# Set the database path
-db_path = os.environ[db_path_str]
+# Database URL from environment variable or config
+db_path = os.environ.get(db_path_str)
+if db_path.startswith("postgres://"):
+    db_path = db_path.replace("postgres://", "postgresql+psycopg2://", 1)
 
 def calculate_day_type_1(df):
     """
@@ -92,21 +94,21 @@ def calculate_percentage_changes(df):
     return df
 
 
-def fetch_ohlc_for_2024(ticker, market_name, conn):
+def fetch_ohlc_for_2024(ticker, market_name, engine):
     """
     Fetch OHLC data for the year 2024 and append new entries to the database.
 
     Args:
         ticker (str): Ticker symbol of the market.
         market_name (str): Name of the market.
-        conn (postgresql.Connection): Database connection.
+        engine (postgresql.Connection): Database connection.
     """
     # Define the table name
     table_name = market_name.lower().replace(' ', '_') + '_ohlc'
 
     # Query the latest date in the database
     query = f"SELECT MAX(date) FROM {table_name}"
-    with conn.connect() as connection:
+    with engine.connect() as connection:
         result = connection.execute(text(query)).fetchone()
     last_date = result[0]
 
@@ -159,7 +161,6 @@ def fetch_ohlc_for_2024(ticker, market_name, conn):
     data_to_insert = data.iloc[1:]
 
     # Create SQLAlchemy engine and insert data
-    engine = create_engine(os.environ[db_path_str])
     data_to_insert.to_sql(table_name, engine, if_exists='append', index=False)
     print(f"New data for {market_name} appended to the database.")
 
