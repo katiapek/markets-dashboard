@@ -211,7 +211,7 @@ class OpenInterestDataFetcher(BaseDataFetcher):
         FROM {table_name}
         WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year+1}-01-01'}
         df = OpenInterestDataFetcher.fetch_data(query, params)
         if not df.empty:
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'], format="%Y-%m-%d %H:%M:%S")
@@ -294,7 +294,7 @@ class OpenInterestPercentagesFetcher(BaseDataFetcher):
         FROM {table_name}
         WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year+1}-01-01'}
         df = OpenInterestPercentagesFetcher.fetch_data(query, params)
 
         if not df.empty:
@@ -379,7 +379,7 @@ class PositionsChangeDataFetcher(BaseDataFetcher):
         FROM {table_name}
         WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year+1}-01-01'}
         df = PositionsChangeDataFetcher.fetch_data(query, params)
 
         if not df.empty:
@@ -454,7 +454,7 @@ class NetPositionsDataFetcher(BaseDataFetcher):
         FROM {table_name}
         WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year+1}-01-01'}
         df = NetPositionsDataFetcher.fetch_data(query, params)
 
         if not df.empty:
@@ -529,7 +529,7 @@ class PositionsChangeNetDataFetcher(BaseDataFetcher):
         FROM {table_name}
         WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year+1}-01-01'}
         df = PositionsChangeNetDataFetcher.fetch_data(query, params)
 
         if not df.empty:
@@ -603,7 +603,7 @@ class Index26WDataFetcher(BaseDataFetcher):
         FROM {table_name}
         WHERE report_date_as_yyyy_mm_dd BETWEEN :start_date AND :end_date
         """
-        params = {'start_date': f'{year}-01-01', 'end_date': f'{year}-12-31'}
+        params = {'start_date': f'{year}-01-01', 'end_date': f'{year+1}-01-01'}
         df = Index26WDataFetcher.fetch_data(query, params)
 
         if not df.empty:

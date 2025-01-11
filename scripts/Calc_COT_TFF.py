@@ -24,6 +24,7 @@ def calculate_and_store_cot_data(market_name, data_type):
         query = text(f"SELECT * FROM {input_table}")
         df = pd.read_sql(query, conn)
 
+
         # Ensure correct data types for calculations
         numeric_columns = {
             'cot_tff_combined': [
@@ -42,6 +43,7 @@ def calculate_and_store_cot_data(market_name, data_type):
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
         # Forward fill missing values
+        df.sort_values('report_date_as_yyyy_mm_dd', ascending=True)
         df = df.ffill()
 
         # Calculate percentage changes

@@ -122,7 +122,7 @@ market_codes = {
     'Gold': '088691',
     'Silver': '084691',
     'Copper': '085692',
-    'Platinum': '076651',
+    # 'Platinum': '076651',
 }
 
 TRACE_CONFIG = {
