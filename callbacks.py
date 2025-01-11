@@ -309,7 +309,12 @@ def register_callbacks(app):
         else:
             end_date = pd.Timestamp(f"{current_year}-12-31")
 
-        initial_x_range = [ohlc_df['date'].iloc[0], end_date]  # ohlc_df['date'].iloc[-1]
+        buffer_days = 2  # Set the buffet on the sides so all candles are visible
+
+        start_date_with_buffer = ohlc_df['date'].iloc[0] - pd.DateOffset(days=buffer_days)
+        end_date_with_buffer = end_date + pd.DateOffset(days=buffer_days)
+
+        initial_x_range = [start_date_with_buffer, end_date_with_buffer]  # Adjusted with buffer
         initial_y_range = [ohlc_df["low"].min(), ohlc_df["high"].max()]
 
         # Determine if reset is needed (via year change)

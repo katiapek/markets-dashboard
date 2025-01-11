@@ -1140,19 +1140,6 @@ def create_layout(app):
                         type='circle'
                     ),
 
-                    # Opportunity analysis section below the main chart
-                    # html.Div(
-                    #     children=[
-                    #         create_analysis_section(),
-                    #         dcc.Loading(
-                    #             id='loading-opportunity',
-                    #             children=[html.Div(id='opportunity-output')],
-                    #             type='circle'
-                    #         )
-                    #     ],
-                    #     style={'marginTop': '20px'}
-                    # ),
-
                     # Day Trading Starts below the analysis section
                     html.Div(
                         children=[
@@ -1205,38 +1192,11 @@ def create_layout(app):
                         style={'marginTop': '20px'}
                     ),
 
-
-                    # # Create D-UP analysis section
-                    # html.Div(
-                    #     children=[
-                    #         create_dup_analysis_section(),
-                    #         dcc.Loading(
-                    #             id='dup-analysis-loading',
-                    #             children=[html.Div(id='dup-analysis-output')],
-                    #             type='circle'
-                    #         )
-                    #     ],
-                    #     style={'marginTop': '20px'}
-                    # ),
-
                     dcc.Loading(
                         id='loading-dup-analysis-output',
                         children=[create_dup_analysis_section(), html.Div(id='dup-analysis-output')],
                         type='circle'
                     ),
-
-                    # # Create D-DOWN analysis section
-                    # html.Div(
-                    #     children=[
-                    #         create_ddown_analysis_section(),
-                    #         dcc.Loading(
-                    #             id='ddown-analysis-loading',
-                    #             children=[html.Div(id='ddown-analysis-output')],
-                    #             type='circle'
-                    #         )
-                    #     ],
-                    #     style={'marginTop': '20px'}
-                    # ),
 
                     dcc.Loading(
                         id='loading-ddown-analysis-output',
@@ -1244,37 +1204,11 @@ def create_layout(app):
                         type='circle'
                     ),
 
-                    # # Create PD-H analysis section
-                    # html.Div(
-                    #     children=[
-                    #         create_pdh_analysis_section(),
-                    #         dcc.Loading(
-                    #             id='pdh-analysis-loading',
-                    #             children=[html.Div(id='pdh-analysis-output')],
-                    #             type='circle'
-                    #         )
-                    #     ],
-                    #     style={'marginTop': '20px'}
-                    # ),
-
                     dcc.Loading(
                         id='loading-pdh-analysis-output',
                         children=[create_pdh_analysis_section(), html.Div(id='pdh-analysis-output')],
                         type='circle'
                     ),
-
-                    # # Create PD-L analysis section
-                    # html.Div(
-                    #     children=[
-                    #         create_pdl_analysis_section(),
-                    #         dcc.Loading(
-                    #             id='pdl-analysis-loading',
-                    #             children=[html.Div(id='pdl-analysis-output')],
-                    #             type='circle'
-                    #         )
-                    #     ],
-                    #     style={'marginTop': '20px'}
-                    # ),
 
                     dcc.Loading(
                         id='loading-pdl-analysis-output',
@@ -1282,37 +1216,11 @@ def create_layout(app):
                         type='circle'
                     ),
 
-                    # # Create PD-HL analysis section
-                    # html.Div(
-                    #     children=[
-                    #         create_pdhl_analysis_section(),
-                    #         dcc.Loading(
-                    #             id='pdhl-analysis-loading',
-                    #             children=[html.Div(id='pdhl-analysis-output')],
-                    #             type='circle'
-                    #         )
-                    #     ],
-                    #     style={'marginTop': '20px'}
-                    # ),
-
                     dcc.Loading(
                         id='loading-pdhl-analysis-output',
                         children=[create_pdhl_analysis_section(), html.Div(id='pdhl-analysis-output')],
                         type='circle'
                     ),
-
-                    # # Create PD-H, PD-L, PD-HL analysis section
-                    # html.Div(
-                    #     children=[
-                    #         create_pdh_pdl_pdhl_analysis_section(),
-                    #         dcc.Loading(
-                    #             id='pdh-pdl-pdhl-analysis-loading',
-                    #             children=[html.Div(id='pdh-pdl-pdhl-analysis-output')],
-                    #             type='circle'
-                    #         )
-                    #     ],
-                    #     style={'marginTop': '20px'}
-                    # ),
 
                     dcc.Loading(
                         id='loading-pdh_pdl_pdhl-analysis-output',
@@ -1361,7 +1269,21 @@ def create_layout(app):
             html.Div(
                 id='right-panel',
                 children=[
-                    html.Button('<>', id='toggle-button', n_clicks=0),
+                    html.Button(
+                        id='toggle-button',
+                        n_clicks=0,
+                        children=[
+                            html.Span(className='navbar-dark navbar-toggler-icon')  # Bootstrap hamburger icon
+                        ],
+                        style={
+                            'border': 'none',
+                            'color': 'white',  # Ensures text/icon visibility
+                            'fontSize': '10px',  # Adjusts icon size
+                            'padding': '10px',  # Ensures clickable space
+                            'zIndex': '1000',  # Brings button to the front
+
+                        }
+                    ),
 
                     html.Div(
                         className='content',
@@ -1708,6 +1630,35 @@ def create_layout(app):
                                 )
                             ]),
 
+                            # Links to Twitter and YouTube
+                            html.Div([
+                                html.P(
+                                    "See tutorials and more!",
+                                    style={'fontWeight': 'bold', 'textAlign': 'center', 'color': 'white',
+                                           'marginTop': '20px'}
+                                ),
+                                html.Div([
+                                    # Twitter link
+                                    html.A(
+                                        html.Img(
+                                            src="https://upload.wikimedia.org/wikipedia/commons/9/95/Twitter_new_X_logo.png",
+                                            style={'height': '30px', 'width': '30px', 'marginRight': '10px'}
+                                        ),
+                                        href="https://x.com/ClockTrades",  # Replace with your Twitter link
+                                        target="_blank"
+                                    ),
+                                    # YouTube link
+                                    html.A(
+                                        html.Img(
+                                            src="https://upload.wikimedia.org/wikipedia/commons/d/d0/YouTube_full-color_icon_%282017%29.webp",
+                                            style={'height': '30px', 'width': '45px'}
+                                        ),
+                                        href="https://youtube.com/@ClockTrades",  # Replace with your YouTube link
+                                        target="_blank"
+                                    ),
+                                ], style={'display': 'flex', 'justifyContent': 'center'})
+                            ]),
+
                             html.Div([
                                 # html.Button('Previous Year', id='prev-year-button', n_clicks=0),
                                 # html.Button('Next Year', id='next-year-button', n_clicks=0)
@@ -1755,6 +1706,26 @@ def create_layout(app):
                         ]
                     ),
 
+                    html.Div(children=[
+                        html.P(
+                            "Enjoy the Power of FREE version Now – Full Features Coming Soon!",
+                            style={'fontWeight': 'bold', 'textAlign': 'center', 'color': 'white',
+                                   'marginTop': '20px'}
+                        ),
+                        html.P(
+                            [
+                                "Follow us on ",
+                                html.A(
+                                    "X for Updates!",
+                                    href="https://x.com/ClockTrades",
+                                    target="_blank",  # Opens the link in a new tab
+                                    style={'color': 'CornflowerBlue', 'textDecoration': 'none', 'fontWeight': 'bold'}
+                                )
+                            ],
+                            style={'fontWeight': 'bold', 'textAlign': 'center', 'color': 'white', 'marginTop': '20px'}
+                        ),
+                    ]),
+
                     # Create Correlation Tables section
                     html.Div(
                         children=[
@@ -1796,7 +1767,21 @@ def create_layout(app):
             html.Div(
                 id='right-panel',
                 children=[
-                    html.Button('<>', id='toggle-button', n_clicks=0),
+                    html.Button(
+                        id='toggle-button',
+                        n_clicks=0,
+                        children=[
+                            html.Span(className='navbar-dark navbar-toggler-icon')  # Bootstrap hamburger icon
+                        ],
+                        style={
+                            'border': 'none',
+                            'color': 'white',  # Ensures text/icon visibility
+                            'fontSize': '10px',  # Adjusts icon size
+                            'padding': '10px',  # Ensures clickable space
+                            'zIndex': '1000',  # Brings button to the front
+
+                        }
+                    ),
 
                     html.Div(
                         className='content',
@@ -2144,6 +2129,36 @@ def create_layout(app):
                                     id='tff-futures-only-collapse',
                                     is_open=False
                                 )
+                            ]),
+
+                            # Links to Twitter and YouTube
+                            html.Div([
+                                html.P(
+                                    "See tutorials and more!",
+                                    style={'fontWeight': 'bold', 'textAlign': 'center', 'color': 'white',
+                                           'marginTop': '20px'}
+                                ),
+                                html.Div([
+                                    # Twitter link
+                                    html.A(
+                                        html.Img(
+                                            src="https://upload.wikimedia.org/wikipedia/commons/9/95/Twitter_new_X_logo.png",
+                                            style={'height': '30px', 'width': '30px', 'marginRight': '10px'}
+                                        ),
+                                        href="https://x.com/ClockTrades",  # Replace with your Twitter link
+                                        target="_blank"
+                                    ),
+                                    # YouTube link
+                                    html.A(
+                                        html.Img(
+                                            src="https://upload.wikimedia.org/wikipedia/commons/d/d0/YouTube_full-color_icon_%282017%29.webp",
+                                            style={'height': '30px', 'width': '45px'}
+                                        ),
+                                        href="https://youtube.com/@ClockTrades",  # Replace with your YouTube link
+                                        target="_blank"
+                                    ),
+                                ], style={'display': 'flex', 'justifyContent': 'center'}),
+
                             ]),
 
                             html.Div([
