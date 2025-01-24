@@ -702,70 +702,11 @@ def create_day_analysis_scatter_legend():
 
 
 def create_dup_analysis_section():
-    """
-    Creates a section for D-UP day analysis including distributions and scatter plots.
-
-    Returns:
-        html.Div: The layout containing input fields and result placeholders for PD-H day analysis.
-    """
-    return html.Div(style={'backgroundColor': '#1e1e1e', 'color': 'white',
-                           'fontFamily': "'Press Start 2P', monospace", 'fontSize': '10px'},
-                    children=[
-                        html.H3("D-UP Day Analysis", style={'textAlign': 'center'}),
-                        html.Div(create_day_analysis_dist_legend()),
-                        # Distribution Plots
-                        html.Div([
-
-                            html.Div([
-                                dcc.Graph(id='dup-open-low-dist',
-                                          config={'displayModeBar': False, 'staticPlot': True}),
-                            ], style={'width': '50%', 'display': 'inline-block'}),
-
-                            html.Div([
-                                dcc.Graph(id='dup-open-high-dist',
-                                          config={'displayModeBar': False, 'staticPlot': True}),
-                            ], style={'width': '50%', 'display': 'inline-block'}),
-
-                        ], style={'display': 'flex'}),
-
-                        # Open-Close distribution
-                        html.Div([
-                            html.Div([
-                                dcc.Graph(id='dup-open-close-dist',
-                                          config={'displayModeBar': False, 'staticPlot': True}),
-                            ], style={'width': '50%', 'display': 'block', 'margin': '0 auto'}),
-                        ]),
-
-                        # Low vs Prev Day Low and High vs Prev Day High distribution
-                        html.Div([
-                            html.Div([
-                                dcc.Graph(id='dup-low-vs-prev-low-dist',
-                                          config={'displayModeBar': False, 'staticPlot': True}),
-                            ], style={'width': '50%', 'display': 'inline-block'}),
-
-                            html.Div([
-                                dcc.Graph(id='dup-high-vs-prev-high-dist',
-                                          config={'displayModeBar': False, 'staticPlot': True}),
-                            ], style={'width': '50%', 'display': 'inline-block'}),
-
-                        ]),
-
-                        # Scatter Plots
-                        html.Div(create_day_analysis_scatter_legend()),
-                        html.Div([
-                            html.Div([
-                                dcc.Graph(id='dup-open-low-vs-close-scatter',
-                                          config={'displayModeBar': False, 'staticPlot': True}),
-                            ], style={'width': '50%', 'display': 'inline-block'}),
-
-                            html.Div([
-                                dcc.Graph(id='dup-open-low-vs-high-scatter',
-                                          config={'displayModeBar': False, 'staticPlot': True}),
-                            ], style={'width': '50%', 'display': 'inline-block'}),
-
-                        ], style={'display': 'flex'}),
-
-                    ])
+    """Create D-UP Day Analysis section using factory"""
+    return create_analysis_section_factory(
+        section_id="dup",
+        title="D-UP Day Analysis"
+    )
 
 
 def create_ddown_analysis_section():
