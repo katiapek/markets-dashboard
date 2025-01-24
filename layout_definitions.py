@@ -718,10 +718,29 @@ def create_ddown_analysis_section():
 
 
 def create_pdh_analysis_section():
-    """Create PD-H Day Analysis section using factory"""
-    return create_analysis_section_factory(
-        section_id="pdh",
-        title="PD-H Day Analysis"
+    """Create PD-H Day Analysis section with custom layout"""
+    return html.Div(
+        id="pdh-section",
+        style=ANALYSIS_SECTION_STYLE,
+        children=[
+            html.H3("PD-H Day Analysis", style=SECTION_TITLE_STYLE),
+            create_day_analysis_dist_legend(),
+            html.Div([
+                html.Div(dcc.Graph(id="pdh-open-low-dist", config={'displayModeBar': False, 'staticPlot': True}), style=HALF_WIDTH),
+                html.Div(dcc.Graph(id="pdh-open-high-dist", config={'displayModeBar': False, 'staticPlot': True}), style=HALF_WIDTH),
+            ], style=FLEX_CONTAINER_STYLE),
+            html.Div([
+                html.Div(dcc.Graph(id="pdh-open-close-dist", config={'displayModeBar': False, 'staticPlot': True}), style=CENTERED_HALF_WIDTH),
+            ]),
+            html.Div([
+                html.Div(dcc.Graph(id="pdh-high-vs-prev-high-dist", config={'displayModeBar': False, 'staticPlot': True}), style=HALF_WIDTH),
+            ], style=FLEX_CONTAINER_STYLE),
+            create_day_analysis_scatter_legend(),
+            html.Div([
+                html.Div(dcc.Graph(id="pdh-open-low-vs-close-scatter", config={'displayModeBar': False, 'staticPlot': True}), style=HALF_WIDTH),
+                html.Div(dcc.Graph(id="pdh-open-low-vs-high-scatter", config={'displayModeBar': False, 'staticPlot': True}), style=HALF_WIDTH),
+            ], style=FLEX_CONTAINER_STYLE)
+        ]
     )
 
 
