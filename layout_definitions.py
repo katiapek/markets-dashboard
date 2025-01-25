@@ -177,7 +177,34 @@ TABLE_TOOLTIP_STYLE = {
 
 TABLE_CONTAINER_STYLE = {'overflowX': 'scroll'}
 
-# Factory Functions
+# COT Section Factory
+def create_cot_section(cot_type, section_name, toggle_id):
+    """Factory for creating COT checklist sections"""
+    return html.Div([
+        html.Button(
+            f'{cot_type} - {section_name.replace("-", " ").title()}',
+            id=toggle_id,
+            n_clicks=0,
+            style={'width': '100%', 'textAlign': 'left'}
+        ),
+        dbc.Collapse(
+            children=[
+                dcc.Checklist(
+                    id=f'{key}-{cot_type.lower()}-{section_name}-checklist',
+                    options=CHECKLIST_OPTIONS[key],
+                    value=[],
+                    inputStyle=INPUT_STYLE
+                ) for key in [
+                    'open_interest', 'oi_percentages', 'positions_change',
+                    'net_positions', 'net_positions_change', 'index_26w'
+                ]
+            ],
+            id=f'{cot_type.lower()}-{section_name}-collapse',
+            is_open=False
+        )
+    ])
+
+# Analysis Section Factory
 def create_analysis_section_factory(section_id, title, comparisons=None):
     """Factory for creating standardized analysis sections"""
     comparison_charts = []
@@ -1010,34 +1037,7 @@ def create_layout(app):
                                 )
                             ]),
 
-                            # COT Checklist Section Factory
-                            def create_cot_section(cot_type, section_name, toggle_id):
-                                """Factory for creating COT checklist sections"""
-                                return html.Div([
-                                    html.Button(
-                                        f'{cot_type} - {section_name.replace("-", " ").title()}',
-                                        id=toggle_id,
-                                        n_clicks=0,
-                                        style={'width': '100%', 'textAlign': 'left'}
-                                    ),
-                                    dbc.Collapse(
-                                        children=[
-                                            dcc.Checklist(
-                                                id=f'{key}-{cot_type.lower()}-{section_name}-checklist',
-                                                options=CHECKLIST_OPTIONS[key],
-                                                value=[],
-                                                inputStyle=INPUT_STYLE
-                                            ) for key in [
-                                                'open_interest', 'oi_percentages', 'positions_change',
-                                                'net_positions', 'net_positions_change', 'index_26w'
-                                            ]
-                                        ],
-                                        id=f'{cot_type.lower()}-{section_name}-collapse',
-                                        is_open=False
-                                    )
-                                ])
-
-                            # Generate COT sections using factory
+                            # Generate COT sections using factory function
                             create_cot_section('Legacy', 'Combined', 'legacy-combined-toggle'),
                             create_cot_section('Legacy', 'Futures-Only', 'legacy-futures-only-toggle'),
                             create_cot_section('Disaggregated', 'Combined', 'disaggregated-combined-toggle'),
