@@ -1010,294 +1010,40 @@ def create_layout(app):
                                 )
                             ]),
 
-                            # Foldable "Legacy - Combined" section
-                            html.Div([
-                                html.Button('Legacy - Combined', id='legacy-combined-toggle', n_clicks=0,
-                                            style={'width': '100%', 'textAlign': 'left'}),
-                                dbc.Collapse(  # Correct use of dbc.Collapse
-                                    children=[
-                                        dcc.Checklist(
-                                            id='open-interest-legacy-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['open_interest'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='oi-percentages-legacy-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['oi_percentages'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='positions-change-legacy-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-legacy-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-change-legacy-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='26w-index-legacy-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['index_26w'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                    ],
-                                    id='legacy-combined-collapse',  # Correct ID for collapsible content
-                                    is_open=False  # Initial state is collapsed
-                                )
-                            ]),
-                            # Foldable "Legacy - Futures Only" section
-                            html.Div([
-                                html.Button('Legacy - Futures Only', id='legacy-futures-only-toggle', n_clicks=0,
-                                            style={'width': '100%', 'textAlign': 'left'}),
-                                dbc.Collapse(  # Correct use of dbc.Collapse
-                                    children=[
-                                        dcc.Checklist(
-                                            id='open-interest-legacy-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['open_interest'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='oi-percentages-legacy-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['oi_percentages'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='positions-change-legacy-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-legacy-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-change-legacy-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='26w-index-legacy-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['index_26w'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                    ],
-                                    id='legacy-futures-only-collapse',  # Correct ID for collapsible content
-                                    is_open=False  # Initial state is collapsed
-                                )
-                            ]),
-                            # Foldable COT Disaggregated Combined
-                            html.Div([
-                                html.Button('Disaggregated - Combined', id='disaggregated-combined-toggle', n_clicks=0,
-                                            style={'width': '100%', 'textAlign': 'left'}),
-                                dbc.Collapse(
-                                    children=[
-                                        dcc.Checklist(
-                                            id='open-interest-disaggregated-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['open_interest'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='oi-percentages-disaggregated-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['oi_percentages'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='positions-change-disaggregated-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-disaggregated-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-change-disaggregated-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='26w-index-disaggregated-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['index_26w'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
+                            # COT Checklist Section Factory
+                            def create_cot_section(cot_type, section_name, toggle_id):
+                                """Factory for creating COT checklist sections"""
+                                return html.Div([
+                                    html.Button(
+                                        f'{cot_type} - {section_name.replace("-", " ").title()}',
+                                        id=toggle_id,
+                                        n_clicks=0,
+                                        style={'width': '100%', 'textAlign': 'left'}
+                                    ),
+                                    dbc.Collapse(
+                                        children=[
+                                            dcc.Checklist(
+                                                id=f'{key}-{cot_type.lower()}-{section_name}-checklist',
+                                                options=CHECKLIST_OPTIONS[key],
+                                                value=[],
+                                                inputStyle=INPUT_STYLE
+                                            ) for key in [
+                                                'open_interest', 'oi_percentages', 'positions_change',
+                                                'net_positions', 'net_positions_change', 'index_26w'
+                                            ]
+                                        ],
+                                        id=f'{cot_type.lower()}-{section_name}-collapse',
+                                        is_open=False
+                                    )
+                                ])
 
-                                    ],
-                                    id='disaggregated-combined-collapse',
-                                    is_open=False
-                                )
-                            ]),
-                            # Foldable COT Disaggregated Futures Only
-                            html.Div([
-                                html.Button('Disaggregated - Futures Only', id='disaggregated-futures-only-toggle',
-                                            n_clicks=0,
-                                            style={'width': '100%', 'textAlign': 'left'}),
-                                dbc.Collapse(
-                                    children=[
-                                        dcc.Checklist(
-                                            id='open-interest-disaggregated-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['open_interest'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='oi-percentages-disaggregated-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['oi_percentages'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='positions-change-disaggregated-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-disaggregated-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-change-disaggregated-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='26w-index-disaggregated-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['index_26w'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-
-                                    ],
-                                    id='disaggregated-futures-only-collapse',
-                                    is_open=False
-                                )
-                            ]),
-                            # Foldable COT TFF Combined
-                            html.Div([
-                                html.Button('TFF - Combined', id='tff-combined-toggle', n_clicks=0,
-                                            style={'width': '100%', 'textAlign': 'left'}),
-                                dbc.Collapse(
-                                    children=[
-                                        dcc.Checklist(
-                                            id='open-interest-tff-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['open_interest'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='oi-percentages-tff-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['oi_percentages'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='positions-change-tff-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-tff-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-change-tff-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='26w-index-tff-combined-checklist',
-                                            options=CHECKLIST_OPTIONS['index_26w'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-
-                                    ],
-                                    id='tff-combined-collapse',
-                                    is_open=False
-                                )
-                            ]),
-                            # Foldable COT TFF Futures Only
-                            html.Div([
-                                html.Button('TFF - Futures Only', id='tff-futures-only-toggle',
-                                            n_clicks=0,
-                                            style={'width': '100%', 'textAlign': 'left'}),
-                                dbc.Collapse(
-                                    children=[
-                                        dcc.Checklist(
-                                            id='open-interest-tff-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['open_interest'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='oi-percentages-tff-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['oi_percentages'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='positions-change-tff-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-tff-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='net-positions-change-tff-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['net_positions_change'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-                                        dcc.Checklist(
-                                            id='26w-index-tff-futures-only-checklist',
-                                            options=CHECKLIST_OPTIONS['index_26w'],
-                                            value=[],
-                                            inputStyle=INPUT_STYLE
-                                        ),
-
-                                    ],
-                                    id='tff-futures-only-collapse',
-                                    is_open=False
-                                )
-                            ]),
+                            # Generate COT sections using factory
+                            create_cot_section('Legacy', 'Combined', 'legacy-combined-toggle'),
+                            create_cot_section('Legacy', 'Futures-Only', 'legacy-futures-only-toggle'),
+                            create_cot_section('Disaggregated', 'Combined', 'disaggregated-combined-toggle'),
+                            create_cot_section('Disaggregated', 'Futures-Only', 'disaggregated-futures-only-toggle'),
+                            create_cot_section('TFF', 'Combined', 'tff-combined-toggle'),
+                            create_cot_section('TFF', 'Futures-Only', 'tff-futures-only-toggle'),
 
                             # Links to Twitter and YouTube
                             html.Div([
