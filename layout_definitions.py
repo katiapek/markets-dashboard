@@ -14,6 +14,40 @@ ANALYSIS_SECTION_STYLE = {
     'fontSize': '10px'
 }
 
+TOOLTIP_REGISTRY = {
+    # Base Metrics
+    'd_up': "Days where Close > Open",
+    'd_up_pct': "D-UP days percentage (D-UP% + D-DN% ≈ 100%)",
+    'd_dn': "Days where Close < Open",
+    'd_dn_pct': "D-DN days percentage (D-UP% + D-DN% ≈ 100%)",
+    'pd_h': "High ≥ Previous High & Low > Previous Low",
+    'pd_h_pct': "Percentage of PD-H days (PD-H% + PD-L% + PD-HL% + PD-nHL ≈ 100%)",
+    'pd_l': "Low ≤ Previous Low & High < Previous High",
+    'pd_l_pct': "Percentage of PD-L days (PD-H% + PD-L% + PD-HL% + PD-nHL ≈ 100%)",
+    'pd_hl': "High ≥ Previous High & Low ≤ Previous Low (Outside bar)",
+    'pd_hl_pct': "Percentage of PD-HL days (PD-H% + PD-L% + PD-HL% + PD-nHL ≈ 100%)",
+    'pd_nhl': "High < Previous High & Low > Previous Low (Inside bar)",
+    'pd_nhl_pct': "Percentage of PD-nHL days (PD-H% + PD-L% + PD-HL% + PD-nHL ≈ 100%)",
+    
+    # Extended Metrics
+    'capd_h': "PD-H Days where Close was above Previous High",
+    'capd_h_pct': "Percentage of CaPD-H days",
+    'cbpd_l': "PD-L Days where Close was below Previous Low",
+    'cbpd_l_pct': "Percentage of CbPD-L days",
+    'capd_hl': "PD-HL Days where Close was above Previous High",
+    'capd_hl_pct': "Percentage of CaPD-HL days",
+    'cbpd_hl': "PD-HL Days where Close was below Previous Low",
+    'cbpd_hl_pct': "Percentage of CbPD-HL days",
+    'bisi': "Previous High < Next Low (Buyside Imbalance Sellside Inefficiency)",
+    'bisi_pct': "Percentage of BISI days",
+    'sibi': "Previous Low > Next High (Sellside Imbalance Buyside Inefficiency)", 
+    'sibi_pct': "Percentage of SIBI days"
+}
+
+def get_tooltip(key):
+    """Get standardized tooltip text from registry"""
+    return TOOLTIP_REGISTRY.get(key.lower(), "No tooltip available")
+
 SECTION_TITLE_STYLE = {'textAlign': 'center'}
 
 # Table Configuration
@@ -45,53 +79,35 @@ TABLE_CONFIGS = {
     'base_analysis': {
         'columns': [],
         'tooltips': {
-            "D UP": "Days where the Close was higher than the Open",
-            "D UP %": "Percentage of D UP days out of Total Days.\nD UP % + D DN % ≈ 100%",
-            "D DN": "Days where the Close was lower than the Open",
-            "D DN %": "Percentage of D-DN days out of Total Days.\nD UP % + D DN % ≈ 100%",
-            "PD-H": "Days where the High was not lower than the Previous Day's High and the Low was higher than the Previous Day's Low.",
-            "PD-H %": "Percentage of PD-H days out of Total Days.\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
-            "PD-L": "Days where the Low was not higher than the Previous Day's Low and the High was lower than the Previous Day's High.",
-            "PD-L %": "Percentage of PD-L days out of Total Days.\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
-            "PD-HL": "Days where the High was not lower than the Previous Day's High, and the Low was not higher than the Previous Day's Low (Outside bar)",
-            "PD-HL %": "Percentage of PD-HL days out of Total Days.\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
-            "PD-nHL": "Days where the High was lower than the Previous Day's High and the Low was higher than the Previous Day's Low (Inside bar)",
-            "PD-nHL %": "Percentage of PD-nHL days out of Total Days.\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
+            col: TOOLTIP_REGISTRY[col.lower().replace(" ", "_").replace("-", "_")]
+            for col in [
+                "D UP", "D UP %", "D DN", "D DN %",
+                "PD-H", "PD-H %", "PD-L", "PD-L %",
+                "PD-HL", "PD-HL %", "PD-nHL", "PD-nHL %"
+            ]
         }
     },
     'day_trading': {
         'base': 'base_analysis',
         'columns': generate_base_columns('year'),
         'tooltips': {
-            "D UP": "Days where the Close was higher than the Open",
-            "D UP %": "Percentage of D UP days out of Total Days.\nD UP % + D DN % ≈ 100%",
-            "D DN": "Days where the Close was lower than the Open",
-            "D DN %": "Percentage of D-DN days out of Total Days.\nD UP % + D DN % ≈ 100%",
-            "PD-H": "Days where the High was not lower than the Previous Day's High and the Low was higher than the Previous Day's Low.",
-            "PD-H %": "Percentage of PD-H days out of Total Days.\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
-            "PD-L": "Days where the Low was not higher than the Previous Day's Low and the High was lower than the Previous Day's High.",
-            "PD-L %": "Percentage of PD-L days out of Total Days.\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
-            "PD-HL": "Days where the High was not lower than the Previous Day's High, and the Low was not higher than the Previous Day's Low (Outside bar)",
-            "PD-HL %": "Percentage of PD-HL days out of Total Days.\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
-            "PD-nHL": "Days where the High was lower than the Previous Day's High and the Low was higher than the Previous Day's Low (Inside bar)",
-            "PD-nHL %": "Percentage of PD-nHL days out of Total Days.\nPD-H % + PD-L % + PD-HL % + PD-nHL ≈ 100%",
+            col: TOOLTIP_REGISTRY[col.lower().replace(" ", "_").replace("-", "_")]
+            for col in [
+                "D UP", "D UP %", "D DN", "D DN %",
+                "PD-H", "PD-H %", "PD-L", "PD-L %",
+                "PD-HL", "PD-HL %", "PD-nHL", "PD-nHL %"
+            ]
         }
     },
     'day_trading_extended': {
         'columns': generate_extended_columns('year'),
         'tooltips': {
-                    "CaPD-H": "PD-H Days where Close was above the Previous Day's High.\n(Closed above PD-H)",
-                    "CaPD-H %": "Percentage of CaPD-H days out of Total Days.",
-                    "CbPD-L": "PD-L Days where Close was below the Previous Day's Low\n(Closed below the PD-L)",
-                    "CbPD-L %": "Percentage of CbPD-L days out of Total Days.",
-                    "CaPD-HL": "PD-HL Days where the Close was above the Previous Day's High\n(Closed above PD-HL)",
-                    "CaPD-HL %": "Percentage of CaPD-HL days out of Total Days.",
-                    "CbPD-HL": "PD-HL Days where the Close was below the Previous Day's Low\n(Closed below PD-HL)",
-                    "CbPD-HL %": "Percentage of CbPD-HL days out of Total Days.",
-                    "BISI": "Days where Previous Day's High is lower than the Next Day's Low\n(Buyside Imbalance Sellside Inefficiency)",
-                    "BISI %": "Percentage of BISI days out of Total Days.",
-                    "SIBI": "Days where Previous Day's Low is higher than the Next Day's High\n(Sellside Imbalance Buyside Inefficiency)",
-                    "SIBI %": "Percentage of SIBI days out of Total Days.",
+            col: TOOLTIP_REGISTRY[col.lower().replace(" ", "_").replace("-", "_")]
+            for col in [
+                "CaPD-H", "CaPD-H %", "CbPD-L", "CbPD-L %",
+                "CaPD-HL", "CaPD-HL %", "CbPD-HL", "CbPD-HL %",
+                "BISI", "BISI %", "SIBI", "SIBI %"
+            ]
         }
     },
     'day_trading_weekday': {
@@ -101,18 +117,12 @@ TABLE_CONFIGS = {
     'day_trading_extended_weekday': {
         'columns': generate_extended_columns('weekday'),
         'tooltips': {
-            "CaPD-H": "PD-H Days where Close was above the Previous Day's High.\n(Closed above PD-H)",
-            "CaPD-H %": "Percentage of CaPD-H days out of Total Days.",
-            "CbPD-L": "PD-L Days where Close was below the Previous Day's Low\n(Closed below the PD-L)",
-            "CbPD-L %": "Percentage of CbPD-L days out of Total Days.",
-            "CaPD-HL": "PD-HL Days where the Close was above the Previous Day's High\n(Closed above PD-HL)",
-            "CaPD-HL %": "Percentage of CaPD-HL days out of Total Days.",
-            "CbPD-HL": "PD-HL Days where the Close was below the Previous Day's Low\n(Closed below PD-HL)",
-            "CbPD-HL %": "Percentage of CbPD-HL days out of Total Days.",
-            "BISI": "Days where Previous Day's High is lower than the Next Day's Low\n(Buyside Imbalance Sellside Inefficiency)",
-            "BISI %": "Percentage of BISI days out of Total Days.",
-            "SIBI": "Days where Previous Day's Low is higher than the Next Day's High\n(Sellside Imbalance Buyside Inefficiency)",
-            "SIBI %": "Percentage of SIBI days out of Total Days.",
+            col: TOOLTIP_REGISTRY[col.lower().replace(" ", "_").replace("-", "_")]
+            for col in [
+                "CaPD-H", "CaPD-H %", "CbPD-L", "CbPD-L %",
+                "CaPD-HL", "CaPD-HL %", "CbPD-HL", "CbPD-HL %",
+                "BISI", "BISI %", "SIBI", "SIBI %"
+            ]
         }
     }
 }
