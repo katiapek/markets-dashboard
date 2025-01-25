@@ -161,7 +161,7 @@ HALF_WIDTH = {'width': '50%', 'display': 'inline-block'}
 CENTERED_HALF_WIDTH = {'width': '50%', 'display': 'block', 'margin': '0 auto'}
 
 TABLE_HEADER_STYLE = {
-    'backgroundColor': '#333',
+    'backgroundColor': '#00C853',
     'color': 'white',
     'border': '1px solid white',
     'fontFamily': "'Press Start 2P', monospace",
@@ -737,7 +737,7 @@ def create_correlation_section():
     """Create simplified correlation section with only 180-day table"""
     return html.Div(children=[
         html.H3("Market Correlation",
-                style={'textAlign': 'center', 'color': 'white', 
+                style={'textAlign': 'center', 'color': '#00C853', 
                        'fontFamily': "'Press Start 2P', monospace"}),
         
         # Single 180-day table
@@ -760,14 +760,14 @@ def create_correlation_section():
                 },
                 style_data_conditional=[{
                     'if': {'column_id': 'MKT'},
-                    'backgroundColor': '#4CAF50',
+                    'backgroundColor': '#00C853',
                     'color': 'white',
                     'fontWeight': 'bold',
                     'textAlign': 'left',
                     'whiteSpace': 'nowrap'
                 }],
                 style_header={
-                    'backgroundColor': '#4CAF50',
+                    'backgroundColor': '#00C853',
                     'color': 'white',
                     'fontWeight': 'bold',
                     'fontFamily': "'Press Start 2P', monospace",
@@ -903,7 +903,7 @@ def create_base_layout(is_premium=False):
                             href="/disclaimer",
                             target="_blank",
                             style={
-                                "color": "#4CAF50",
+                                "color": "#00C853",
                                 "textDecoration": "underline",
                                 "fontSize": "10px",
                                 "marginLeft": "5px",
