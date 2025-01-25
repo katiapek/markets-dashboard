@@ -79,19 +79,36 @@ class BaseDataFetcher:
             pd.DataFrame: DataFrame containing the fetched data.
 
         Raises:
-            ValueError: If parameters are not in dictionary format
+            ValueError: If parameters are not in dictionary format or invalid table/column names
         """
         from sqlalchemy import bindparam
 
+        # Validate parameters
         if params and not isinstance(params, dict):
             raise ValueError("Query parameters must be in dictionary format")
 
+        # Validate table/column names in query
+        allowed_tables = {
+            '_ohlc', '_ohlc_seasonality_5_years', '_ohlc_seasonality_10_years',
+            '_cot_disaggregated_combined', '_cot_legacy_combined', '_cot_tff_combined',
+            '_cot_disaggregated_combined_calc', '_cot_legacy_combined_calc', '_cot_tff_combined_calc'
+        }
+        
+        # Check for valid table patterns
+        table_pattern = re.compile(r'^[a-z0-9_]+(_ohlc|_cot_(disaggregated|legacy|tff)_(combined|calc))$')
+        if not table_pattern.search(query.lower()):
+            raise ValueError("Invalid table name pattern in query")
+
         # Fetch data using SQLAlchemy Engine with parameter binding
         with engine.connect() as connection:
-            stmt = text(query)
-            if params:
-                stmt = stmt.bindparams(*[bindparam(key, value) for key, value in params.items()])
-            df = pd.read_sql(stmt, connection)
+            try:
+                stmt = text(query)
+                if params:
+                    stmt = stmt.bindparams(*[bindparam(key, value) for key, value in params.items()])
+                df = pd.read_sql(stmt, connection)
+            except Exception as e:
+                raise RuntimeError(f"Database error: {str(e)}") from e
+                
         return df
 
 
@@ -113,7 +130,14 @@ class SeasonalDataFetcher(BaseDataFetcher):
         Returns:
             pd.DataFrame: DataFrame containing the seasonal data with an additional 'date' column.
         """
-        table_name = f"{market.lower().replace(' ', '_')}_ohlc_seasonality_{years}_years" # f"{format_market_name(market)}_seasonality_{years}_years"
+        # Validate and construct table name
+        base_name = market.lower().replace(' ', '_')
+        table_name = f"{base_name}_ohlc_seasonality_{years}_years"
+        
+        # Validate table name pattern
+        if not re.match(r'^[a-z0-9_]+_ohlc_seasonality_\d+_years$', table_name):
+            raise ValueError(f"Invalid table name format: {table_name}")
+            
         query = f"SELECT * FROM {table_name} ORDER BY day_of_year ASC"
         df = SeasonalDataFetcher.fetch_data(query)
 
@@ -311,9 +335,8 @@ class OpenInterestPercentagesFetcher(BaseDataFetcher):
             df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
             # df['Day_of_Year'] = df['report_date_as_yyyy_mm_dd'].dt.dayofyear
 
-            # Convert the relevant columns to numeric, based on report type
-            for col in numeric_columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
+            # Convert numeric columns more efficiently
+            df[numeric_columns] = df[numeric_columns].apply(pd.to_numeric, errors='coerce')
 
             df['date'] = df['report_date_as_yyyy_mm_dd']
             df.sort_values(by='date', inplace=True)
