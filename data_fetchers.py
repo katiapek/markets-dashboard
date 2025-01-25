@@ -8,6 +8,7 @@ from functools import lru_cache
 from sqlalchemy import create_engine, text
 import os
 from urllib.parse import urlparse
+import re
 
 db_url = os.environ.get(db_path_str).replace("postgres://", "postgresql+psycopg2://", 1)
 engine = create_engine(db_url)
