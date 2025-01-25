@@ -96,7 +96,7 @@ class BaseDataFetcher:
         }
         
         # Check for valid table patterns
-        table_pattern = re.compile(r'^[a-z0-9_]+(_ohlc|_cot_(disaggregated|legacy|tff)_(combined|calc)|correlation_\d+_(days|years))$')
+        table_pattern = re.compile(r'^([a-z0-9_]+(_ohlc|_cot_(disaggregated|legacy|tff)_(combined|calc))|correlation_\d+_(days|years))$')
         if not table_pattern.search(query.lower()):
             raise ValueError("Invalid table name pattern in query")
 
