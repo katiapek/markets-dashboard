@@ -190,7 +190,7 @@ def create_cot_section(cot_type, section_name, toggle_id):
         dbc.Collapse(
             children=[
                 dcc.Checklist(
-                    id=f'{key.replace("_", "-")}-{cot_type.lower()}-{section_name}-checklist',
+                    id=f'{"26w-index" if key == "26w_index" else key.replace("_", "-")}-{cot_type.lower()}-{section_name}-checklist',
                     options=CHECKLIST_OPTIONS[key],
                     value=[],
                     inputStyle=INPUT_STYLE
