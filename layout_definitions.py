@@ -892,15 +892,6 @@ def create_layout(app):
     return app
 
 
-                    dcc.Loading(
-                        id="loading-combined-chart",
-                        type="circle",
-                        children=dcc.Graph(
-                            id="combined-chart",
-                            config={"scrollZoom": True, "doubleClick": "autosize", "displayModeBar": False},
-                            style={"backgroundColor": "#1e1e1e"}
-                        ),
-                    ),
 
                     dcc.Loading(
                         id='loading-opportunity',
