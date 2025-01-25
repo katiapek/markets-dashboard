@@ -312,12 +312,50 @@ def create_market_dropdown():
         searchable=False
     )
 
+class ErrorBoundary(html.Div):
+    """Error boundary component to catch and display errors instead of crashing"""
+    def __init__(self, children, fallback=None, **kwargs):
+        super().__init__(children, **kwargs)
+        self.fallback = fallback or html.Div(
+            [
+                html.P("⚠️ Component Error - Please Refresh", style={'color': 'red'}),
+                html.Button("Reload", onClick="window.location.reload()", 
+                          style={'marginTop': '10px', 'padding': '5px 10px'})
+            ],
+            style={
+                'backgroundColor': '#2b2b2b',
+                'padding': '20px',
+                'border': '2px solid red',
+                'textAlign': 'center'
+            }
+        )
+
+    def _handle_error(self, error):
+        return self.fallback
+
 def create_loading_container(component, loading_id):
-    """Create standardized loading container"""
-    return dcc.Loading(
-        id=loading_id,
-        children=[component, html.Div(id=f'{loading_id}-output')],
-        type='circle'
+    """Create standardized loading container with error boundary"""
+    return ErrorBoundary(
+        dcc.Loading(
+            id=loading_id,
+            children=[component, html.Div(id=f'{loading_id}-output')],
+            type='circle'
+        ),
+        # Custom fallback for loading components
+        fallback=html.Div(
+            [
+                html.P("⚠️ Failed to Load Component", style={'color': 'red'}),
+                html.P("Try refreshing or checking your connection"),
+                html.Button("Retry", id=f"{loading_id}-retry", n_clicks=0,
+                          style={'marginTop': '10px', 'padding': '5px 10px'})
+            ],
+            style={
+                'backgroundColor': '#2b2b2b',
+                'padding': '20px',
+                'border': '2px solid orange',
+                'textAlign': 'center'
+            }
+        )
     )
 
 if user_tier == 'premium':
