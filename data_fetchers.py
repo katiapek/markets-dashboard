@@ -86,9 +86,21 @@ class BaseDataFetcher:
         if params and not isinstance(params, dict):
             raise ValueError("Query parameters must be in dictionary format")
 
-        # Validate table/column names in query
         # Validate table name pattern using helper method
-        self.validate_table_name_from_query(query.lower())
+        BaseDataFetcher.validate_table_name_from_query(query.lower())
+
+        # Fetch data using SQLAlchemy Engine with parameter binding
+        from sqlalchemy import bindparam
+        with engine.connect() as connection:
+            try:
+                stmt = text(query)
+                if params:
+                    stmt = stmt.bindparams(*[bindparam(key, value) for key, value in params.items()])
+                df = pd.read_sql(stmt, connection)
+            except Exception as e:
+                raise RuntimeError(f"Database error: {str(e)}") from e
+                
+        return df
 
     @staticmethod
     def validate_table_name(table_name):
@@ -109,18 +121,6 @@ class BaseDataFetcher:
         matches = table_pattern.findall(query)
         for _, table in matches:
             BaseDataFetcher.validate_table_name(table)
-
-        # Fetch data using SQLAlchemy Engine with parameter binding
-        with engine.connect() as connection:
-            try:
-                stmt = text(query)
-                if params:
-                    stmt = stmt.bindparams(*[bindparam(key, value) for key, value in params.items()])
-                df = pd.read_sql(stmt, connection)
-            except Exception as e:
-                raise RuntimeError(f"Database error: {str(e)}") from e
-                
-        return df
 
 
 class SeasonalDataFetcher(BaseDataFetcher):
