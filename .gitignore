@@ -10,3 +10,4 @@ __pycache__/
 
 #Ignore database files
 *.db
+.aider*

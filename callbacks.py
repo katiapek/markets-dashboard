@@ -174,52 +174,52 @@ def register_callbacks(app):
         if 'OI Percentages' in values[1]:
             active_subplots.append(('OI Percentages', '_cot_legacy_combined', 'legacy'))
         if 'Positions Change' in values[2]:
-            active_subplots.append(('Positions Change', '_cot_legacy_combined', 'legacy'))
+            active_subplots.append(('Positions Change', '_cot_legacy_combined_calc', 'legacy'))
         if 'Net Positions' in values[3]:
-            active_subplots.append(('Net Positions', '_cot_legacy_combined', 'legacy'))
+            active_subplots.append(('Net Positions', '_cot_legacy_combined_calc', 'legacy'))
         if 'Net Positions Change' in values[4]:
-            active_subplots.append(('Net Positions Change', '_cot_legacy_combined', 'legacy'))
+            active_subplots.append(('Net Positions Change', '_cot_legacy_combined_calc', 'legacy'))
         if '26W Index' in values[5]:
-            active_subplots.append(('26W Index', '_cot_legacy_combined', 'legacy'))
+            active_subplots.append(('26W Index', '_cot_legacy_combined_calc', 'legacy'))
         # For COT Legacy Futures Only
         if 'Open Interest' in values[6]:
             active_subplots.append(('Open Interest', '_cot_legacy_futures_only', 'legacy'))
         if 'OI Percentages' in values[7]:
             active_subplots.append(('OI Percentages', '_cot_legacy_futures_only', 'legacy'))
         if 'Positions Change' in values[8]:
-            active_subplots.append(('Positions Change', '_cot_legacy_futures_only', 'legacy'))
+            active_subplots.append(('Positions Change', '_cot_legacy_futures_only_calc', 'legacy'))
         if 'Net Positions' in values[9]:
-            active_subplots.append(('Net Positions', '_cot_legacy_futures_only', 'legacy'))
+            active_subplots.append(('Net Positions', '_cot_legacy_futures_only_calc', 'legacy'))
         if 'Net Positions Change' in values[10]:
-            active_subplots.append(('Net Positions Change', '_cot_legacy_futures_only', 'legacy'))
+            active_subplots.append(('Net Positions Change', '_cot_legacy_futures_only_calc', 'legacy'))
         if '26W Index' in values[11]:
-            active_subplots.append(('26W Index', '_cot_legacy_futures_only', 'legacy'))
+            active_subplots.append(('26W Index', '_cot_legacy_futures_only_calc', 'legacy'))
         # For COT Disaggregated Combined
         if 'Open Interest' in values[12]:
             active_subplots.append(('Open Interest', '_cot_disaggregated_combined', 'disaggregated'))
         if 'OI Percentages' in values[13]:
             active_subplots.append(('OI Percentages', '_cot_disaggregated_combined', 'disaggregated'))
         if 'Positions Change' in values[14]:
-            active_subplots.append(('Positions Change', '_cot_disaggregated_combined', 'disaggregated'))
+            active_subplots.append(('Positions Change', '_cot_disaggregated_combined_calc', 'disaggregated'))
         if 'Net Positions' in values[15]:
-            active_subplots.append(('Net Positions', '_cot_disaggregated_combined', 'disaggregated'))
+            active_subplots.append(('Net Positions', '_cot_disaggregated_combined_calc', 'disaggregated'))
         if 'Net Positions Change' in values[16]:
-            active_subplots.append(('Net Positions Change', '_cot_disaggregated_combined', 'disaggregated'))
+            active_subplots.append(('Net Positions Change', '_cot_disaggregated_combined_calc', 'disaggregated'))
         if '26W Index' in values[17]:
-            active_subplots.append(('26W Index', '_cot_disaggregated_combined', 'disaggregated'))
+            active_subplots.append(('26W Index', '_cot_disaggregated_combined_calc', 'disaggregated'))
         # For COT Disaggregated Futures Only
         if 'Open Interest' in values[18]:
             active_subplots.append(('Open Interest', '_cot_disaggregated_futures_only', 'disaggregated'))
         if 'OI Percentages' in values[19]:
             active_subplots.append(('OI Percentages', '_cot_disaggregated_futures_only', 'disaggregated'))
         if 'Positions Change' in values[20]:
-            active_subplots.append(('Positions Change', '_cot_disaggregated_futures_only', 'disaggregated'))
+            active_subplots.append(('Positions Change', '_cot_disaggregated_futures_only_calc', 'disaggregated'))
         if 'Net Positions' in values[21]:
-            active_subplots.append(('Net Positions', '_cot_disaggregated_futures_only', 'disaggregated'))
+            active_subplots.append(('Net Positions', '_cot_disaggregated_futures_only_calc', 'disaggregated'))
         if 'Net Positions Change' in values[22]:
-            active_subplots.append(('Net Positions Change', '_cot_disaggregated_futures_only', 'disaggregated'))
+            active_subplots.append(('Net Positions Change', '_cot_disaggregated_futures_only_calc', 'disaggregated'))
         if '26W Index' in values[23]:
-            active_subplots.append(('26W Index', '_cot_disaggregated_futures_only', 'disaggregated'))
+            active_subplots.append(('26W Index', '_cot_disaggregated_futures_only_calc', 'disaggregated'))
 
         # For COT TFF Combined
         if 'Open Interest' in values[24]:
@@ -227,26 +227,26 @@ def register_callbacks(app):
         if 'OI Percentages' in values[25]:
             active_subplots.append(('OI Percentages', '_cot_tff_combined', 'tff'))
         if 'Positions Change' in values[26]:
-            active_subplots.append(('Positions Change', '_cot_tff_combined', 'tff'))
+            active_subplots.append(('Positions Change', '_cot_tff_combined_calc', 'tff'))
         if 'Net Positions' in values[27]:
-            active_subplots.append(('Net Positions', '_cot_tff_combined', 'tff'))
+            active_subplots.append(('Net Positions', '_cot_tff_combined_calc', 'tff'))
         if 'Net Positions Change' in values[28]:
-            active_subplots.append(('Net Positions Change', '_cot_tff_combined', 'tff'))
+            active_subplots.append(('Net Positions Change', '_cot_tff_combined_calc', 'tff'))
         if '26W Index' in values[29]:
-            active_subplots.append(('26W Index', '_cot_tff_combined', 'tff'))
+            active_subplots.append(('26W Index', '_cot_tff_combined_calc', 'tff'))
         # For COT TFF Futures Only
         if 'Open Interest' in values[30]:
             active_subplots.append(('Open Interest', '_cot_tff_futures_only', 'tff'))
         if 'OI Percentages' in values[31]:
             active_subplots.append(('OI Percentages', '_cot_tff_futures_only', 'tff'))
         if 'Positions Change' in values[32]:
-            active_subplots.append(('Positions Change', '_cot_tff_futures_only', 'tff'))
+            active_subplots.append(('Positions Change', '_cot_tff_futures_only_calc', 'tff'))
         if 'Net Positions' in values[33]:
-            active_subplots.append(('Net Positions', '_cot_tff_futures_only', 'tff'))
+            active_subplots.append(('Net Positions', '_cot_tff_futures_only_calc', 'tff'))
         if 'Net Positions Change' in values[34]:
-            active_subplots.append(('Net Positions Change', '_cot_tff_futures_only', 'tff'))
+            active_subplots.append(('Net Positions Change', '_cot_tff_futures_only_calc', 'tff'))
         if '26W Index' in values[35]:
-            active_subplots.append(('26W Index', '_cot_tff_futures_only', 'tff'))
+            active_subplots.append(('26W Index', '_cot_tff_futures_only_calc', 'tff'))
         return active_subplots
 
     @app.callback(
