@@ -146,6 +146,9 @@ class BaseDataFetcher:
         if 'date' in df.columns:
             df.sort_values(by='date', inplace=True)
 
+        if 'report_date_as_yyyy_mm_dd' in df.columns:
+            df.sort_values(by='report_date_as_yyyy_mm_dd', inplace=True)
+
         # Example: Clean OHLC data if relevant columns exist
         ohlc_columns = ['open', 'high', 'low', 'close']
         for col in ohlc_columns:
