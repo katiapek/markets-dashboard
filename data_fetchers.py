@@ -64,7 +64,6 @@ def fetch_ohlc_data_cached(market, start_date, end_date):
     """
     return OHLCDataFetcher.fetch_ohlc_data_by_range(market, start_date, end_date)
 
-
 @lru_cache(maxsize=10)
 def fetch_active_subplot_data(market, year, subplot, table_suffix, report_type):
     config = ReportDataFetcher.CONFIG_REGISTRY.get(subplot, {}).get(report_type)
@@ -74,11 +73,9 @@ def fetch_active_subplot_data(market, year, subplot, table_suffix, report_type):
     fetcher = ReportDataFetcher(config)
     return fetcher.fetch(market, year, table_suffix, report_type)
 
-
 @lru_cache(maxsize=5)
 def fetch_seasonal_data_cached(market, years, base_year):
     return SeasonalDataFetcher.fetch_seasonal_data(market, years, base_year)
-
 
 class BaseDataFetcher:
     """
@@ -220,7 +217,7 @@ class SeasonalDataFetcher(BaseDataFetcher):
 
             # The following steps are now handled by the common_processing pipeline
             # df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d")
-            # df.sort_values(by='date', inplace=True)
+            # df.sort_values(by='date', inplace=True
 
         return df
 
@@ -465,9 +462,13 @@ class ReportDataFetcher(BaseDataFetcher):
         df = self.fetch_data(query, params)
 
         if not df.empty:
-            # Common processing pipeline is already applied by fetch_data
+            # Ensure 'date' column exists by mapping 'report_date_as_yyyy_mm_dd' to 'date'
+            if 'report_date_as_yyyy_mm_dd' in df.columns:
+                df['date'] = df['report_date_as_yyyy_mm_dd']
+            else:
+                print("Warning: 'report_date_as_yyyy_mm_dd' column missing; 'date' column not created.")
+
             # Additional processing specific to ReportDataFetcher can be added here if needed
-            pass
 
         return df
 
