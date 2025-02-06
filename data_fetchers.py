@@ -3,6 +3,13 @@
 import pandas as pd
 from scripts.config import db_path_str
 from enum import Enum
+from datetime import timedelta
+from dateutil import parser
+from functools import lru_cache
+from sqlalchemy import create_engine, text
+import os
+from urllib.parse import urlparse
+import re
 
 class TableType(Enum):
     OHLC = "ohlc"
@@ -46,13 +53,6 @@ class TableNameFactory:
             r'^correlation_\d+_(days|years)$'
         ]
         return any(re.match(pattern, table_name) for pattern in patterns)
-from datetime import timedelta
-from dateutil import parser
-from functools import lru_cache
-from sqlalchemy import create_engine, text
-import os
-from urllib.parse import urlparse
-import re
 
 db_url = os.environ.get(db_path_str).replace("postgres://", "postgresql+psycopg2://", 1)
 engine = create_engine(db_url)
@@ -79,23 +79,6 @@ def fetch_active_subplot_data(market, year, subplot, table_suffix, report_type):
 def fetch_seasonal_data_cached(market, years, base_year):
     return SeasonalDataFetcher.fetch_seasonal_data(market, years, base_year)
 
-
-def clean_ohlc_data(df):
-    """
-    Clean OHLC data by removing commas from Open, High, Low, Close columns.
-
-    Args:
-        df (pd.DataFrame): DataFrame containing OHLC data.
-
-    Returns:
-        pd.DataFrame: Cleaned DataFrame with commas removed from numeric columns.
-    """
-    ohlc_columns = ['open', 'high', 'low', 'close']
-
-    for col in ohlc_columns:
-        df[col] = df[col].astype(str).str.replace(',', '').astype(float)
-
-    return df
 
 class BaseDataFetcher:
     """
@@ -127,7 +110,6 @@ class BaseDataFetcher:
         BaseDataFetcher.validate_table_name_from_query(query.lower())
 
         # Fetch data using SQLAlchemy Engine with parameter binding
-        from sqlalchemy import bindparam
         with engine.connect() as connection:
             try:
                 stmt = text(query)
@@ -136,7 +118,45 @@ class BaseDataFetcher:
                 df = pd.read_sql(stmt, connection)
             except Exception as e:
                 raise RuntimeError(f"Database error: {str(e)}") from e
-                
+
+        # Apply common processing pipeline
+        df = BaseDataFetcher.common_processing(df)
+
+        return df
+
+    @staticmethod
+    def common_processing(df):
+        """
+        Apply common processing steps to the fetched DataFrame.
+
+        Args:
+            df (pd.DataFrame): The DataFrame to process.
+
+        Returns:
+            pd.DataFrame: The processed DataFrame.
+        """
+        if df.empty:
+            print("Fetched DataFrame is empty.")
+            return df
+
+        # Example: Parse date columns if they exist
+        date_columns = ['date', 'report_date_as_yyyy_mm_dd']
+        for col in date_columns:
+            if col in df.columns:
+                df[col] = pd.to_datetime(df[col], errors='coerce')
+
+        # Example: Sort by date if 'date' column exists
+        if 'date' in df.columns:
+            df.sort_values(by='date', inplace=True)
+
+        # Example: Clean OHLC data if relevant columns exist
+        ohlc_columns = ['open', 'high', 'low', 'close']
+        for col in ohlc_columns:
+            if col in df.columns:
+                df[col] = df[col].astype(str).str.replace(',', '').astype(float)
+
+        # Additional common processing steps can be added here
+
         return df
 
     @staticmethod
@@ -198,11 +218,9 @@ class SeasonalDataFetcher(BaseDataFetcher):
             # Convert Day_of_Year to actual dates within the current year
             df['date'] = df['day_of_year'].apply(lambda x: (base_date + timedelta(days=x - 1)).strftime("%Y-%m-%d"))
 
-            # Convert 'date' column to datetime format explicitly
-            df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d")
-
-            # Sort by the new Date column
-            df.sort_values(by='date', inplace=True)
+            # The following steps are now handled by the common_processing pipeline
+            # df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d")
+            # df.sort_values(by='date', inplace=True)
 
         return df
 
@@ -227,13 +245,14 @@ class OHLCDataFetcher(BaseDataFetcher):
 
         df = OHLCDataFetcher.fetch_data(query, params)
 
-        if df.empty:
-            print(f"No data found for {market} in {year}")
-        else:
-            df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d %H:%M:%S")
-            df['day_of_year'] = df['date'].dt.dayofyear
-            print(f"Fetched data for {year}: {df.head()}")
-        df = clean_ohlc_data(df)
+        # The following steps are now handled by the common_processing pipeline
+        # if df.empty:
+        #     print(f"No data found for {market} in {year}")
+        # else:
+        #     df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d %H:%M:%S")
+        #     df['day_of_year'] = df['date'].dt.dayofyear
+        #     print(f"Fetched data for {year}: {df.head()}")
+        # df = clean_ohlc_data(df)
 
         return df
 
@@ -258,12 +277,6 @@ class OHLCDataFetcher(BaseDataFetcher):
 
         df = OHLCDataFetcher.fetch_data(query, params)
 
-        if not df.empty:
-            # Parse the 'date' column with the appropriate format
-            df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d %H:%M:%S")
-            df['day_of_year'] = df['date'].dt.dayofyear
-
-        df = clean_ohlc_data(df)
         return df
 
 
@@ -452,16 +465,9 @@ class ReportDataFetcher(BaseDataFetcher):
         df = self.fetch_data(query, params)
 
         if not df.empty:
-            # Common processing pipeline
-            df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(df['report_date_as_yyyy_mm_dd'])
-            df['date'] = df['report_date_as_yyyy_mm_dd']
-            df.sort_values(by='date', inplace=True)
-
-            # Type-specific numeric conversions
-            if 'numeric_cols' in self.config:
-                df[self.config['numeric_cols']] = df[self.config['numeric_cols']].apply(
-                    pd.to_numeric, errors='coerce'
-                )
+            # Common processing pipeline is already applied by fetch_data
+            # Additional processing specific to ReportDataFetcher can be added here if needed
+            pass
 
         return df
 
