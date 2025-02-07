@@ -82,11 +82,17 @@ def register_callbacks(app):
                 # table_suffix = 'combined_calc' if parts[1] == 'index' else 'futures_only_calc'
                 continue
             else:
-                # Correct format: {metric}-{cot_type}-{section_name}
-                parts = report_type.split('-')
-                metric_part = '-'.join(parts[:-2])  # Handle multi-part metrics
-                cot_type = parts[-2]
-                section_name = parts[-1]
+                # Correct format: {metric_part}-{cot_type}-{section_name}
+                import re
+                # Use regex to handle hyphenated section names properly
+                match = re.match(r'^(.+)-(legacy|disaggregated|tff)-(.+)$', report_type)
+                if match:
+                    metric_part = match.group(1)
+                    cot_type = match.group(2)
+                    section_name = match.group(3)
+                else:
+                    print(f"Invalid report type format: {report_type}")
+                    continue
                 
                 # Map metric parts to display names
                 metric_map = {
@@ -99,9 +105,9 @@ def register_callbacks(app):
                 }
                 display_metric = metric_map.get(metric_part, metric_part.replace('-', ' ').title())
                 # Handle 26w index columns for Legacy report types
-                # if display_metric == '26W Index' and cot_type == 'legacy':
-                #     columns = ['noncomm_26w_index', 'comm_26w_index']  # Matches actual database columns
-                #     table_suffix = 'combined_calc'  # Fixed suffix for index tables
+                if display_metric == '26W Index' and cot_type == 'legacy':
+                    columns = ['noncomm_26w_index', 'comm_26w_index']
+                    table_suffix = 'combined_calc' if 'combined' in section_name else 'futures_only_calc'
 
             # Add activated subplots
             if display_metric in value:
