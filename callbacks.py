@@ -104,7 +104,11 @@ def register_callbacks(app):
 
             # Add activated subplots
             if display_metric in value:
+                # Check if this is a calculated metric that needs _calc suffix
+                calculated_metrics = ['Positions Change', 'Net Positions', 'Net Positions Change', '26W Index']
                 section_type = 'combined' if 'combined' in section_name else 'futures_only'
+                if display_metric in calculated_metrics and not section_type.endswith('_calc'):
+                    section_type += '_calc'
                 active_subplots.append((display_metric, section_type, cot_type.lower()))
         return active_subplots
 
