@@ -1,6 +1,7 @@
 # callbacks.py
 
 from dash import Input, Output, State, ctx, callback_context, MATCH, ALL
+from state_managers import RangeManager, ViewportHandler, InteractionTracker
 import plotly.subplots as sp
 from layout_definitions import format_market_name
 from data_fetchers import (
@@ -173,21 +174,9 @@ def register_callbacks(app):
             )
             return fig
 
-        # Initial Range Configuration
-        if len(ohlc_df) < 30:
-            end_date = pd.Timestamp(f"{current_year}-03-31")
-        elif len(ohlc_df) < 60:
-            end_date = pd.Timestamp(f"{current_year}-06-30")
-        else:
-            end_date = pd.Timestamp(f"{current_year}-12-31")
-
-        buffer_days = 2  # Set the buffet on the sides so all candles are visible
-
-        start_date_with_buffer = ohlc_df['date'].iloc[0] - pd.DateOffset(days=buffer_days)
-        end_date_with_buffer = end_date + pd.DateOffset(days=buffer_days)
-
-        initial_x_range = [start_date_with_buffer, end_date_with_buffer]  # Adjusted with buffer
-        initial_y_range = [ohlc_df["low"].min(), ohlc_df["high"].max()]
+        # Initialize range management
+        range_mgr = RangeManager(ohlc_df)
+        initial_x_range, initial_y_range = range_mgr.get_initial_ranges()
 
         # Determine if reset is needed (via year change)
         ctx_graph_reset = callback_context
@@ -198,18 +187,12 @@ def register_callbacks(app):
         x_range = initial_x_range
         y_range = initial_y_range
 
-        # Check for User Interactions and Adjust Ranges
+        # Handle viewport changes
         if relayout_data and not reset_required:
             if "xaxis.range[0]" in relayout_data and "xaxis.range[1]" in relayout_data:
-                # Convert relayoutData x-range to Timestamps
                 x_range_start = pd.Timestamp(relayout_data["xaxis.range[0]"])
                 x_range_end = pd.Timestamp(relayout_data["xaxis.range[1]"])
-
-                # Clamp the range to prevent excessive zooming out or in
-                x_range = [
-                    max(initial_x_range[0], x_range_start),
-                    min(initial_x_range[1], x_range_end)
-                ]
+                x_range = range_mgr.clamp_x_range(x_range_start, x_range_end)
 
             if "yaxis.autorange" in relayout_data or "xaxis.range[0]" in relayout_data:
                 # Dynamically adjust Y-axis to fit the data within the selected X-axis range
