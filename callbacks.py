@@ -80,11 +80,11 @@ def register_callbacks(app):
                 display_metric = '26W Index'
                 table_suffix = 'combined_calc' if parts[1] == 'index' else 'futures_only_calc'
             else:
-                # Standard format: {metric}-{table_suffix}-{cot_type}
+                # Correct format: {metric}-{cot_type}-{section_name}
                 parts = report_type.split('-')
                 metric_part = '-'.join(parts[:-2])  # Handle multi-part metrics
-                table_suffix = parts[-2]
-                cot_type = parts[-1]
+                cot_type = parts[-2]
+                section_name = parts[-1]
                 
                 # Map metric parts to display names
                 metric_map = {
@@ -104,7 +104,7 @@ def register_callbacks(app):
 
             # Add activated subplots
             if display_metric in value:
-                section_type = 'combined' if 'combined' in table_suffix else 'futures_only'
+                section_type = 'combined' if 'combined' in section_name else 'futures_only'
                 active_subplots.append((display_metric, section_type, cot_type.lower()))
         return active_subplots
 
