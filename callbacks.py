@@ -1,6 +1,6 @@
 # callbacks.py
 
-from dash import Input, Output, State, ctx, callback_context
+from dash import Input, Output, State, ctx, callback_context, MATCH, ALL
 import plotly.subplots as sp
 from layout_definitions import format_market_name
 from data_fetchers import (
