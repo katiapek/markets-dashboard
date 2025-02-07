@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 import os
 from callback_helpers import *
 from scripts.config import COLORS, market_tickers, TRACE_CONFIG
+import re
 
 
 # Load environment variables from .env file
@@ -74,40 +75,27 @@ def register_callbacks(app):
             report_type = id_dict['report-type']
             print(f"REPORT TYPE: {report_type}")
 
-            # Handle 26w-index special case
-            if '26w-index' in report_type:
-                # parts = report_type.split('-')
-                # cot_type = parts[2]
-                # display_metric = '26W Index'
-                # table_suffix = 'combined_calc' if parts[1] == 'index' else 'futures_only_calc'
-                continue
+            # Correct format: {metric_part}-{cot_type}-{section_name}
+            # Use regex to handle hyphenated section names properly
+            match = re.match(r'^(.+)-(legacy|disaggregated|tff)-(.+)$', report_type)
+            if match:
+                metric_part = match.group(1)
+                cot_type = match.group(2)
+                section_name = match.group(3)
             else:
-                # Correct format: {metric_part}-{cot_type}-{section_name}
-                import re
-                # Use regex to handle hyphenated section names properly
-                match = re.match(r'^(.+)-(legacy|disaggregated|tff)-(.+)$', report_type)
-                if match:
-                    metric_part = match.group(1)
-                    cot_type = match.group(2)
-                    section_name = match.group(3)
-                else:
-                    print(f"Invalid report type format: {report_type}")
-                    continue
-                
-                # Map metric parts to display names
-                metric_map = {
-                    'open-interest': 'Open Interest',
-                    'oi-percentages': 'OI Percentages',
-                    'positions-change': 'Positions Change',
-                    'net-positions': 'Net Positions',
-                    'net-positions-change': 'Net Positions Change',
-                    '26w-index': '26W Index'  # Explicit mapping for 26w index
-                }
-                display_metric = metric_map.get(metric_part, metric_part.replace('-', ' ').title())
-                # Handle 26w index columns for Legacy report types
-                if display_metric == '26W Index' and cot_type == 'legacy':
-                    columns = ['noncomm_26w_index', 'comm_26w_index']
-                    table_suffix = 'combined_calc' if 'combined' in section_name else 'futures_only_calc'
+                print(f"Invalid report type format: {report_type}")
+                continue
+
+            # Map metric parts to display names
+            metric_map = {
+                'open-interest': 'Open Interest',
+                'oi-percentages': 'OI Percentages',
+                'positions-change': 'Positions Change',
+                'net-positions': 'Net Positions',
+                'net-positions-change': 'Net Positions Change',
+                '26w-index': '26W Index'  # Explicit mapping for 26w index
+            }
+            display_metric = metric_map.get(metric_part, metric_part.replace('-', ' ').title())
 
             # Add activated subplots
             if display_metric in value:
