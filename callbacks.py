@@ -72,13 +72,15 @@ def register_callbacks(app):
                 continue
                 
             report_type = id_dict['report-type']
-            
+            print(f"REPORT TYPE: {report_type}")
+
             # Handle 26w-index special case
             if '26w-index' in report_type:
-                parts = report_type.split('-')
-                cot_type = parts[2]
-                display_metric = '26W Index'
-                table_suffix = 'combined_calc' if parts[1] == 'index' else 'futures_only_calc'
+                # parts = report_type.split('-')
+                # cot_type = parts[2]
+                # display_metric = '26W Index'
+                # table_suffix = 'combined_calc' if parts[1] == 'index' else 'futures_only_calc'
+                continue
             else:
                 # Correct format: {metric}-{cot_type}-{section_name}
                 parts = report_type.split('-')
@@ -96,11 +98,10 @@ def register_callbacks(app):
                     '26w-index': '26W Index'  # Explicit mapping for 26w index
                 }
                 display_metric = metric_map.get(metric_part, metric_part.replace('-', ' ').title())
-
                 # Handle 26w index columns for Legacy report types
-                if display_metric == '26W Index' and cot_type == 'legacy':
-                    columns = ['noncomm_26w_index', 'comm_26w_index']  # Matches actual database columns
-                    table_suffix = 'combined_calc'  # Fixed suffix for index tables
+                # if display_metric == '26W Index' and cot_type == 'legacy':
+                #     columns = ['noncomm_26w_index', 'comm_26w_index']  # Matches actual database columns
+                #     table_suffix = 'combined_calc'  # Fixed suffix for index tables
 
             # Add activated subplots
             if display_metric in value:
@@ -110,6 +111,7 @@ def register_callbacks(app):
                 if display_metric in calculated_metrics and not section_type.endswith('_calc'):
                     section_type += '_calc'
                 active_subplots.append((display_metric, section_type, cot_type.lower()))
+        print(f"Active Subplots: {active_subplots}")
         return active_subplots
 
     @app.callback(
