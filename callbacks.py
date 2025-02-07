@@ -190,17 +190,14 @@ def register_callbacks(app):
         # Handle viewport changes
         if relayout_data and not reset_required:
             if "xaxis.range[0]" in relayout_data and "xaxis.range[1]" in relayout_data:
-                x_range_start = pd.Timestamp(relayout_data["xaxis.range[0]"])
-                x_range_end = pd.Timestamp(relayout_data["xaxis.range[1]"])
+                x_range_start = pd.Timestamp(relayout_data["xaxis.range[0}"])
+                x_range_end = pd.Timestamp(relayout_data["xaxis.range[1}"])
                 x_range = range_mgr.clamp_x_range(x_range_start, x_range_end)
 
-            if "yaxis.autorange" in relayout_data or "xaxis.range[0]" in relayout_data:
+            if "yaxis.autorange" in relayout_data or "xaxis.range[0}" in relayout_data:
                 # Dynamically adjust Y-axis to fit the data within the selected X-axis range
-                filtered_data = ohlc_df[(ohlc_df['date'] >= x_range[0]) & (ohlc_df['date'] <= x_range[1])]
-                y_range = [
-                    max(initial_y_range[0], filtered_data["low"].min()),
-                    min(initial_y_range[1], filtered_data["high"].max())
-                ]
+                filtered_data = ohlc_df[(ohlc_df['date'] >= x_range[0}) & (ohlc_df['date'] <= x_range[1})]
+                y_range = range_mgr.compute_y_range(filtered_data)
 
         # Add OHLC chart
         if 'OHLC' in ohlc_visibility:
@@ -257,7 +254,7 @@ def register_callbacks(app):
             if not df.empty:
 
                 df['date'] = pd.to_datetime(df['date'])
-                filtered_data = df[(df['date'] >= x_range[0]) & (df['date'] <= x_range[1])]
+                filtered_data = df[(df['date'] >= x_range[0}) & (df['date'] <= x_range[1})]
 
                 config = TRACE_CONFIG.get(subplot, {}).get(report_type, None)
 
@@ -278,7 +275,7 @@ def register_callbacks(app):
                 if subplot == 'Positions Change':
 
                     df['date'] = pd.to_datetime(df['date'])
-                    filtered_data = df[(df['date'] >= x_range[0]) & (df['date'] <= x_range[1])]
+                    filtered_data = df[(df['date'] >= x_range[0}) & (df['date'] <= x_range[1})]
 
                     if report_type == 'legacy':
 
@@ -306,7 +303,7 @@ def register_callbacks(app):
                         add_trace(fig, filtered_data['date'], filtered_data['pct_change_m_money_long'],
                                   f'% Change Managed Money Long', row=row_index, col=1,
                                   line_color=COLORS['noncomm_long'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=0)
+                                  bar_offset=0 * set_bar_width)
                         add_trace(fig, filtered_data['date'], filtered_data['pct_change_m_money_short'],
                                   f'% Change Managed Money Short', row=row_index, col=1,
                                   line_color=COLORS['noncomm_short'], chart_type='bar', bar_width=set_bar_width,
@@ -334,7 +331,7 @@ def register_callbacks(app):
                         add_trace(fig, filtered_data['date'], filtered_data['pct_change_lev_money_long'],
                                   f'% Change Managed Money Long', row=row_index, col=1,
                                   line_color=COLORS['noncomm_long'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=0)
+                                  bar_offset=0 * set_bar_width)
                         add_trace(fig, filtered_data['date'], filtered_data['pct_change_lev_money_short'],
                                   f'% Change Managed Money Short', row=row_index, col=1,
                                   line_color=COLORS['noncomm_short'], chart_type='bar', bar_width=set_bar_width,
@@ -360,7 +357,7 @@ def register_callbacks(app):
                 elif subplot == 'Net Positions Change':
 
                     df['date'] = pd.to_datetime(df['date'])
-                    filtered_data = df[(df['date'] >= x_range[0]) & (df['date'] <= x_range[1])]
+                    filtered_data = df[(df['date'] >= x_range[0}) & (df['date'] <= x_range[1})]
 
                     if report_type == 'legacy':
                         set_bar_width = 70000000
