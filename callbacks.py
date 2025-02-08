@@ -117,10 +117,11 @@ def register_callbacks(app):
          Input('stored-market', 'data'),
          Input('current-year', 'data'),
          Input('combined-chart', 'relayoutData'),
-         ],
+         Input('combined-chart', 'hoverData'),
+         Input('combined-chart', 'clickData')],
         prevent_initial_call=False
     )
-    def update_graph(active_subplots, selected_years, ohlc_visibility, stored_market, current_year, relayout_data):
+    def update_graph(active_subplots, selected_years, ohlc_visibility, stored_market, current_year, relayout_data, hover_data, click_data):
         # Phase 1: Debug instrumentation
         print(f"\n=== GRAPH UPDATE START ===\nActive subplots: {active_subplots}")
         assert isinstance(active_subplots, list), "Invalid active_subplots type"
@@ -179,9 +180,11 @@ def register_callbacks(app):
         viewport_handler = ViewportHandler(range_mgr)
         interaction_tracker = InteractionTracker()
         
-        # Configure interactive features
+        # Configure interactive features and handle events
         fig = interaction_tracker.configure_hover(fig)
         fig = interaction_tracker.configure_trace_hover(fig)
+        interaction_tracker.handle_hover(hover_data)
+        interaction_tracker.handle_click(click_data)
         
         # Detect year change triggers
         ctx_graph_reset = callback_context
