@@ -5,10 +5,10 @@ from state_managers import RangeManager, ViewportHandler, InteractionTracker
 from data_processor import OHLCProcessor
 import plotly.subplots as sp
 from layout_definitions import format_market_name
+from real_data_fetcher import RealDataFetcher
 from data_fetchers import (
-    RealDataFetcher,
     fetch_ohlc_data_cached,
-    fetch_active_subplot_data,
+    fetch_active_subplot_data, 
     fetch_seasonal_data_cached
 )
 from dotenv import load_dotenv
