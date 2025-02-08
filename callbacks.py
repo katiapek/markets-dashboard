@@ -211,13 +211,11 @@ def register_callbacks(app):
                     secondary_y=False
                 )
 
-                # Build a complete timeline and identify missing dates for OHLC chart
-                dt_all = pd.date_range(start=ohlc_df['date'].min(), end=ohlc_df['date'].max())
-                dt_obs = ohlc_df['date'].dt.strftime("%Y-%m-%d").tolist()
-                dt_breaks = [d for d in dt_all.strftime("%Y-%m-%d").tolist() if d not in dt_obs]
-
+                # Process OHLC data dates and gaps
+                ohlc_processor = OHLCProcessor(ohlc_df).calculate_date_ranges()
+                
                 # Apply rangebreaks only for the OHLC chart
-                fig.update_xaxes(rangebreaks=[dict(values=dt_breaks)], row=1, col=1)
+                fig.update_xaxes(rangebreaks=ohlc_processor.get_rangebreaks(), row=1, col=1)
 
         if user_tier == 'premium':
             # Add Seasonality chart
