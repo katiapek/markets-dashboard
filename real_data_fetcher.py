@@ -115,7 +115,7 @@ class RealDataFetcher(IDataFetcher):
                 raise ValueError("Table name not specified in params")
             
             query = f"SELECT * FROM {table_name}"
-            df = BaseDataFetcher.fetch_data(query)
+            df = RealDataFetcher.fetch_data(query)
             return df.to_dict('records')
         except (ConnectionError, TimeoutError) as e:
             logging.error(f"Transient error occurred: {e}")
