@@ -6,7 +6,7 @@ from data_processor import OHLCProcessor
 import plotly.subplots as sp
 from layout_definitions import format_market_name
 from data_fetchers import (
-    CorrelationDataFetcher,
+    RealDataFetcher,
     fetch_ohlc_data_cached,
     fetch_active_subplot_data,
     fetch_seasonal_data_cached
@@ -859,7 +859,8 @@ def register_callbacks(app):
     )
     def update_correlation_tables(n_intervals):
         # Fetch only 180-day data
-        correlation_180d = CorrelationDataFetcher.fetch_correlation_data("correlation_180_days")
+        fetcher = RealDataFetcher()
+        correlation_180d = fetcher.fetch_data({'table_name': "correlation_180_days"})
         
         def apply_ticker_prefix(df):
             if not df.empty:
