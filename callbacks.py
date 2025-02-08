@@ -861,7 +861,6 @@ def register_callbacks(app):
         # Fetch only 180-day data
         fetcher = RealDataFetcher()
         raw_data = fetcher.fetch_data({'table_name': "correlation_180_days"})
-        
         # Ensure raw_data is list-like
         if not isinstance(raw_data, (list, dict)):
             raw_data = []
@@ -869,6 +868,7 @@ def register_callbacks(app):
             raw_data = [raw_data]
             
         correlation_180d = pd.DataFrame(raw_data)
+
         def apply_ticker_prefix(df):
             # Handle case where input isn't a DataFrame
             if not isinstance(df, pd.DataFrame):
@@ -877,13 +877,14 @@ def register_callbacks(app):
             # Return empty DF if no data or missing required column
             if df.empty or 'market_1' not in df.columns:
                 return pd.DataFrame()
-                df['MKT'] = df['market_1'].map(ticker_prefixes)
-                df['market_2'] = df['market_2'].map(ticker_prefixes)
-                df = df.groupby(['MKT', 'market_2'], as_index=False).agg({'correlation': 'mean'})
-                df = df.pivot(index='MKT', columns='market_2', values='correlation').round(2) * 100
-                df = df.astype(int)
-                df.reset_index(inplace=True)
-                df.columns.name = None
+
+            df['MKT'] = df['market_1'].map(ticker_prefixes)
+            df['market_2'] = df['market_2'].map(ticker_prefixes)
+            df = df.groupby(['MKT', 'market_2'], as_index=False).agg({'correlation': 'mean'})
+            df = df.pivot(index='MKT', columns='market_2', values='correlation').round(2) * 100
+            df = df.astype(int)
+            df.reset_index(inplace=True)
+            df.columns.name = None
             return df
 
         correlation_180d = apply_ticker_prefix(correlation_180d)
