@@ -20,9 +20,15 @@ class TestDataFetcher(IDataFetcher):
         
         Returns:
             data: The mock data corresponding to the parameters.
+        
+        Raises:
+            ValueError: If the required parameter is missing.
         """
         logging.debug(f"Fetching test data with params: {params}")
         key = params.get('key')
+        if not key:
+            logging.error("Missing 'key' in params.")
+            raise ValueError("Missing 'key' in params.")
         data = self.test_data.get(key, {})
         logging.debug(f"Returning test data: {data}")
         return data

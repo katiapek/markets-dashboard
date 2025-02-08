@@ -1,53 +1,96 @@
 from data_fetcher_interface import IDataFetcher
 import logging
 import time
+from exceptions import DataFetchFailedError, CacheError
 
 class RealDataFetcher(IDataFetcher):
-    def __init__(self, cache_duration=300):
+    def __init__(self, cache_duration=300, max_retries=3, retry_delay=2):
         """
-        Initializes the RealDataFetcher with an empty cache and sets the cache duration.
+        Initializes the RealDataFetcher with an empty cache, sets cache duration,
+        and configures retry parameters.
         
         Args:
             cache_duration (int): Duration in seconds before cache expires. Default is 300 seconds (5 minutes).
+            max_retries (int): Maximum number of retry attempts for transient errors.
+            retry_delay (int): Delay in seconds between retry attempts.
         """
         self.cache = {}
         self.cache_timestamps = {}
         self.cache_duration = cache_duration  # Cache duration in seconds
-        logging.info(f"RealDataFetcher initialized with empty cache and cache duration of {self.cache_duration} seconds.")
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+        logging.info(f"RealDataFetcher initialized with cache duration of {self.cache_duration} seconds, "
+                     f"max_retries={self.max_retries}, retry_delay={self.retry_delay} seconds.")
 
     def fetch_data(self, params):
         """
         Fetches data from the actual data source based on provided parameters.
         Utilizes caching to store and retrieve data, with cache invalidation based on time.
+        Implements retry mechanism for transient errors.
         
         Args:
             params (dict): Parameters required to fetch the data.
         
         Returns:
             data: The fetched data.
+        
+        Raises:
+            DataFetchFailedError: If data fetching fails after retries.
+            CacheError: If there is an issue with caching.
         """
         logging.debug(f"Fetching data with params: {params}")
         cache_key = self._generate_cache_key(params)
         current_time = time.time()
         
-        # Check if data is in cache and not expired
-        if cache_key in self.cache:
-            cached_time = self.cache_timestamps.get(cache_key, 0)
-            if (current_time - cached_time) < self.cache_duration:
-                logging.debug("Data found in cache and is still valid.")
-                return self.cache[cache_key]
-            else:
-                # Cache expired
-                logging.debug("Cached data has expired. Removing from cache.")
-                self.cache.pop(cache_key, None)
-                self.cache_timestamps.pop(cache_key, None)
+        try:
+            # Check if data is in cache and not expired
+            if cache_key in self.cache:
+                cached_time = self.cache_timestamps.get(cache_key, 0)
+                if (current_time - cached_time) < self.cache_duration:
+                    logging.debug("Data found in cache and is still valid.")
+                    return self.cache[cache_key]
+                else:
+                    # Cache expired
+                    logging.debug("Cached data has expired. Removing from cache.")
+                    self.cache.pop(cache_key, None)
+                    self.cache_timestamps.pop(cache_key, None)
+            
+            # Fetch data with retry mechanism
+            data = self._fetch_with_retries(params)
+            self.cache[cache_key] = data
+            self.cache_timestamps[cache_key] = current_time
+            logging.debug("Data fetched from source and cached.")
+            return data
+
+        except DataFetchFailedError as e:
+            logging.error(f"Failed to fetch data for params {params}: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"An unexpected error occurred: {e}")
+            raise DataFetcherError("An unexpected error occurred while fetching data.") from e
+
+    def _fetch_with_retries(self, params):
+        """
+        Attempts to fetch data from the source with retries for transient errors.
         
-        # Fetch data from the source since it's not in cache or cache expired
-        data = self._fetch_from_source(params)
-        self.cache[cache_key] = data
-        self.cache_timestamps[cache_key] = current_time
-        logging.debug("Data fetched from source and cached.")
-        return data
+        Args:
+            params (dict): Parameters required to fetch the data.
+        
+        Returns:
+            data: The fetched data.
+        
+        Raises:
+            DataFetchFailedError: If all retry attempts fail.
+        """
+        attempts = 0
+        while attempts < self.max_retries:
+            try:
+                return self._fetch_from_source(params)
+            except (ConnectionError, TimeoutError) as e:
+                attempts += 1
+                logging.warning(f"Attempt {attempts} failed with error: {e}. Retrying in {self.retry_delay} seconds...")
+                time.sleep(self.retry_delay)
+        raise DataFetchFailedError(f"Failed to fetch data after {self.max_retries} attempts.")
 
     def _fetch_from_source(self, params):
         """
@@ -58,24 +101,41 @@ class RealDataFetcher(IDataFetcher):
         
         Returns:
             data: The fetched data.
+        
+        Raises:
+            ConnectionError: If there is a network issue.
+            TimeoutError: If the data source times out.
+            Exception: For other unforeseen errors.
         """
-        # Implement the actual data fetching logic here.
-        # This could be a database query, API call, etc.
-        logging.info("Fetching data from the real data source.")
-        data = {}  # Replace with real data fetching logic
-        # Simulate data fetching delay
-        time.sleep(1)
-        # Example fetched data
-        data = {"example_key": "example_value"}
-        return data
+        try:
+            # Implement the actual data fetching logic here.
+            # This could be a database query, API call, etc.
+            logging.info("Fetching data from the real data source.")
+            # Example: Simulate a transient error randomly
+            # Remove the following lines and implement actual fetching logic
+            import random
+            if random.choice([True, False]):
+                raise ConnectionError("Simulated connection error.")
+            data = {"example_key": "example_value"}  # Replace with real data fetching logic
+            return data
+        except (ConnectionError, TimeoutError) as e:
+            logging.error(f"Transient error occurred: {e}")
+            raise e  # These will be caught by the retry mechanism
+        except Exception as e:
+            logging.error(f"An error occurred while fetching data: {e}")
+            raise e  # These will be caught and re-raised as DataFetcherError
 
     def clear_cache(self):
         """
         Clears the cached data by emptying the cache and cache timestamps.
         """
-        self.cache.clear()
-        self.cache_timestamps.clear()
-        logging.info("Cache has been cleared.")
+        try:
+            self.cache.clear()
+            self.cache_timestamps.clear()
+            logging.info("Cache has been cleared.")
+        except Exception as e:
+            logging.error(f"Failed to clear cache: {e}")
+            raise CacheError("Failed to clear cache.") from e
     
     def _generate_cache_key(self, params):
         """

@@ -1,12 +1,13 @@
 import pytest
 from unittest.mock import patch
 from real_data_fetcher import RealDataFetcher
+from exceptions import DataFetchFailedError, CacheError
 import time
 
 @pytest.fixture
 def real_data_fetcher():
-    # Initialize RealDataFetcher with a short cache duration for testing
-    return RealDataFetcher(cache_duration=2)  # 2 seconds for quick expiration
+    # Initialize RealDataFetcher with a short cache duration and retry parameters for testing
+    return RealDataFetcher(cache_duration=2, max_retries=2, retry_delay=1)  # 2 seconds cache, 2 retries, 1 second delay
 
 def test_cache_hit(real_data_fetcher):
     params = {'key': 'param1'}
@@ -91,3 +92,29 @@ def test_fetch_data_with_different_params(real_data_fetcher):
         data3 = real_data_fetcher.fetch_data(params1)
         assert mock_fetch.call_count == 2  # No additional call
         assert data3 == {'data': 'data5'}
+
+def test_fetch_data_transient_error(real_data_fetcher):
+    params = {'key': 'param_error'}
+
+    with patch.object(RealDataFetcher, '_fetch_from_source', side_effect=[ConnectionError("Simulated connection error."),
+                                                                        {'data': 'fetched_data'}]) as mock_fetch:
+        # First attempt raises ConnectionError, retry #1
+        # Second attempt succeeds
+        data = real_data_fetcher.fetch_data(params)
+        assert mock_fetch.call_count == 2
+        assert data == {'data': 'fetched_data'}
+
+def test_fetch_data_persistent_error(real_data_fetcher):
+    params = {'key': 'param_persistent_error'}
+
+    with patch.object(RealDataFetcher, '_fetch_from_source', side_effect=ConnectionError("Persistent connection error.")) as mock_fetch:
+        with pytest.raises(DataFetchFailedError) as exc_info:
+            real_data_fetcher.fetch_data(params)
+        assert mock_fetch.call_count == real_data_fetcher.max_retries
+        assert "Failed to fetch data after" in str(exc_info.value)
+
+def test_clear_cache_error(real_data_fetcher):
+    with patch.object(real_data_fetcher.cache, 'clear', side_effect=Exception("Simulated cache clear error.")):
+        with pytest.raises(CacheError) as exc_info:
+            real_data_fetcher.clear_cache()
+        assert "Failed to clear cache." in str(exc_info.value)
