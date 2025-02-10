@@ -42,6 +42,16 @@ class LegendConfig:
         self.xanchor = xanchor
         self.bgcolor = bgcolor
 
+class AxisPreset:
+    """
+    Centralized axis configuration for consistent styling and behavior.
+    """
+    def __init__(self, show_grid=False, show_line=False, show_ticks=True, fixed_range=True):
+        self.show_grid = show_grid  # Show grid lines
+        self.show_line = show_line  # Show axis line
+        self.show_ticks = show_ticks  # Show tick marks
+        self.fixed_range = fixed_range  # Fix axis range (no auto-scaling)
+
 class Config:
     """
     Global configuration class for the app.
@@ -54,6 +64,13 @@ class Config:
         'top_left': LegendConfig(yanchor='top', xanchor='left'),
         'bottom_right': LegendConfig(yanchor='bottom', xanchor='right'),
         'inline': LegendConfig(orientation='h', yanchor='bottom', xanchor='center')
+    }
+
+    # Common axis presets
+    AXIS_PRESETS = {
+        'default': AxisPreset(show_grid=False, show_line=False, fixed_range=True),
+        'minimal': AxisPreset(show_grid=False, show_line=False, show_ticks=False, fixed_range=True),
+        'detailed': AxisPreset(show_grid=True, show_line=True, show_ticks=True, fixed_range=False),
     }
 
     """
