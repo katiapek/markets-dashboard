@@ -1,6 +1,7 @@
 import unittest
 import pandas as pd
 from plotly import graph_objects as go
+import plotly.subplots as sp
 from callbacks import PositionChangeVisuals
 
 class TestPositionChangeVisuals(unittest.TestCase):
@@ -29,7 +30,7 @@ class TestPositionChangeVisuals(unittest.TestCase):
         }
 
     def test_render_bars(self):
-        fig = go.Figure()
+        fig = sp.make_subplots(rows=1, cols=1)
         visuals = PositionChangeVisuals(self.data, self.config)
         visuals.render_bars(fig, row=1, col=1)
         
@@ -39,8 +40,8 @@ class TestPositionChangeVisuals(unittest.TestCase):
         self.assertEqual(fig.data[1].name, '% Change Non-Commercials Short')
 
     def test_empty_data(self):
-        fig = go.Figure()
-        visuals = PositionChangeVisuals(pd.DataFrame(), self.config)
+        fig = sp.make_subplots(rows=1, cols=1)
+        visuals = PositionChangeVisuals(pd.DataFrame(columns=['date']), self.config)
         visuals.render_bars(fig, row=1, col=1)
         self.assertEqual(len(fig.data), 0)
 
