@@ -145,6 +145,13 @@ market_codes = {
     # 'Platinum': '076651',
 }
 
+CANDLESTICK_CONFIG = {
+    'increasing_color': 'green',
+    'decreasing_color': 'red',
+    'line_width': 1,
+    'opacity': 0.8
+}
+
 TRACE_CONFIG = {
     'Open Interest': {
         'legacy': {
