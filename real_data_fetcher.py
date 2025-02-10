@@ -137,6 +137,21 @@ class RealDataFetcher(IDataFetcher):
             logging.error(f"An error occurred while fetching data: {e}")
             raise e  # These will be caught and re-raised as DataFetcherError
 
+    def _generate_cache_key(self, params):
+        """
+        Generates a unique cache key based on the provided parameters.
+        Assumes that params is a dictionary with hashable values.
+        
+        Args:
+            params (dict): Parameters used to fetch data.
+        
+        Returns:
+            tuple: A hashable tuple representing the cache key.
+        """
+        # Convert the params dictionary into a sorted tuple of key-value pairs
+        # This ensures that the cache key is consistent for the same parameters
+        return tuple(sorted(params.items()))
+
 class SubplotFetcher(RealDataFetcher):
     """Specialized fetcher for COT subplot data"""
     def _fetch_from_source(self, params):
@@ -151,8 +166,6 @@ class SubplotFetcher(RealDataFetcher):
         except Exception as e:
             logging.error(f"Subplot fetch failed: {e}")
             raise DataFetchFailedError("Failed to fetch subplot data") from e
-
-    def _generate_cache_key(self, params):
         """
         Generates a unique cache key based on the provided parameters.
         Assumes that params is a dictionary with hashable values.
