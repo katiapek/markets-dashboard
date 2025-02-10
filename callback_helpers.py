@@ -34,6 +34,7 @@ def add_trace(fig, x, y, trace_name, row, col, mode='lines', line_color=None, se
         show_legend: Boolean - hide or show legend for the trace
         disable_hover: Boolean - allow to show data on hover
     """
+
     if chart_type == 'line':
         trace = go.Scatter(x=x, y=y, mode=mode, name=trace_name, line=dict(color=line_color), showlegend=show_legend,
                            opacity=opacity, connectgaps=True, hoverinfo='skip' if disable_hover else 'x+y',
