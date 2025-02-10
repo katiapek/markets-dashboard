@@ -270,7 +270,9 @@ def register_callbacks(app):
                 range_filter = RangeFilter(df) \
                     .set_date_column('date') \
                     .apply_viewport_filter(x_range)
-                filtered_data = range_filter.get_filtered_data()
+                filtered_data = range_filter \
+                    .subsample_for_performance(max_points=1000) \
+                    .get_filtered_data()
 
                 config = TRACE_CONFIG.get(subplot, {}).get(report_type, None)
 

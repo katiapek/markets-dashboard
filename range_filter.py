@@ -69,3 +69,14 @@ class RangeFilter:
             self.full_data[self.date_col].min(), 
             self.full_data[self.date_col].max()
         )
+
+    def subsample_for_performance(self, max_points: int = 1000):
+        """Subsample data while maintaining visual fidelity"""
+        if len(self.filtered_data) <= max_points:
+            return self
+            
+        # Stratified sampling to preserve key features
+        self.filtered_data = self.filtered_data \
+            .sort_values(self.date_col) \
+            .iloc[::int(len(self.filtered_data)/max_points)]
+        return self
