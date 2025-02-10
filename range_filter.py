@@ -22,7 +22,7 @@ class RangeFilter:
         if self.full_data.empty or not date_range:
             return self
             
-        start_date, end_date = pd.to_datetime(date_range[0]), Pd.to_datetime(date_range[1])
+        start_date, end_date = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         mask = (
             (self.full_data[self.date_col] >= start_date) & 
             (self.full_data[self.date_col] <= end_date)
