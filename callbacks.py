@@ -36,6 +36,39 @@ for name, ticker in market_tickers.items():
         ticker_prefixes[name] = ticker.split('=')[0]
 
 
+class PositionChangeVisuals:
+    """Handles position change bar chart rendering with configurable options."""
+    
+    def __init__(self, position_data, config):
+        """
+        Args:
+            position_data (pd.DataFrame): Position change data
+            config (dict): Configuration for rendering (colors, styles, etc.)
+        """
+        self.data = position_data
+        self.config = config
+
+    def render_bars(self, fig, row, col):
+        """
+        Adds position change bar traces to the figure.
+        
+        Args:
+            fig (plotly.Figure): Figure to add traces to
+            row (int): Subplot row number
+            col (int): Subplot column number
+        """
+        bar_width = self.config.get('bar_width', 70000000)
+        
+        for i, (column, name, color) in enumerate(self.config['columns']):
+            fig.add_trace(go.Bar(
+                x=self.data['date'],
+                y=self.data[column],
+                name=name,
+                marker_color=self.config['colors'][color],
+                width=bar_width,
+                offset=i * bar_width
+            ), row=row, col=col)
+
 class CandlestickRenderer:
     """Renders OHLC candlestick charts with configurable options."""
 

@@ -159,6 +159,43 @@ SEASONALITY_CONFIG = {
     'line_dash': 'solid'
 }
 
+POSITION_CHANGE_CONFIG = {
+    'legacy': {
+        'columns': [
+            ('pct_change_noncomm_long', '% Change Non-Commercials Long', 'noncomm_long'),
+            ('pct_change_noncomm_short', '% Change Non-Commercials Short', 'noncomm_short'),
+            ('pct_change_comm_long', '% Change Commercials Long', 'comm_long'),
+            ('pct_change_comm_short', '% Change Commercials Short', 'comm_short')
+        ],
+        'colors': COLORS,
+        'bar_width': 70000000
+    },
+    'disaggregated': {
+        'columns': [
+            ('pct_change_m_money_long', '% Change Managed Money Long', 'noncomm_long'),
+            ('pct_change_m_money_short', '% Change Managed Money Short', 'noncomm_short'),
+            ('pct_change_prod_merc_long', '% Change Producers / Merchants Long', 'comm_long'),
+            ('pct_change_prod_merc_short', '% Change Producers / Merchants Short', 'comm_short'),
+            ('pct_change_swap_long', '% Change Swap Dealers Long', 'other_long'),
+            ('pct_change_swap_short', '% Change Swap Dealers Short', 'other_short')
+        ],
+        'colors': COLORS,
+        'bar_width': 60000000
+    },
+    'tff': {
+        'columns': [
+            ('pct_change_lev_money_long', '% Change Managed Money Long', 'noncomm_long'),
+            ('pct_change_lev_money_short', '% Change Managed Money Short', 'noncomm_short'),
+            ('pct_change_asset_mgr_long', '% Change Asset Mgrs Long', 'comm_long'),
+            ('pct_change_asset_mgr_short', '% Change Asset Mgrs Short', 'comm_short'),
+            ('pct_change_dealer_long', '% Change Dealers Long', 'other_long'),
+            ('pct_change_dealer_short', '% Change Dealers Short', 'other_short')
+        ],
+        'colors': COLORS,
+        'bar_width': 60000000
+    }
+}
+
 CANDLESTICK_CONFIG = {
     'increasing_color': 'green',
     'decreasing_color': 'red',
