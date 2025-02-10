@@ -47,10 +47,11 @@ class AxisPreset:
     Centralized axis configuration for consistent styling and behavior.
     """
     def __init__(self, show_grid=False, show_line=False, show_ticks=True, fixed_range=True):
-        self.show_grid = show_grid  # Show grid lines
-        self.show_line = show_line  # Show axis line
-        self.show_ticks = show_ticks  # Show tick marks
-        self.fixed_range = fixed_range  # Fix axis range (no auto-scaling)
+        self.gridcolor = '#333333' if show_grid else 'rgba(0,0,0,0)'  # Grid lines color
+        self.showline = show_line  # Show axis line
+        self.showticklabels = show_ticks  # Show tick labels
+        self.fixedrange = fixed_range  # Fix axis range (no auto-scaling)
+        self.zeroline = False  # Hide zero line
 
 class Config:
     """
