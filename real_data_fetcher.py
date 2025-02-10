@@ -5,6 +5,18 @@ import time
 from exceptions import DataFetchFailedError, CacheError, DataFetcherError
 
 class RealDataFetcher(IDataFetcher):
+    def clear_cache(self):
+        """
+        Clears the cached data by emptying the cache and cache timestamps.
+        """
+        try:
+            self.cache.clear()
+            self.cache_timestamps.clear()
+            logging.info("Cache has been cleared.")
+        except Exception as e:
+            logging.error(f"Failed to clear cache: {e}")
+            raise CacheError("Failed to clear cache.") from e
+
     def __init__(self, cache_duration=300, max_retries=3, retry_delay=2):
         """
         Initializes the RealDataFetcher with an empty cache, sets cache duration,
@@ -140,18 +152,6 @@ class SubplotFetcher(RealDataFetcher):
             logging.error(f"Subplot fetch failed: {e}")
             raise DataFetchFailedError("Failed to fetch subplot data") from e
 
-    def clear_cache(self):
-        """
-        Clears the cached data by emptying the cache and cache timestamps.
-        """
-        try:
-            self.cache.clear()
-            self.cache_timestamps.clear()
-            logging.info("Cache has been cleared.")
-        except Exception as e:
-            logging.error(f"Failed to clear cache: {e}")
-            raise CacheError("Failed to clear cache.") from e
-    
     def _generate_cache_key(self, params):
         """
         Generates a unique cache key based on the provided parameters.
