@@ -125,6 +125,21 @@ class RealDataFetcher(IDataFetcher):
             logging.error(f"An error occurred while fetching data: {e}")
             raise e  # These will be caught and re-raised as DataFetcherError
 
+class SubplotFetcher(RealDataFetcher):
+    """Specialized fetcher for COT subplot data"""
+    def _fetch_from_source(self, params):
+        try:
+            return BaseDataFetcher.fetch_active_subplot_data(
+                params['market'],
+                params['year'],
+                params['subplot_type'],
+                params['table_suffix'],
+                params['report_type']
+            )
+        except Exception as e:
+            logging.error(f"Subplot fetch failed: {e}")
+            raise DataFetchFailedError("Failed to fetch subplot data") from e
+
     def clear_cache(self):
         """
         Clears the cached data by emptying the cache and cache timestamps.

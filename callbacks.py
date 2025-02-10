@@ -5,7 +5,7 @@ from state_managers import RangeManager, ViewportHandler, InteractionTracker
 from data_processor import OHLCProcessor
 import plotly.subplots as sp
 from layout_definitions import format_market_name
-from real_data_fetcher import RealDataFetcher
+from real_data_fetcher import RealDataFetcher, SubplotFetcher
 from data_fetchers import (
     fetch_ohlc_data_cached,
     fetch_active_subplot_data, 
@@ -243,7 +243,14 @@ def register_callbacks(app):
         print(f"Processing {len(active_subplots)} subplots:")
         for i, (subplot, table_suffix, report_type) in enumerate(active_subplots, 1):
             print(f"  [{i}/{len(active_subplots)}] {subplot} | {table_suffix} | {report_type}")
-            df = fetch_active_subplot_data(stored_market, current_year, subplot, table_suffix, report_type)
+            subplot_fetcher = SubplotFetcher()
+            df = subplot_fetcher.fetch_data({
+                'market': stored_market,
+                'year': current_year,
+                'subplot_type': subplot,
+                'table_suffix': table_suffix,
+                'report_type': report_type
+            })
             df = df.apply(pd.to_numeric, errors='coerce')
 
             if not df.empty:
