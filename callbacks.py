@@ -5,7 +5,7 @@ from state_managers import RangeManager, ViewportHandler, InteractionTracker
 from data_processor import OHLCProcessor
 import plotly.subplots as sp
 from layout_definitions import format_market_name
-from real_data_fetcher import RealDataFetcher, SubplotFetcher
+from real_data_fetcher import RealDataFetcher, SubplotFetcher, SeasonalityFetcher
 from data_fetchers import (
     fetch_ohlc_data_cached,
     fetch_active_subplot_data, 
@@ -221,7 +221,12 @@ def register_callbacks(app):
         if user_tier == 'premium':
             # Add Seasonality chart
             for years in selected_years:
-                df = fetch_seasonal_data_cached(format_market_name(stored_market), years, current_year)
+                seasonality_fetcher = SeasonalityFetcher()
+                df = seasonality_fetcher.fetch_data({
+                    'market': format_market_name(stored_market),
+                    'years': years,
+                    'base_year': current_year
+                })
                 if not df.empty:
                     add_trace(
                         fig,

@@ -166,6 +166,19 @@ class SubplotFetcher(RealDataFetcher):
         except Exception as e:
             logging.error(f"Subplot fetch failed: {e}")
             raise DataFetchFailedError("Failed to fetch subplot data") from e
+
+class SeasonalityFetcher(RealDataFetcher):
+    """Specialized fetcher for seasonality data"""
+    def _fetch_from_source(self, params):
+        try:
+            return fetch_seasonal_data_cached(
+                params['market'],
+                params['years'],
+                params['base_year']
+            )
+        except Exception as e:
+            logging.error(f"Seasonality fetch failed: {e}")
+            raise DataFetchFailedError("Failed to fetch seasonality data") from e
         """
         Generates a unique cache key based on the provided parameters.
         Assumes that params is a dictionary with hashable values.
