@@ -32,6 +32,12 @@ class MetricsCalculator:
         """Calculate annualized volatility"""
         return daily_returns.std() * np.sqrt(252)
 
+    @staticmethod
+    def calculate_calmar_ratio(daily_returns: pd.Series, max_drawdown: float) -> float:
+        """Calculate Calmar ratio using annualized returns and max drawdown"""
+        annualized_return = daily_returns.mean() * 252  # 252 trading days
+        return annualized_return / abs(max_drawdown)
+
     @classmethod
     def calculate_risk_metrics(cls, daily_returns: pd.Series, cumulative_returns: pd.Series) -> dict:
         """Calculate comprehensive risk metrics package"""
@@ -39,5 +45,7 @@ class MetricsCalculator:
             'Sharpe Ratio': cls.calculate_sharpe_ratio(daily_returns),
             'Sortino Ratio': cls.calculate_sortino_ratio(daily_returns),
             'Max Drawdown': cls.calculate_maximum_drawdown(cumulative_returns),
-            'Volatility': cls.calculate_volatility(daily_returns)
+            'Volatility': cls.calculate_volatility(daily_returns),
+            'Calmar Ratio': cls.calculate_calmar_ratio(daily_returns, 
+                cls.calculate_maximum_drawdown(cumulative_returns))
         }
