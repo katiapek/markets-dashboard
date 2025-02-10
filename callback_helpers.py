@@ -11,6 +11,103 @@ from app.config import DEFAULT_MARKET  # market_tickers, DEFAULT_YEAR
 from metrics_calculator import MetricsCalculator
 
 
+class AnnotationManager:
+    """
+    Centralized annotation configuration for consistent styling and positioning.
+    """
+    def __init__(self, fig):
+        self.fig = fig
+        self.annotations = []
+
+    def add_annotation(self, text, x, y, xref='paper', yref='paper', **kwargs):
+        """
+        Add an annotation to the figure with consistent styling.
+
+        Args:
+            text (str): The annotation text.
+            x (float): X position (0-1 for paper coordinates).
+            y (float): Y position (0-1 for paper coordinates).
+            xref (str): X reference ('paper' or 'x').
+            yref (str): Y reference ('paper' or 'y').
+            **kwargs: Additional annotation properties.
+        """
+        annotation = {
+            'text': text,
+            'x': x,
+            'y': y,
+            'xref': xref,
+            'yref': yref,
+            'showarrow': False,
+            'font': {
+                'family': Config.theme.fonts['family'],
+                'size': 12,
+                'color': Config.theme.colors['text']
+            },
+            'bgcolor': Config.theme.colors['background'],
+            'bordercolor': Config.theme.colors['grid'],
+            'borderwidth': 1,
+            **kwargs
+        }
+        self.annotations.append(annotation)
+        self.fig.update_layout(annotations=self.annotations)
+
+    def add_vline(self, x, text=None, **kwargs):
+        """
+        Add a vertical line annotation.
+
+        Args:
+            x (float): X position of the line.
+            text (str, optional): Text to display at the line.
+            **kwargs: Additional line properties.
+        """
+        self.fig.add_vline(
+            x=x,
+            line=dict(
+                color=kwargs.get('color', Config.theme.colors['grid']),
+                dash=kwargs.get('dash', 'dash'),
+                width=kwargs.get('width', 1)
+            )
+        )
+        if text:
+            self.add_annotation(
+                text=text,
+                x=x,
+                y=1,
+                yref='paper',
+                xref='x',
+                yanchor='bottom',
+                font=dict(size=10)
+            )
+
+    def add_hline(self, y, text=None, **kwargs):
+        """
+        Add a horizontal line annotation.
+
+        Args:
+            y (float): Y position of the line.
+            text (str, optional): Text to display at the line.
+            **kwargs: Additional line properties.
+        """
+        self.fig.add_hline(
+            y=y,
+            line=dict(
+                color=kwargs.get('color', Config.theme.colors['grid']),
+                dash=kwargs.get('dash', 'dash'),
+                width=kwargs.get('width', 1)
+            )
+        )
+        if text:
+            self.add_annotation(
+                text=text,
+                x=1,
+                y=y,
+                xref='paper',
+                yref='y',
+                xanchor='right',
+                font=dict(size=10)
+            )
+
+
 def add_trace(fig, x, y, trace_name, row, col, mode='lines', line_color=None, secondary_y=False, chart_type='line',
               opacity=1, hide_yaxis_ticks=False, bar_width=None, bar_offset=None, show_legend=True,
               disable_hover=False):
