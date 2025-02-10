@@ -6,6 +6,7 @@ from data_processor import OHLCProcessor
 import plotly.subplots as sp
 from layout_definitions import format_market_name
 from real_data_fetcher import RealDataFetcher, SubplotFetcher, SeasonalityFetcher, OHLCFetcher
+from range_filter import RangeFilter
 from data_fetchers import (
     fetch_ohlc_data_cached,
     fetch_active_subplot_data
@@ -265,7 +266,11 @@ def register_callbacks(app):
             if not df.empty:
 
                 df['date'] = pd.to_datetime(df['date'])
-                filtered_data = df[(df['date'] >= x_range[0]) & (df['date'] <= x_range[1])]
+                # Create and configure range filter
+                range_filter = RangeFilter(df) \
+                    .set_date_column('date') \
+                    .apply_viewport_filter(x_range)
+                filtered_data = range_filter.get_filtered_data()
 
                 config = TRACE_CONFIG.get(subplot, {}).get(report_type, None)
 
