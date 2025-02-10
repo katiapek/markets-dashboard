@@ -733,12 +733,12 @@ def register_callbacks(app):
             )
 
             # Calculate risk metrics using cumulative returns
-            risk_metrics_15 = calculate_risk_metrics(daily_returns_15, cum_returns_no_stop_15)
-            risk_metrics_30 = calculate_risk_metrics(daily_returns_30, cum_returns_no_stop_30)
+            risk_metrics_15 = MetricsCalculator.calculate_risk_metrics(daily_returns_15, cum_returns_no_stop_15)
+            risk_metrics_30 = MetricsCalculator.calculate_risk_metrics(daily_returns_30, cum_returns_no_stop_30)
 
             # Calculate stop-loss risk metrics
-            stop_loss_metrics_15 = calculate_risk_metrics(daily_returns_15_stoploss, cum_returns_stop_15)
-            stop_loss_metrics_30 = calculate_risk_metrics(daily_returns_30_stoploss, cum_returns_stop_30)
+            stop_loss_metrics_15 = MetricsCalculator.calculate_risk_metrics(daily_returns_15_stoploss, cum_returns_stop_15)
+            stop_loss_metrics_30 = MetricsCalculator.calculate_risk_metrics(daily_returns_30_stoploss, cum_returns_stop_30)
 
             # Risk metrics and summaries for both scenarios (with and without stop-loss)
             no_stop_loss_color = 'CornFlowerBlue'

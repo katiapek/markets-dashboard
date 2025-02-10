@@ -38,6 +38,13 @@ class MetricsCalculator:
         annualized_return = daily_returns.mean() * 252  # 252 trading days
         return annualized_return / abs(max_drawdown)
 
+    @staticmethod
+    def calculate_expected_return(daily_returns: pd.Series) -> float:
+        """Calculate Calmar ratio using annualized returns and max drawdown"""
+        average_daily_return = daily_returns.mean()
+        annualized_expected_return = average_daily_return * 252  # assuming 252 trading days in a year
+        return annualized_expected_return
+
     @classmethod
     def calculate_risk_metrics(cls, daily_returns: pd.Series, cumulative_returns: pd.Series) -> dict:
         """Calculate comprehensive risk metrics package"""
@@ -47,5 +54,6 @@ class MetricsCalculator:
             'Max Drawdown': cls.calculate_maximum_drawdown(cumulative_returns),
             'Volatility': cls.calculate_volatility(daily_returns),
             'Calmar Ratio': cls.calculate_calmar_ratio(daily_returns, 
-                cls.calculate_maximum_drawdown(cumulative_returns))
+                cls.calculate_maximum_drawdown(cumulative_returns)),
+            'Annualized Expected Return': cls.calculate_expected_return(daily_returns),
         }

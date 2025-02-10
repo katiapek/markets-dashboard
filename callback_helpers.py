@@ -167,67 +167,6 @@ def add_percentile_lines(fig, data, title="", day_type='pdh'):
 
 
 
-def calculate_sortino_ratio(daily_returns, risk_free_rate=0):
-    """
-    Function to calculate Sortino ratio.
-    Parameters:
-        - daily_returns: pd.Series, daily return percentages
-        - risk_free_rate: float, assumed risk-free rate (default is 0)
-    Returns:
-        - sortino_ratio: float, calculated Sortino ratio
-    """
-    negative_returns = daily_returns[daily_returns < risk_free_rate]
-    mean_return = daily_returns.mean()
-    downside_std_dev = negative_returns.std()
-    sortino_ratio = (mean_return - risk_free_rate) / downside_std_dev * np.sqrt(252)  # Annualize using 252 trading days
-    return sortino_ratio
-
-
-def calculate_maximum_drawdown(cumulative_returns):
-    """
-    Function to calculate Maximum Drawdown as the largest peak-to-trough decline in percentage points.
-    It tracks peaks as they occur, and calculates the drawdown at each step, simulating Excel's
-    MIN((A1-MAX($A$1:A1)),0) approach.
-
-    Parameters:
-        - cumulative_returns: pd.Series, cumulative returns over time (in percentage points).
-
-    Returns:
-        - max_drawdown: float, calculated Maximum Drawdown in percentage points.
-    """
-    # Step 1: Calculate the rolling maximum (the peak up to that point)
-    cumulative_max = cumulative_returns.cummax()
-
-    # Step 2: Calculate the drawdown as the difference between the peak and the current value
-    drawdown = cumulative_returns - cumulative_max
-
-    # Step 3: Find the maximum drawdown (i.e., the largest negative value in the drawdown series)
-    max_drawdown = drawdown.min()  # This returns the most negative value, which represents the max drawdown
-
-    # Step 4: Return the absolute value of max drawdown, as we want the magnitude of the drawdown
-    return abs(max_drawdown)
-
-
-def calculate_calmar_ratio(daily_returns, max_drawdown):
-    # Calculate the Calmar ratio using annualized returns and max drawdown
-    annualized_return = daily_returns.mean() * 252  # Assuming 252 trading days per year
-    calmar_ratio = annualized_return / abs(max_drawdown)
-    return calmar_ratio
-
-
-def calculate_volatility(daily_returns):
-    """
-    Function to calculate Volatility.
-    Parameters:
-        - daily_returns: pd.Series, daily return percentages
-    Returns:
-        - volatility: float, calculated annualized volatility.
-    """
-    # No need to multiply by 100 as daily_returns are already in percentage format
-    volatility = daily_returns.std() * np.sqrt(252)
-    return volatility
-
-
 def calculate_points_change(direction, open_price, close_price):
     """
     Calculate the points and percentage change based on trade direction (Long/Short).
@@ -323,11 +262,11 @@ def calculate_risk_metrics(daily_returns, cumulative_returns):
     and annualized expected return based on daily returns.
     """
     # Calculate core risk metrics
-    sharpe_ratio = calculate_sharpe_ratio(daily_returns)
-    sortino_ratio = calculate_sortino_ratio(daily_returns)
-    max_drawdown = calculate_maximum_drawdown(cumulative_returns)  # Pass cumulative returns here
-    calmar_ratio = calculate_calmar_ratio(daily_returns, max_drawdown)
-    volatility = calculate_volatility(daily_returns)
+    sharpe_ratio = MetricsCalculator.calculate_sharpe_ratio(daily_returns)
+    sortino_ratio = MetricsCalculator.calculate_sortino_ratio(daily_returns)
+    max_drawdown = MetricsCalculator.calculate_maximum_drawdown(cumulative_returns)  # Pass cumulative returns here
+    calmar_ratio = MetricsCalculator.calculate_calmar_ratio(daily_returns, max_drawdown)
+    volatility = MetricsCalculator.calculate_volatility(daily_returns)
 
     # Calculate the annualized expected return
     average_daily_return = daily_returns.mean()
