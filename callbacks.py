@@ -57,17 +57,23 @@ class PositionChangeVisuals:
             row (int): Subplot row number
             col (int): Subplot column number
         """
+        if self.data.empty or 'date' not in self.data.columns:
+            return
+            
         bar_width = self.config.get('bar_width', 70000000)
         
         for i, (column, name, color) in enumerate(self.config['columns']):
-            fig.add_trace(go.Bar(
-                x=self.data['date'],
-                y=self.data[column],
-                name=name,
-                marker_color=self.config['colors'][color],
-                width=bar_width,
-                offset=i * bar_width
-            ), row=row, col=col)
+            if column in self.data.columns:
+                fig.add_trace(go.Bar(
+                    x=self.data['date'],
+                    y=self.data[column],
+                    name=name,
+                    marker_color=self.config['colors'][color],
+                    width=bar_width,
+                    offset=i * bar_width,
+                    hoverinfo='x+y+name',
+                    showlegend=True
+                ), row=row, col=col)
 
 class CandlestickRenderer:
     """Renders OHLC candlestick charts with configurable options."""
