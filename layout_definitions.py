@@ -2,16 +2,16 @@
 import dash
 from dash import dcc, html, dash_table
 import dash_bootstrap_components as dbc  # Correct import
-from app.config import market_tickers
+from app.config import market_tickers, Config
 from dotenv import load_dotenv
 import os
 
 # Style Constants
 ANALYSIS_SECTION_STYLE = {
-    'backgroundColor': '#1e1e1e', 
-    'color': 'white',
-    'fontFamily': "'Press Start 2P', monospace",
-    'fontSize': '10px'
+    'backgroundColor': Config.theme.colors['background'],
+    'color': Config.theme.colors['text'],
+    'fontFamily': Config.theme.fonts['family'],
+    'fontSize': Config.theme.fonts['size']
 }
 
 TOOLTIP_REGISTRY = {
@@ -161,19 +161,19 @@ HALF_WIDTH = {'width': '50%', 'display': 'inline-block'}
 CENTERED_HALF_WIDTH = {'width': '50%', 'display': 'block', 'margin': '0 auto'}
 
 TABLE_HEADER_STYLE = {
-    'backgroundColor': '#00C853',
-    'color': 'white',
-    'border': '1px solid white',
-    'fontFamily': "'Press Start 2P', monospace",
-    'fontSize': '10px'
+    'backgroundColor': Config.theme.colors['accent'],
+    'color': Config.theme.colors['text'],
+    'border': f'1px solid {Config.theme.colors["grid"]}',
+    'fontFamily': Config.theme.fonts['family'],
+    'fontSize': Config.theme.fonts['size']
 }
 
 TABLE_CELL_STYLE = {
-    'backgroundColor': '#1e1e1e',
-    'color': 'white',
-    'border': '1px solid #444',
-    'fontFamily': "'Press Start 2P', monospace",
-    'fontSize': '10px',
+    'backgroundColor': Config.theme.colors['background'],
+    'color': Config.theme.colors['text'],
+    'border': f'1px solid {Config.theme.colors["grid"]}',
+    'fontFamily': Config.theme.fonts['family'],
+    'fontSize': Config.theme.fonts['size'],
     'textAlign': 'center'
 }
 

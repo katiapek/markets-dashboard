@@ -1,6 +1,7 @@
 # callback_helpers.py
 
 import numpy as np
+from app.config import Config
 import plotly.graph_objs as go
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -36,14 +37,21 @@ def add_trace(fig, x, y, trace_name, row, col, mode='lines', line_color=None, se
     """
 
     if chart_type == 'line':
-        trace = go.Scatter(x=x, y=y, mode=mode, name=trace_name, line=dict(color=line_color), showlegend=show_legend,
-                           opacity=opacity, connectgaps=True, hoverinfo='skip' if disable_hover else 'x+y',
-                           hovertemplate='%{y:.2f}',
-                           )
+        trace = go.Scatter(
+            x=x, y=y, mode=mode, name=trace_name,
+            line=dict(color=line_color or Config.theme.colors['accent']),
+            showlegend=show_legend, opacity=opacity, connectgaps=True,
+            hoverinfo='skip' if disable_hover else 'x+y',
+            hovertemplate='%{y:.2f}',
+        )
     else:  # chart_type == 'bar':
-        trace = go.Bar(x=x, y=y, name=trace_name, marker=dict(color=line_color), showlegend=show_legend,
-                       opacity=opacity, width=bar_width, offset=bar_offset, hovertemplate='%{y:.2f}',
-                       )
+        trace = go.Bar(
+            x=x, y=y, name=trace_name,
+            marker=dict(color=line_color or Config.theme.colors['accent']),
+            showlegend=show_legend, opacity=opacity,
+            width=bar_width, offset=bar_offset,
+            hovertemplate='%{y:.2f}',
+        )
 
     fig.add_trace(trace, row=row, col=col, secondary_y=secondary_y)
     fig.update_layout(bargap=0.2)
@@ -64,8 +72,8 @@ def add_candlestick_trace(fig, x, c_open, high, low, close, c_name, row, col, se
         yaxis='y2',
         hoverinfo='x+y',
         showlegend=False,
-        increasing=dict(line=dict(color="white"), fillcolor="white"),
-        decreasing=dict(line=dict(color="white"), fillcolor="black")
+        increasing=dict(line=dict(color=Config.theme.colors['text']), fillcolor=Config.theme.colors['text']),
+        decreasing=dict(line=dict(color=Config.theme.colors['text']), fillcolor=Config.theme.colors['background'])
     )
     fig.add_trace(trace, row=row, col=col, secondary_y=secondary_y)
     # Ensure the y-axis is fixed
@@ -81,7 +89,11 @@ def update_yaxis(fig, row, col, title, y_min=None, y_max=None, secondary_y=False
 
 
 def add_shape(fig, x0, x1, y0, y1, row, col, color='gray', dash='dash'):
-    fig.add_shape(type='line', x0=x0, x1=x1, y0=y0, y1=y1, line=dict(color=color, dash=dash), row=row, col=col)
+    fig.add_shape(
+        type='line', x0=x0, x1=x1, y0=y0, y1=y1,
+        line=dict(color=color or Config.theme.colors['grid'], dash=dash),
+        row=row, col=col
+    )
 
 
 def add_distribution_annotation(key, std, color, direction="Vertical"):
