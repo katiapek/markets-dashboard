@@ -83,6 +83,16 @@ class BaseDataFetcher:
     """
 
     @staticmethod
+    def fetch_active_subplot_data(market, year, subplot, table_suffix, report_type):
+        """Fetch subplot data from cache or source"""
+        config = ReportDataFetcher.CONFIG_REGISTRY.get(subplot, {}).get(report_type)
+        if not config:
+            return pd.DataFrame()
+            
+        fetcher = ReportDataFetcher(config)
+        return fetcher.fetch(market, year, table_suffix, report_type)
+
+    @staticmethod
     def fetch_data(query, params=None):
         """
         Fetch data from the database using the given query and parameters.
