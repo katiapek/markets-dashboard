@@ -288,6 +288,13 @@ def register_callbacks(app):
                     # No manual y_range computation; RangeManager handles it
                     # filtered_y_range = [filtered_data.iloc[:, 1:].min().min(), filtered_data.iloc[:, 1:].max().max()]
                     # y_range is already set earlier
+                    
+                    # Apply price range constraints
+                    range_filter = RangeFilter(filtered_data) \
+                        .set_price_columns(['open', 'high', 'low', 'close']) \
+                        .apply_price_constraints(y_range)
+                        
+                    filtered_data = range_filter.get_filtered_data()
 
                 if subplot == 'Positions Change':
 
