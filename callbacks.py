@@ -373,30 +373,14 @@ def register_callbacks(app):
                     filtered_data = range_filter.get_filtered_data()
 
                 if subplot == 'Positions Change':
-
                     df['date'] = pd.to_datetime(df['date'])
                     filtered_data = df[(df['date'] >= x_range[0]) & (df['date'] <= x_range[1])]
-
+                    
                     if report_type == 'legacy':
-
-                        set_bar_width = 70000000
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_noncomm_long'],
-                                  f'% Change Non-Commercials Long', row=row_index, col=1,
-                                  line_color=COLORS['noncomm_long'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=0)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_noncomm_short'],
-                                  f'% Change Non-Commercials Short', row=row_index, col=1,
-                                  line_color=COLORS['noncomm_short'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=1 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_comm_long'],
-                                  f'% Change Commercials Long', row=row_index, col=1,
-                                  line_color=COLORS['comm_long'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=2 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_comm_short'],
-                                  f'% Change Commercials Short', row=row_index, col=1,
-                                  line_color=COLORS['comm_short'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=3 * set_bar_width)
-                        # fig.update_yaxes(fixedrange=True)
+                        config = POSITION_CHANGE_CONFIG.get('legacy')
+                        if config:
+                            visuals = PositionChangeVisuals(filtered_data, config)
+                            visuals.render_bars(fig, row=row_index, col=1)
 
                     elif report_type == 'disaggregated':
                         set_bar_width = 60000000
