@@ -11,3 +11,14 @@ class DataFetchFailedError(DataFetcherError):
 class CacheError(DataFetcherError):
     """Exception raised for cache-related errors."""
     pass
+
+class AnalysisError(Exception):
+    """Base exception class for analysis related errors."""
+    def __init__(self, message="Analysis failed", details=None):
+        super().__init__(message)
+        self.details = details
+        
+    def __str__(self):
+        if self.details:
+            return f"{self.message}: {self.details}"
+        return self.message
