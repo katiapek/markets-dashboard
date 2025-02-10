@@ -4,7 +4,7 @@ from dash import Input, Output, State, ctx, callback_context, MATCH, ALL
 from state_managers import RangeManager, ViewportHandler, InteractionTracker
 from data_processor import OHLCProcessor
 from plotly import graph_objects as go
-from app.config import CANDLESTICK_CONFIG
+from app.config import CANDLESTICK_CONFIG, SEASONALITY_CONFIG, POSITION_CHANGE_CONFIG
 import plotly.subplots as sp
 from layout_definitions import format_market_name
 from real_data_fetcher import RealDataFetcher, SubplotFetcher, SeasonalityFetcher, OHLCFetcher
