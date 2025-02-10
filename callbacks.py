@@ -383,60 +383,16 @@ def register_callbacks(app):
                             visuals.render_bars(fig, row=row_index, col=1)
 
                     elif report_type == 'disaggregated':
-                        set_bar_width = 60000000
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_m_money_long'],
-                                  f'% Change Managed Money Long', row=row_index, col=1,
-                                  line_color=COLORS['noncomm_long'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=0 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_m_money_short'],
-                                  f'% Change Managed Money Short', row=row_index, col=1,
-                                  line_color=COLORS['noncomm_short'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=1 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_prod_merc_long'],
-                                  f'% Change Producers / Merchants Long', row=row_index, col=1,
-                                  line_color=COLORS['comm_long'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=2 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_prod_merc_short'],
-                                  f'% Change Producers / Merchants Short', row=row_index, col=1,
-                                  line_color=COLORS['comm_short'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=3 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_swap_long'],
-                                  f'% Change Swap Dealers Long', row=row_index, col=1,
-                                  line_color=COLORS['other_long'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=4 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_swap_short'],
-                                  f'% Change Swap Dealers Short', row=row_index, col=1,
-                                  line_color=COLORS['other_short'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=5 * set_bar_width)
-                        # fig.update_yaxes(fixedrange=True)
+                        config = POSITION_CHANGE_CONFIG.get('disaggregated')
+                        if config:
+                            visuals = PositionChangeVisuals(filtered_data, config)
+                            visuals.render_bars(fig, row=row_index, col=1)
 
                     elif report_type == 'tff':
-                        set_bar_width = 60000000
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_lev_money_long'],
-                                  f'% Change Managed Money Long', row=row_index, col=1,
-                                  line_color=COLORS['noncomm_long'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=0 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_lev_money_short'],
-                                  f'% Change Managed Money Short', row=row_index, col=1,
-                                  line_color=COLORS['noncomm_short'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=1 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_asset_mgr_long'],
-                                  f'% Change Asset Mgrs Long', row=row_index, col=1,
-                                  line_color=COLORS['comm_long'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=2 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_asset_mgr_short'],
-                                  f'% Change Asset Mgrs Short', row=row_index, col=1,
-                                  line_color=COLORS['comm_short'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=3 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_dealer_long'],
-                                  f'% Change Swap Dealers Long', row=row_index, col=1,
-                                  line_color=COLORS['other_long'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=4 * set_bar_width)
-                        add_trace(fig, filtered_data['date'], filtered_data['pct_change_dealer_short'],
-                                  f'% Change Swap Dealers Short', row=row_index, col=1,
-                                  line_color=COLORS['other_short'], chart_type='bar', bar_width=set_bar_width,
-                                  bar_offset=5 * set_bar_width)
-                        # fig.update_yaxes(fixedrange=True)
+                        config = POSITION_CHANGE_CONFIG.get('tff')
+                        if config:
+                            visuals = PositionChangeVisuals(filtered_data, config)
+                            visuals.render_bars(fig, row=row_index, col=1)
 
                 elif subplot == 'Net Positions Change':
 
