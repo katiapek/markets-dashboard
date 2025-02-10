@@ -4,7 +4,39 @@ from dotenv import load_dotenv
 # Load environment variables from a .env file if present
 load_dotenv()
 
+class LayoutTheme:
+    """
+    Centralized theme configuration for consistent styling across the app.
+    """
+    def __init__(self):
+        # Define color palette
+        self.colors = {
+            'background': '#1e1e1e',  # Dark background
+            'text': 'white',          # White text
+            'grid': '#333333',       # Grid lines
+            'accent': '#FF7F0E',     # Accent color (orange)
+            'success': '#4CAF50',    # Success color (green)
+            'error': '#FF5733',      # Error color (red)
+        }
+
+        # Define font settings
+        self.fonts = {
+            'family': "'Press Start 2P', monospace",  # Default font
+            'size': 10,                              # Font size
+            'color': 'white',                       # Font color
+        }
+
+        # Define spacing settings
+        self.spacing = {
+            'margin': 50,  # Margin around components
+            'padding': 10,  # Padding inside components
+        }
+
 class Config:
+    """
+    Global configuration class for the app.
+    """
+    theme = LayoutTheme()  # Initialize the theme
     """
     Configuration settings for the application.
     """
