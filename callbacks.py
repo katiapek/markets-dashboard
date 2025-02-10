@@ -8,8 +8,7 @@ from layout_definitions import format_market_name
 from real_data_fetcher import RealDataFetcher, SubplotFetcher, SeasonalityFetcher
 from data_fetchers import (
     fetch_ohlc_data_cached,
-    fetch_active_subplot_data, 
-    fetch_seasonal_data_cached
+    fetch_active_subplot_data
 )
 from dotenv import load_dotenv
 import os
