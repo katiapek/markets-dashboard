@@ -5,117 +5,101 @@ import pandas as pd
 from pydantic_core import core_schema
 
 class FetchingContract(BaseModel):
-    """Standardized contract for data fetching stage"""
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    """Standardized contract for data fetching stage with enhanced debugging"""
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        validate_default=True,
+        extra='forbid',
+        str_strip_whitespace=True,
+        str_min_length=1
+    )
     
     market: str
     start_date: datetime
     end_date: datetime
     raw_data: Optional[pd.DataFrame] = None
     metadata: Dict[str, Any] = {}
-
-    @classmethod
-    def __get_pydantic_core_schema__(cls, source_type, handler):
-        return core_schema.no_info_after_validator_function(
-            cls.validate_dataframe,
-            core_schema.union_schema([
-                core_schema.is_instance_schema(pd.DataFrame),
-                core_schema.dict_schema()
-            ])
-        )
-        
-    @staticmethod
-    def validate_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-        """Validate DataFrame structure"""
-        if df is None:
-            return None
-            
-        # Convert dict to DataFrame if needed
-        if isinstance(df, dict):
-            try:
-                df = pd.DataFrame.from_dict(df)
-            except Exception as e:
-                raise ValueError(f"Could not convert dict to DataFrame: {e}")
-                
-        # Validate DataFrame type
-        if not isinstance(df, pd.DataFrame):
-            raise ValueError(f"raw_data must be a pandas DataFrame, got {type(df)}")
-            
-        # Validate required columns
-        required_columns = {'date', 'open', 'high', 'low', 'close'}
-        if not required_columns.issubset(df.columns):
-            missing = required_columns - set(df.columns)
-            raise ValueError(f"Missing required columns: {missing}")
-            
-        # Ensure date column is datetime
-        if 'date' in df.columns and not pd.api.types.is_datetime64_any_dtype(df['date']):
-            try:
-                df['date'] = pd.to_datetime(df['date'])
-            except Exception as e:
-                raise ValueError(f"Could not convert 'date' column to datetime: {e}")
-                
-        return df
     
-    @field_validator('start_date', 'end_date', mode='before')
-    @classmethod
-    def parse_dates(cls, value):
-        if isinstance(value, str):
-            return datetime.fromisoformat(value)
-        return value
-        
+    def __init__(self, **data):
+        print("\n=== FetchingContract Initialization ===")
+        print("Input data keys:", data.keys())
+        try:
+            super().__init__(**data)
+            print("Contract created successfully!")
+            self._debug_print()
+        except Exception as e:
+            print(f"Error creating contract: {str(e)}")
+            raise
+
+    def _debug_print(self):
+        """Print detailed contract information for debugging"""
+        print("\n=== Contract Details ===")
+        print(f"Market: {self.market}")
+        print(f"Start Date: {self.start_date}")
+        print(f"End Date: {self.end_date}")
+        print(f"Metadata: {self.metadata}")
+        if self.raw_data is not None:
+            print("\nRaw Data Summary:")
+            print(f"Type: {type(self.raw_data)}")
+            print(f"Shape: {self.raw_data.shape}")
+            print("Columns:", self.raw_data.columns.tolist())
+            print("Sample Data:")
+            print(self.raw_data.head(2))
+        else:
+            print("Raw Data: None")
+        print("=======================\n")
+
     @field_validator('market')
     @classmethod
-    def validate_market(cls, value):
-        if not value or not isinstance(value, str):
-            raise ValueError("Market must be a non-empty string")
-        return value.strip().upper()
-        
+    def validate_market(cls, value: str) -> str:
+        """Validate and normalize market name"""
+        if not value:
+            raise ValueError("Market cannot be empty")
+        return value.upper().strip()
+
+    @field_validator('start_date', 'end_date', mode='before')
+    @classmethod
+    def parse_dates(cls, value) -> datetime:
+        """Parse and validate dates"""
+        if isinstance(value, str):
+            try:
+                return datetime.fromisoformat(value)
+            except ValueError as e:
+                raise ValueError(f"Invalid date format: {value}. Expected ISO format (YYYY-MM-DD)")
+        return value
+
     @field_validator('raw_data', mode='before')
     @classmethod
-    def validate_raw_data(cls, value):
-        print(f"\n=== FetchingContract raw_data validation ===")
-        print(f"Input type: {type(value)}")
+    def validate_raw_data(cls, value) -> Optional[pd.DataFrame]:
+        """Validate and convert raw data to DataFrame"""
+        print("\n=== Raw Data Validation ===")
         
         if value is None:
-            print("raw_data is None - returning None")
+            print("Raw data is None")
             return None
             
-        # Convert dict to DataFrame if needed
+        # Convert dict to DataFrame
         if isinstance(value, dict):
             print("Converting dict to DataFrame")
             try:
-                # Handle case where dict values are lists (already in DataFrame format)
-                if all(isinstance(v, (list, pd.Series)) for v in value.values()):
+                # Handle nested dicts
+                if all(isinstance(v, dict) for v in value.values()):
+                    value = pd.DataFrame.from_dict(value, orient='index')
+                # Handle list values
+                elif all(isinstance(v, (list, pd.Series)) for v in value.values()):
                     value = pd.DataFrame(value)
-                # Handle case where dict values are scalars
+                # Handle scalar values
                 else:
-                    # Create DataFrame with index if all values are scalars
                     value = pd.DataFrame([value], index=[0])
             except Exception as e:
-                print(f"Failed to convert dict to DataFrame: {e}")
-                print("Input dict structure:", {k: type(v) for k, v in value.items()})
-                raise ValueError(f"Could not convert dict to DataFrame: {e}")
-                
-        # If we have a DataFrame, ensure proper date conversion
-        if isinstance(value, pd.DataFrame) and 'date' in value.columns:
-            try:
-                value['date'] = pd.to_datetime(value['date'])
-            except Exception as e:
-                print(f"Failed to convert date column: {e}")
-                raise ValueError(f"Could not convert 'date' column to datetime: {e}")
+                print(f"Dict conversion failed: {str(e)}")
+                raise ValueError(f"Could not convert dict to DataFrame: {str(e)}")
                 
         # Validate DataFrame type
         if not isinstance(value, pd.DataFrame):
             print(f"Invalid type: {type(value)}")
-            print("Sample input data:")
-            print(value)
             raise ValueError(f"raw_data must be a pandas DataFrame, got {type(value)}")
             
-        print(f"DataFrame shape: {value.shape}")
-        print("Columns:", value.columns.tolist())
-        print("Sample data:")
-        print(value.head(2))
-        
         # Validate required columns
         required_columns = {'date', 'open', 'high', 'low', 'close'}
         if not required_columns.issubset(value.columns):
@@ -123,17 +107,31 @@ class FetchingContract(BaseModel):
             print(f"Missing required columns: {missing}")
             raise ValueError(f"Missing required columns: {missing}")
             
-        # Convert date column if needed
+        # Convert date column
         if 'date' in value.columns and not pd.api.types.is_datetime64_any_dtype(value['date']):
             print("Converting date column to datetime")
             try:
                 value['date'] = pd.to_datetime(value['date'])
             except Exception as e:
-                print(f"Failed to convert date column: {e}")
-                raise ValueError(f"Could not convert 'date' column to datetime: {e}")
+                print(f"Date conversion failed: {str(e)}")
+                raise ValueError(f"Could not convert 'date' column to datetime: {str(e)}")
                 
-        print("DataFrame validation successful")
+        print("Raw data validation successful")
         return value
+
+    def to_dict(self) -> dict:
+        """Convert contract to dict with DataFrame serialization"""
+        data = self.model_dump()
+        if isinstance(self.raw_data, pd.DataFrame):
+            data['raw_data'] = self.raw_data.to_dict(orient='records')
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'FetchingContract':
+        """Create contract from dict with DataFrame deserialization"""
+        if 'raw_data' in data and isinstance(data['raw_data'], list):
+            data['raw_data'] = pd.DataFrame(data['raw_data'])
+        return cls(**data)
 
 class ProcessingContract(BaseModel):
     """Standardized contract for data processing stage"""
