@@ -27,11 +27,26 @@ class FetchingContract(BaseModel):
     @staticmethod
     def validate_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         """Validate DataFrame structure"""
-        if df is not None:
-            required_columns = {'date', 'open', 'high', 'low', 'close'}
-            if not required_columns.issubset(df.columns):
-                missing = required_columns - set(df.columns)
-                raise ValueError(f"Missing required columns: {missing}")
+        if df is None:
+            return None
+            
+        # Convert dict to DataFrame if needed
+        if isinstance(df, dict):
+            try:
+                df = pd.DataFrame(df)
+            except Exception as e:
+                raise ValueError(f"Could not convert dict to DataFrame: {e}")
+                
+        # Validate DataFrame type
+        if not isinstance(df, pd.DataFrame):
+            raise ValueError(f"raw_data must be a pandas DataFrame, got {type(df)}")
+            
+        # Validate required columns
+        required_columns = {'date', 'open', 'high', 'low', 'close'}
+        if not required_columns.issubset(df.columns):
+            missing = required_columns - set(df.columns)
+            raise ValueError(f"Missing required columns: {missing}")
+            
         return df
     
     @validator('start_date', 'end_date', pre=True)
