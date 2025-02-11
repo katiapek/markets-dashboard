@@ -78,17 +78,32 @@ class ProcessingContract(BaseModel):
 
 class AnalysisContract(BaseModel):
     """Standardized contract for analysis stage"""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
     processed_data: pd.DataFrame
     analysis_results: Dict[str, Any] = {}
     metrics: Dict[str, float] = {}
     optimal_values: Dict[str, float] = {}
     risk_metrics: Dict[str, float] = {}
     
-    @validator('processed_data')
-    def validate_processed_data(cls, value):
-        if value.empty:
-            raise ValueError("Processed data cannot be empty")
-        return value
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_after_validator_function(
+            cls.validate_dataframe,
+            handler(pd.DataFrame)
+        )
+        
+    @staticmethod
+    def validate_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+        """Validate DataFrame structure"""
+        if df is not None:
+            if df.empty:
+                raise ValueError("Processed data cannot be empty")
+            required_columns = {'date', 'open', 'high', 'low', 'close'}
+            if not required_columns.issubset(df.columns):
+                missing = required_columns - set(df.columns)
+                raise ValueError(f"Missing required columns: {missing}")
+        return df
 
 class VisualizationContract(BaseModel):
     """Standardized contract for visualization stage"""
