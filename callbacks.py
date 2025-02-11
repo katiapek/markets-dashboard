@@ -660,12 +660,24 @@ def register_callbacks(app):
                 start_date_str = f'{year}-{start_month:02d}-{start_day:02d}'
                 end_date_str = f'{current_year}-{end_month:02d}-{end_day:02d}'
                 
-                contract = FetchingContract(
-                    market=stored_market,
-                    start_date=datetime.strptime(start_date_str, '%Y-%m-%d'),
-                    end_date=datetime.strptime(end_date_str, '%Y-%m-%d'),
-                    raw_data=None
+                # First fetch the data
+                ohlc_data_year = fetch_ohlc_data_cached(
+                    stored_market,
+                    start_date_str,
+                    end_date_str
                 )
+                
+                # Only create contract if we have data
+                if not ohlc_data_year.empty:
+                    contract = FetchingContract(
+                        market=stored_market,
+                        start_date=datetime.strptime(start_date_str, '%Y-%m-%d'),
+                        end_date=datetime.strptime(end_date_str, '%Y-%m-%d'),
+                        raw_data=ohlc_data_year
+                    )
+                else:
+                    print(f"No data found for {stored_market} from {start_date_str} to {end_date_str}")
+                    continue
                 
                 if not fetching_queue.enqueue_fetching_contract(contract):
                     print(f"Failed to enqueue contract for {year}")
