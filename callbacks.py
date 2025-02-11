@@ -1,6 +1,7 @@
 # callbacks.py
 
 from dash import Input, Output, State, ctx, callback_context, MATCH, ALL
+from queues import QueueManager
 from navigation_service import NavigationService
 from state_managers import RangeManager, ViewportHandler, InteractionTracker
 from data_processor import OHLCProcessor
