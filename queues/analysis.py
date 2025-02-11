@@ -28,41 +28,28 @@ class AnalysisQueue(BaseQueue):
             return False
             
         try:
-            # Convert contract to dict with enhanced type handling
+            # Convert contract to dict and serialize recursively
             contract_dict = contract.to_dict()
             
-            # Debug log the contract structure
-            self.logger.debug(f"Original contract keys: {contract_dict.keys()}")
-            
-            # Process DataFrame content with better type handling
-            if 'processed_data' in contract_dict and isinstance(contract_dict['processed_data'], dict):
-                self.logger.debug("Processing dataframe content")
-                if 'data' in contract_dict['processed_data']:
-                    # Use serializers that handle all numpy types
-                    contract_dict['processed_data']['data'] = [
-                        [contract._json_serializer(item) for item in row] 
-                        for row in contract_dict['processed_data']['data']
-                    ]
-                    
-                # Ensure index and columns are serialized
-                contract_dict['processed_data']['index'] = [
-                    contract._json_serializer(item) 
-                    for item in contract_dict['processed_data'].get('index', [])
-                ]
-                contract_dict['processed_data']['columns'] = [
-                    contract._json_serializer(item)
-                    for item in contract_dict['processed_data'].get('columns', [])
-                ]
-                
-                # Convert to JSON string with error handling
+            # Deep serialize all values using numpy-aware serializer
+            def serialize_recursive(obj):
+                if isinstance(obj, dict):
+                    return {k: serialize_recursive(v) for k, v in obj.items()}
+                if isinstance(obj, list):
+                    return [serialize_recursive(v) for v in obj]
                 try:
-                    contract_dict['processed_data'] = json.dumps(
-                        contract_dict['processed_data'], 
-                        default=contract._json_serializer
-                    )
-                except TypeError as e:
-                    self.logger.error(f"Serialization failed: {e}")
-                    raise
+                    return contract._json_serializer(obj)
+                except TypeError:
+                    return str(obj)  # Fallback to string representation
+                    
+            contract_dict = serialize_recursive(contract_dict)
+            
+            # Validate serialization
+            try:
+                json.dumps(contract_dict)  # Test serialization
+            except TypeError as e:
+                self.logger.error(f"Serialization validation failed: {e}")
+                raise ValueError(f"Contract contains non-serializable data: {e}")
             return self.enqueue(contract_dict)
         except Exception as e:
             self.logger.error(f"Failed to enqueue AnalysisContract: {e}")

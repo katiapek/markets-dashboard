@@ -522,14 +522,39 @@ class AnalysisContract(BaseModel):
 
     @staticmethod
     def _json_serializer(obj):
-        """Handle non-serializable types"""
+        """Handle non-serializable types including numpy/pandas types"""
         if isinstance(obj, (datetime, pd.Timestamp)):
             return obj.isoformat()
+            
         if isinstance(obj, pd.DataFrame):
             return obj.reset_index().to_dict(orient='split')
+            
+        # Handle numpy types
         if isinstance(obj, np.generic):
+            if isinstance(obj, np.integer):
+                return int(obj)
+            if isinstance(obj, np.floating):
+                return float(obj)
+            if isinstance(obj, np.bool_):
+                return bool(obj)
             return obj.item()
-        raise TypeError(f"Type {type(obj)} not serializable")
+            
+        # Handle native Python types that might wrap numpy types
+        if isinstance(obj, (int, float, str, bool, type(None))):
+            return obj
+            
+        # Handle collections that might contain numpy types
+        if isinstance(obj, (list, tuple)):
+            return [AnalysisContract._json_serializer(item) for item in obj]
+            
+        if isinstance(obj, dict):
+            return {k: AnalysisContract._json_serializer(v) for k, v in obj.items()}
+            
+        # Handle numpy arrays
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+            
+        raise TypeError(f"Type {type(obj)} not serializable. Value: {repr(obj)}")
 
     def __setstate__(self, state):
         """Custom deserialization for stored state"""
