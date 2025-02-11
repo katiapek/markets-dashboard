@@ -42,6 +42,55 @@ class FetchingContract(BaseModel):
         if not value or not isinstance(value, str):
             raise ValueError("Market must be a non-empty string")
         return value.strip().upper()
+        
+    @validator('raw_data')
+    def validate_raw_data(cls, value):
+        print(f"\n=== FetchingContract raw_data validation ===")
+        print(f"Input type: {type(value)}")
+        
+        if value is None:
+            print("raw_data is None - returning None")
+            return None
+            
+        # Convert dict to DataFrame if needed
+        if isinstance(value, dict):
+            print("Converting dict to DataFrame")
+            try:
+                value = pd.DataFrame(value)
+            except Exception as e:
+                print(f"Failed to convert dict to DataFrame: {e}")
+                raise ValueError(f"Could not convert dict to DataFrame: {e}")
+                
+        # Validate DataFrame type
+        if not isinstance(value, pd.DataFrame):
+            print(f"Invalid type: {type(value)}")
+            print("Sample input data:")
+            print(value)
+            raise ValueError(f"raw_data must be a pandas DataFrame, got {type(value)}")
+            
+        print(f"DataFrame shape: {value.shape}")
+        print("Columns:", value.columns.tolist())
+        print("Sample data:")
+        print(value.head(2))
+        
+        # Validate required columns
+        required_columns = {'date', 'open', 'high', 'low', 'close'}
+        if not required_columns.issubset(value.columns):
+            missing = required_columns - set(value.columns)
+            print(f"Missing required columns: {missing}")
+            raise ValueError(f"Missing required columns: {missing}")
+            
+        # Convert date column if needed
+        if 'date' in value.columns and not pd.api.types.is_datetime64_any_dtype(value['date']):
+            print("Converting date column to datetime")
+            try:
+                value['date'] = pd.to_datetime(value['date'])
+            except Exception as e:
+                print(f"Failed to convert date column: {e}")
+                raise ValueError(f"Could not convert 'date' column to datetime: {e}")
+                
+        print("DataFrame validation successful")
+        return value
 
 class ProcessingContract(BaseModel):
     """Standardized contract for data processing stage"""
