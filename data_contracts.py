@@ -33,7 +33,7 @@ class FetchingContract(BaseModel):
         # Convert dict to DataFrame if needed
         if isinstance(df, dict):
             try:
-                df = pd.DataFrame(df)
+                df = pd.DataFrame.from_dict(df)
             except Exception as e:
                 raise ValueError(f"Could not convert dict to DataFrame: {e}")
                 
@@ -47,6 +47,13 @@ class FetchingContract(BaseModel):
             missing = required_columns - set(df.columns)
             raise ValueError(f"Missing required columns: {missing}")
             
+        # Ensure date column is datetime
+        if 'date' in df.columns and not pd.api.types.is_datetime64_any_dtype(df['date']):
+            try:
+                df['date'] = pd.to_datetime(df['date'])
+            except Exception as e:
+                raise ValueError(f"Could not convert 'date' column to datetime: {e}")
+                
         return df
     
     @validator('start_date', 'end_date', pre=True)
