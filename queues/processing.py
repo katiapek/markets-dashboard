@@ -1,3 +1,4 @@
+import pandas as pd
 from typing import Optional
 from .base import BaseQueue
 from data_contracts import ProcessingContract
