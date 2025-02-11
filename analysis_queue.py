@@ -31,6 +31,13 @@ class AnalysisQueue(BaseQueue):
             contract_dict = contract.to_dict()
             # Ensure the processed_data is properly serialized
             if 'processed_data' in contract_dict and isinstance(contract_dict['processed_data'], dict):
+                # Convert numpy arrays to lists
+                if 'data' in contract_dict['processed_data']:
+                    contract_dict['processed_data']['data'] = [
+                        [float(item) if isinstance(item, (np.floating, float)) else item 
+                         for item in row] 
+                        for row in contract_dict['processed_data']['data']
+                    ]
                 contract_dict['processed_data'] = json.dumps(contract_dict['processed_data'])
             return self.enqueue(contract_dict)
         except Exception as e:

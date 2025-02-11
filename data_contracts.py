@@ -495,7 +495,13 @@ class AnalysisContract(BaseModel):
         # Handle special types
         if isinstance(self.processed_data, pd.DataFrame):
             # Convert DataFrame to dict with proper serialization
-            data['processed_data'] = self.processed_data.reset_index().to_dict(orient='split')
+            processed_data_dict = self.processed_data.reset_index().to_dict(orient='split')
+            # Convert numpy types to native Python types
+            processed_data_dict['data'] = [
+                [self._json_serializer(item) for item in row] 
+                for row in processed_data_dict['data']
+            ]
+            data['processed_data'] = processed_data_dict
             data['processed_data']['_is_dataframe'] = True
             
         # Handle numpy types and other non-serializable objects
