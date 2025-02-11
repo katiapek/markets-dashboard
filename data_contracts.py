@@ -229,7 +229,7 @@ class VisualizationContract(BaseModel):
     summaries: Dict[str, str] = {}
     layout_config: Dict[str, Any] = {}
     
-    @validator('analysis_results')
+    @field_validator('analysis_results')
     def validate_analysis_results(cls, value):
         if not value:
             raise ValueError("Analysis results cannot be empty")
@@ -241,7 +241,7 @@ class UIRenderingContract(BaseModel):
     layout: Dict[str, Any]
     interaction_config: Dict[str, Any] = {}
     
-    @validator('visual_components')
+    @field_validator('visual_components')
     def validate_visual_components(cls, value):
         if not value:
             raise ValueError("Visual components cannot be empty")
