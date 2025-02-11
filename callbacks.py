@@ -656,15 +656,15 @@ def register_callbacks(app):
             ohlc_data_all_years = pd.DataFrame()
             
             # Try years in reverse order (most recent first)
+            # Handle year offsets with proper boundary checking
             for year_offset in sorted(years_range, reverse=True):
-                year = current_year - year_offset
-                start_date_str = f'{year}-{start_month:02d}-{start_day:02d}'
+                target_year = current_year - year_offset
                 end_date_str = f'{current_year}-{end_month:02d}-{end_day:02d}'
                 
-                # Try up to 3 previous years if no data found
+                # Try up to 3 previous years if no data found, starting from target year
                 for attempt in range(3):
-                    try_year = year - attempt
-                    if try_year < 1990:  # Don't go before 1990
+                    try_year = target_year - attempt
+                    if try_year < 1990 or try_year > current_year:
                         continue
                         
                     print(f"Attempting year {try_year} (attempt {attempt + 1})")

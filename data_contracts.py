@@ -122,6 +122,10 @@ class FetchingContract(BaseModel):
     def to_dict(self) -> dict:
         """Convert contract to dict with DataFrame serialization"""
         data = self.model_dump()
+        # Convert datetime objects to ISO strings
+        data['start_date'] = self.start_date.isoformat()
+        data['end_date'] = self.end_date.isoformat()
+        # Convert DataFrame to dict
         if isinstance(self.raw_data, pd.DataFrame):
             data['raw_data'] = self.raw_data.to_dict(orient='records')
         return data
