@@ -670,15 +670,20 @@ def register_callbacks(app):
                 # Only create contract if we have data
                 if not ohlc_data_year.empty:
 
-                    # Convert dates to strings for serialization
+                    # Create contract with string dates
                     contract = FetchingContract(
                         market=stored_market,
                         start_date=start_date_str,
                         end_date=end_date_str,
                         raw_data=ohlc_data_year
                     )
-
-                    if not fetching_queue.enqueue_fetching_contract(contract):
+                    
+                    # Convert contract to dict with serialized dates
+                    contract_dict = contract.to_dict()
+                    contract_dict['start_date'] = start_date_str
+                    contract_dict['end_date'] = end_date_str
+                    
+                    if not fetching_queue.enqueue_fetching_contract(contract_dict):
                         print(f"Failed to enqueue contract for {year}")
                         continue
                 else:
@@ -687,14 +692,17 @@ def register_callbacks(app):
 
             # Process fetched data
             while True:
-                contract = fetching_queue.dequeue_fetching_contract()
-                if not contract:
+                contract_dict = fetching_queue.dequeue_fetching_contract()
+                if not contract_dict:
                     break
                     
+                # Convert back to FetchingContract
+                contract = FetchingContract.from_dict(contract_dict)
+                
                 # Fetch data using the contract
                 ohlc_data_year = fetch_ohlc_data_cached(
-                    contract.market, 
-                    contract.start_date.strftime('%Y-%m-%d'), 
+                    contract.market,
+                    contract.start_date.strftime('%Y-%m-%d'),
                     contract.end_date.strftime('%Y-%m-%d')
                 )
                 
