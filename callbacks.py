@@ -648,10 +648,19 @@ def register_callbacks(app):
             start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day
             end_month, end_day = pd.to_datetime(end_date).month, pd.to_datetime(end_date).day
 
-            # Initialize all queues
-            fetching_queue = FetchingQueue()
-            processing_queue = ProcessingQueue()
-            analysis_queue = AnalysisQueue()
+            # Initialize all queues with proper error handling
+            try:
+                fetching_queue = FetchingQueue()
+                processing_queue = ProcessingQueue()
+                analysis_queue = AnalysisQueue()
+                
+                # Log queue initialization status
+                print(f"FetchingQueue initialized: {fetching_queue.get_queue_status()}")
+                print(f"ProcessingQueue initialized: {processing_queue.get_queue_status()}")
+                print(f"AnalysisQueue initialized: {analysis_queue.get_queue_status()}")
+            except Exception as e:
+                print(f"Failed to initialize queues: {e}")
+                return tuple(empty_components)
             
             # Create and enqueue fetching contracts
             current_year = 2025
@@ -886,35 +895,44 @@ def register_callbacks(app):
             print(f"ProcessingQueue status: {processing_queue.get_queue_status()}")
             print(f"AnalysisQueue status: {analysis_queue.get_queue_status()}")
 
-            # Create and enqueue analysis contract
-            analysis_contract = AnalysisContract(
-                processed_data=ohlc_data_all_years,
-                analysis_results={},
-                metrics={},
-                optimal_values={},
-                risk_metrics={}
-            )
-            
-            if not analysis_queue.enqueue_analysis_contract(analysis_contract):
-                print("Failed to enqueue analysis contract")
-                return tuple(empty_components)
+            # Create and enqueue analysis contract with error handling
+            try:
+                analysis_contract = AnalysisContract(
+                    processed_data=ohlc_data_all_years,
+                    analysis_results={},
+                    metrics={},
+                    optimal_values={},
+                    risk_metrics={}
+                )
                 
-            # Process analysis through queue
-            analysis_contract = analysis_queue.dequeue_analysis_contract()
-            if not analysis_contract:
-                print("Failed to dequeue analysis contract")
-                return tuple(empty_components)
+                if not analysis_queue.enqueue_analysis_contract(analysis_contract):
+                    print("Failed to enqueue analysis contract")
+                    return tuple(empty_components)
+                    
+                # Process analysis through queue with timeout
+                analysis_contract = analysis_queue.dequeue_analysis_contract()
+                if not analysis_contract:
+                    print("Failed to dequeue analysis contract")
+                    return tuple(empty_components)
+                    
+                # Perform analysis on the processed data
+                analysis_results = perform_analysis(
+                    start_date, 
+                    end_date, 
+                    direction, 
+                    analysis_contract.processed_data
+                )
                 
-            # Perform analysis on the processed data
-            analysis_results = perform_analysis(
-                start_date, 
-                end_date, 
-                direction, 
-                analysis_contract.processed_data
-            )
-            
-            # Update contract with results
-            analysis_contract.analysis_results = analysis_results
+                # Update contract with results
+                analysis_contract.analysis_results = analysis_results
+                
+                # Log successful analysis
+                print(f"Analysis completed successfully for {stored_market} {start_date} to {end_date}")
+                print(f"Analysis queue status: {analysis_queue.get_queue_status()}")
+                
+            except Exception as e:
+                print(f"Error during analysis: {e}")
+                return tuple(empty_components)
 
             # Prepare data for the yearly analysis table (Unoptimized)
             yearly_data = analysis_results['yearly_results']
