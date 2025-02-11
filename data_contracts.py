@@ -18,7 +18,10 @@ class FetchingContract(BaseModel):
     def __get_pydantic_core_schema__(cls, source_type, handler):
         return core_schema.no_info_after_validator_function(
             cls.validate_dataframe,
-            handler(pd.DataFrame)
+            core_schema.union_schema([
+                core_schema.is_instance_schema(pd.DataFrame),
+                core_schema.dict_schema()
+            ])
         )
         
     @staticmethod
@@ -43,7 +46,7 @@ class FetchingContract(BaseModel):
             raise ValueError("Market must be a non-empty string")
         return value.strip().upper()
         
-    @validator('raw_data')
+    @validator('raw_data', pre=True)
     def validate_raw_data(cls, value):
         print(f"\n=== FetchingContract raw_data validation ===")
         print(f"Input type: {type(value)}")
@@ -56,10 +59,18 @@ class FetchingContract(BaseModel):
         if isinstance(value, dict):
             print("Converting dict to DataFrame")
             try:
-                value = pd.DataFrame(value)
+                value = pd.DataFrame.from_dict(value)
             except Exception as e:
                 print(f"Failed to convert dict to DataFrame: {e}")
                 raise ValueError(f"Could not convert dict to DataFrame: {e}")
+                
+        # If we have a DataFrame, ensure proper date conversion
+        if isinstance(value, pd.DataFrame) and 'date' in value.columns:
+            try:
+                value['date'] = pd.to_datetime(value['date'])
+            except Exception as e:
+                print(f"Failed to convert date column: {e}")
+                raise ValueError(f"Could not convert 'date' column to datetime: {e}")
                 
         # Validate DataFrame type
         if not isinstance(value, pd.DataFrame):
