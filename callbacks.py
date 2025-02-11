@@ -670,20 +670,22 @@ def register_callbacks(app):
                 # Only create contract if we have data
                 if not ohlc_data_year.empty:
 
+                    # Convert dates to strings for serialization
                     contract = FetchingContract(
                         market=stored_market,
-                        start_date=datetime.strptime(start_date_str, '%Y-%m-%d'),
-                        end_date=datetime.strptime(end_date_str, '%Y-%m-%d'),
+                        start_date=start_date_str,
+                        end_date=end_date_str,
                         raw_data=ohlc_data_year
                     )
 
-
+                    # Convert contract to dict for serialization
+                    contract_dict = contract.to_dict()
+                    
+                    if not fetching_queue.enqueue_fetching_contract(contract_dict):
+                        print(f"Failed to enqueue contract for {year}")
+                        continue
                 else:
                     print(f"No data found for {stored_market} from {start_date_str} to {end_date_str}")
-                    continue
-                
-                if not fetching_queue.enqueue_fetching_contract(contract):
-                    print(f"Failed to enqueue contract for {year}")
                     continue
 
             # Process fetched data
@@ -711,7 +713,39 @@ def register_callbacks(app):
                     ohlc_data_all_years = pd.concat([ohlc_data_all_years, ohlc_data_year], ignore_index=True)
 
             if ohlc_data_all_years.empty:
-                return [], "No data available for 15-Year Summary", "No data available for 30-Year Summary", {}, {}
+                # Return empty values matching the expected schema length
+                empty_figure = go.Figure()
+                empty_figure.update_layout(
+                    plot_bgcolor="#1e1e1e",
+                    paper_bgcolor="#1e1e1e",
+                    xaxis=dict(visible=False),
+                    yaxis=dict(visible=False),
+                    font=dict(
+                        family="'Press Start 2P', monospace",
+                        size=10,
+                        color='white'
+                    )
+                )
+                
+                empty_metrics = "No data available"
+                empty_table = []
+                
+                return (
+                    empty_table, empty_metrics, empty_metrics, 
+                    empty_figure, empty_figure, empty_figure, empty_figure,
+                    empty_figure, empty_figure, empty_metrics, empty_metrics,
+                    empty_metrics, empty_metrics, empty_table, empty_table,
+                    empty_table, empty_table, empty_figure, empty_figure,
+                    empty_figure, empty_figure, empty_figure, empty_figure,
+                    empty_figure, empty_figure, empty_figure, empty_figure,
+                    empty_figure, empty_figure, empty_figure, empty_figure,
+                    empty_figure, empty_figure, empty_figure, empty_figure,
+                    empty_figure, empty_figure, empty_figure, empty_figure,
+                    empty_figure, empty_figure, empty_figure, empty_figure,
+                    empty_figure, empty_figure, empty_figure, empty_figure,
+                    empty_figure, empty_figure, empty_figure, empty_figure,
+                    empty_figure, empty_figure, empty_figure, empty_figure
+                )
                 
             # Log queue status
             print(f"FetchingQueue status: {fetching_queue.get_queue_status()}")
