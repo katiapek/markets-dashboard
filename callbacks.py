@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from dash import Input, Output, State, ctx, callback_context, MATCH, ALL
-from queues import QueueManager, FetchingQueue
+from queues import QueueManager, FetchingQueue, ProcessingQueue
 from data_contracts import FetchingContract
 from navigation_service import NavigationService
 from state_managers import RangeManager, ViewportHandler, InteractionTracker
@@ -648,8 +648,9 @@ def register_callbacks(app):
             start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day
             end_month, end_day = pd.to_datetime(end_date).month, pd.to_datetime(end_date).day
 
-            # Initialize FetchingQueue
+            # Initialize queues
             fetching_queue = FetchingQueue()
+            processing_queue = ProcessingQueue()
             
             # Create and enqueue fetching contracts
             current_year = 2025
@@ -695,7 +696,7 @@ def register_callbacks(app):
                 else:
                     print(f"Exhausted all attempts for year offset {year_offset}")
 
-            # Process fetched data
+            # Process fetched data through processing queue
             while True:
                 contract = fetching_queue.dequeue_fetching_contract()
                 if not contract:
@@ -709,15 +710,28 @@ def register_callbacks(app):
                 )
                 
                 if not ohlc_data_year.empty:
-                    # Create a new contract with the fetched data
-                    updated_contract = FetchingContract(
-                        market=contract.market,
-                        start_date=contract.start_date,
-                        end_date=contract.end_date,
+                    # Create processing contract
+                    processing_contract = ProcessingContract(
                         raw_data=ohlc_data_year,
-                        metadata=contract.metadata
+                        validation_rules={},
+                        cleaning_steps={},
+                        transformation_steps={}
                     )
-                    ohlc_data_all_years = pd.concat([ohlc_data_all_years, ohlc_data_year], ignore_index=True)
+                    
+                    # Enqueue for processing
+                    if processing_queue.enqueue_processing_contract(processing_contract):
+                        print(f"Enqueued processing contract for {contract.market} {contract.start_date}")
+                    else:
+                        print(f"Failed to enqueue processing contract for {contract.market} {contract.start_date}")
+                        continue
+                        
+                    # Process the data
+                    processed_contract = processing_queue.dequeue_processing_contract()
+                    if processed_contract and processed_contract.processed_data is not None:
+                        ohlc_data_all_years = pd.concat([ohlc_data_all_years, processed_contract.processed_data], ignore_index=True)
+                        print(f"Processed data for {contract.market} {contract.start_date}")
+                    else:
+                        print(f"Failed to process data for {contract.market} {contract.start_date}")
 
             if ohlc_data_all_years.empty:
                 # Create empty figure with consistent styling
@@ -797,8 +811,9 @@ def register_callbacks(app):
                 
                 return tuple(empty_components)
                 
-            # Log queue status
+            # Log queue statuses
             print(f"FetchingQueue status: {fetching_queue.get_queue_status()}")
+            print(f"ProcessingQueue status: {processing_queue.get_queue_status()}")
 
             # Perform analysis on the fetched OHLC data (Unoptimized results)
             analysis_results = perform_analysis(start_date, end_date, direction, ohlc_data_all_years)
