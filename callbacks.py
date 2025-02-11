@@ -742,9 +742,70 @@ def register_callbacks(app):
                     else:
                         print(f"No processed contract available for {contract.market} {contract.start_date}")
 
+            # Define empty components for error cases
+            empty_fig = go.Figure()
+            empty_components = [
+                [],  # yearly-analysis-table.data
+                "No data available",  # 15-year-summary.children
+                "No data available",  # 30-year-summary.children
+                empty_fig,  # distribution-chart-15.figure
+                empty_fig,  # distribution-chart-optimal-15.figure
+                empty_fig,  # distribution-chart-30.figure
+                empty_fig,  # distribution-chart-optimal-30.figure
+                empty_fig,  # cumulative-return-chart-15.figure
+                empty_fig,  # cumulative-return-chart-30.figure
+                "No data available",  # risk-metrics-summary-15.children
+                "No data available",  # risk-metrics-summary-30.children
+                "No data available",  # risk-metrics-summary-15-stoploss.children
+                "No data available",  # risk-metrics-summary-30-stoploss.children
+                [],  # day-trading-stats-table.data
+                [],  # day-trading-stats-1-table.data
+                [],  # day-trading-stats-weekday-table.data
+                [],  # day-trading-stats-1-weekday-table.data
+                empty_fig,  # dup-open-high-dist.figure
+                empty_fig,  # dup-open-low-dist.figure
+                empty_fig,  # dup-open-close-dist.figure
+                empty_fig,  # dup-open-low-vs-high-scatter.figure
+                empty_fig,  # dup-open-low-vs-close-scatter.figure
+                empty_fig,  # dup-low-vs-prev-low-dist.figure
+                empty_fig,  # dup-high-vs-prev-high-dist.figure
+                empty_fig,  # ddown-open-high-dist.figure
+                empty_fig,  # ddown-open-low-dist.figure
+                empty_fig,  # ddown-open-close-dist.figure
+                empty_fig,  # ddown-open-low-vs-high-scatter.figure
+                empty_fig,  # ddown-open-low-vs-close-scatter.figure
+                empty_fig,  # ddown-low-vs-prev-low-dist.figure
+                empty_fig,  # ddown-high-vs-prev-high-dist.figure
+                empty_fig,  # pdh-open-high-dist.figure
+                empty_fig,  # pdh-open-low-dist.figure
+                empty_fig,  # pdh-open-close-dist.figure
+                empty_fig,  # pdh-open-low-vs-high-scatter.figure
+                empty_fig,  # pdh-open-low-vs-close-scatter.figure
+                empty_fig,  # pdh-high-vs-prev-high-dist.figure
+                empty_fig,  # pdl-open-high-dist.figure
+                empty_fig,  # pdl-open-low-dist.figure
+                empty_fig,  # pdl-open-close-dist.figure
+                empty_fig,  # pdl-open-low-vs-high-scatter.figure
+                empty_fig,  # pdl-open-low-vs-close-scatter.figure
+                empty_fig,  # pdl-low-vs-prev-low-dist.figure
+                empty_fig,  # pdhl-open-high-dist.figure
+                empty_fig,  # pdhl-open-low-dist.figure
+                empty_fig,  # pdhl-open-close-dist.figure
+                empty_fig,  # pdhl-open-low-vs-high-scatter.figure
+                empty_fig,  # pdhl-open-low-vs-close-scatter.figure
+                empty_fig,  # pdhl-low-vs-prev-low-dist.figure
+                empty_fig,  # pdhl-high-vs-prev-high-dist.figure
+                empty_fig,  # pdh-pdl-pdhl-open-high-dist.figure
+                empty_fig,  # pdh-pdl-pdhl-open-low-dist.figure
+                empty_fig,  # pdh-pdl-pdhl-open-close-dist.figure
+                empty_fig,  # pdh-pdl-pdhl-open-low-vs-high-scatter.figure
+                empty_fig,  # pdh-pdl-pdhl-open-low-vs-close-scatter.figure
+                empty_fig,  # pdh-pdl-pdhl-low-vs-prev-low-dist.figure
+                empty_fig,  # pdh-pdl-pdhl-high-vs-prev-high-dist.figure
+            ]
+
             if ohlc_data_all_years.empty:
                 # Create empty figure with consistent styling
-                empty_fig = go.Figure()
                 empty_fig.update_layout(
                     plot_bgcolor="#1e1e1e",
                     paper_bgcolor="#1e1e1e",
