@@ -81,9 +81,15 @@ class FetchingContract(BaseModel):
         if isinstance(value, dict):
             print("Converting dict to DataFrame")
             try:
-                value = pd.DataFrame.from_dict(value)
+                # Handle case where dict values are lists (already in DataFrame format)
+                if all(isinstance(v, (list, pd.Series)) for v in value.values()):
+                    value = pd.DataFrame(value)
+                # Handle case where dict values are scalars
+                else:
+                    value = pd.DataFrame([value])
             except Exception as e:
                 print(f"Failed to convert dict to DataFrame: {e}")
+                print("Input dict structure:", {k: type(v) for k, v in value.items()})
                 raise ValueError(f"Could not convert dict to DataFrame: {e}")
                 
         # If we have a DataFrame, ensure proper date conversion
