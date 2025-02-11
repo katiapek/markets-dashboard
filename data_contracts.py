@@ -70,6 +70,8 @@ class ProcessingContract(BaseModel):
     
     @validator('raw_data')
     def validate_raw_data(cls, value):
+        if value is None:
+            return None
         required_columns = {'date', 'open', 'high', 'low', 'close'}
         if not required_columns.issubset(value.columns):
             missing = required_columns - set(value.columns)
