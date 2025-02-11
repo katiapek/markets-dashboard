@@ -172,8 +172,10 @@ class FetchingContract(BaseModel):
             return obj.isoformat()
         if isinstance(obj, pd.DataFrame):
             return obj.reset_index().to_dict(orient='split')
-        if isinstance(obj, np.generic):
-            return obj.item()
+        if isinstance(obj, (np.generic, np.int64, np.int32, np.float64, np.float32)):
+            return float(obj)
+        if isinstance(obj, (int, float)):
+            return obj
         raise TypeError(f"Type {type(obj)} not serializable")
 
     def __setstate__(self, state):
