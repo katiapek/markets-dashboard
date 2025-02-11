@@ -160,7 +160,8 @@ class ProcessingContract(BaseModel):
                 raise ValueError("DataFrame cannot be empty")
         return df
     
-    @validator('raw_data')
+    @field_validator('raw_data', mode='before')
+    @classmethod
     def validate_raw_data(cls, value):
         if value is None:
             return None
