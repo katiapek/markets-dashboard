@@ -25,8 +25,9 @@ class ProcessingQueue(BaseQueue):
             return False
             
         try:
-            # Convert contract to dict and enqueue
-            return self.enqueue(contract.dict())
+            # Convert contract to dict with proper DataFrame serialization
+            contract_dict = contract.to_dict()
+            return self.enqueue(contract_dict)
         except Exception as e:
             self.logger.error(f"Failed to enqueue ProcessingContract: {e}")
             return False
