@@ -2,6 +2,8 @@ from typing import Dict, Any, Optional
 from pydantic import BaseModel, field_validator, ValidationError, ConfigDict
 from datetime import datetime
 import pandas as pd
+import numpy as np
+import json
 from pydantic_core import core_schema
 
 class FetchingContract(BaseModel):
