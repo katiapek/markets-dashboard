@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from dash import Input, Output, State, ctx, callback_context, MATCH, ALL
+from visualizers.table_visualizer import TableVisualizer
 from queues import QueueManager, FetchingQueue, ProcessingQueue, AnalysisQueue, VisualizationQueue
 from data_contracts import FetchingContract, ProcessingContract, AnalysisContract, VisualizationContract
 from navigation_service import NavigationService
@@ -132,6 +133,8 @@ class CandlestickRenderer:
 
 
 def register_callbacks(app):
+    table_visualizer = TableVisualizer()
+
     # Callback to toggle the foldable menu for "Legacy - Combined"
 
     @app.callback(
