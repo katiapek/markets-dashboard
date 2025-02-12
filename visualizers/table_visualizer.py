@@ -49,7 +49,12 @@ class TableVisualizer:
                 data = pd.DataFrame.from_dict(data, orient='index').reset_index()
                 data.columns = ['Year', 'Value']  # Set appropriate column names
             elif isinstance(data, list):
-                data = pd.DataFrame(data)
+                # Handle list of dicts
+                if data and isinstance(data[0], dict):
+                    data = pd.DataFrame(data)
+                else:
+                    # Handle list of values
+                    data = pd.DataFrame({'Year': range(len(data)), 'Value': data})
                 
             if not self.validate_data(data, "yearly_analysis"):
                 self.logger.warning("Invalid data for yearly analysis table")

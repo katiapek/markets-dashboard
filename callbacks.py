@@ -1030,7 +1030,31 @@ def register_callbacks(app):
             elif isinstance(yearly_data, (list, pd.DataFrame)):
                 print(f"Yearly data length: {len(yearly_data)}")
                 
-            yearly_analysis_table = table_visualizer.render_yearly_analysis(yearly_data)
+            # Create visualization contract
+            visualization_contract = VisualizationContract(
+                analysis_results=analysis_results,
+                charts={},
+                tables={'yearly_analysis': yearly_data},
+                summaries={},
+                layout_config={}
+            )
+            
+            # Enqueue visualization contract
+            if not visualization_queue.enqueue_visualization_contract(visualization_contract):
+                print("Failed to enqueue visualization contract")
+                return tuple(empty_components)
+                
+            # Process visualization through queue
+            visualization_contract = visualization_queue.dequeue_visualization_contract()
+            if not visualization_contract:
+                print("Failed to dequeue visualization contract")
+                return tuple(empty_components)
+                
+            # Get rendered table from contract
+            yearly_analysis_table = visualization_contract.tables.get('yearly_analysis', None)
+            if yearly_analysis_table is None:
+                print("Yearly analysis table not found in visualization contract")
+                return tuple(empty_components)
 
             # Prepare summaries for 15 years and 30 years - No-Stop loss returns per year for Summary table
             summary_15 = analysis_results['15_year_summary']
