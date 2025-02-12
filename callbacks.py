@@ -1024,6 +1024,7 @@ def register_callbacks(app):
 
             # Prepare data for the yearly analysis table (Unoptimized)
             yearly_data = analysis_results['yearly_results']
+            yearly_analysis_table = table_visualizer.render_yearly_analysis(yearly_data)
 
             # Prepare summaries for 15 years and 30 years - No-Stop loss returns per year for Summary table
             summary_15 = analysis_results['15_year_summary']
@@ -1174,7 +1175,7 @@ def register_callbacks(app):
             )
 
             return (
-                yearly_data,  # Unoptimized data for the yearly analysis table
+                yearly_analysis_table,  # Rendered yearly analysis table
                 summary_15_text,
                 summary_30_text,
                 distribution_chart_15,  # Unoptimized distribution chart for 15 years
