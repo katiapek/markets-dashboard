@@ -78,7 +78,7 @@ class TableVisualizer:
         except Exception as e:
             return self._handle_error(e, "day_trading_stats")
 
-    def render_correlation_table(self, data: pd.DataFrame) -> dash_table.DataTable:
+    def render_correlation_table(self, data: pd.DataFrame) -> tuple:
         """
         Render the correlation table.
         
@@ -86,21 +86,23 @@ class TableVisualizer:
             data (pd.DataFrame): Processed data for the table.
             
         Returns:
-            dash_table.DataTable: Rendered table component.
+            tuple: (data, columns) for the table
         """
         self.logger.info("Rendering correlation table")
         
         try:
             if not self.validate_data(data, "correlation_table"):
-                return self.generate_fallback_table("correlation_table")
+                fallback_table = self.generate_fallback_table("correlation_table")
+                return fallback_table.data, [{"name": col, "id": col} for col in fallback_table.data[0].keys()]
             
-            table = dash_table.DataTable(
-                data=data.to_dict("records"),
-                columns=[{"name": col, "id": col} for col in data.columns]
+            return (
+                data.to_dict("records"),
+                [{"name": col, "id": col} for col in data.columns]
             )
-            return self.apply_styles(table)
         except Exception as e:
-            return self._handle_error(e, "correlation_table")
+            self.logger.error(f"Error rendering correlation table: {str(e)}")
+            fallback_table = self.generate_fallback_table("correlation_table")
+            return fallback_table.data, [{"name": col, "id": col} for col in fallback_table.data[0].keys()]
 
     def apply_styles(self, table: dash_table.DataTable) -> dash_table.DataTable:
         """

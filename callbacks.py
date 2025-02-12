@@ -1274,4 +1274,5 @@ def register_callbacks(app):
             return df
 
         correlation_180d = apply_ticker_prefix(correlation_180d)
-        return table_visualizer.render_correlation_table(correlation_180d)
+        table_data, table_columns = table_visualizer.render_correlation_table(correlation_180d)
+        return table_data, table_columns
