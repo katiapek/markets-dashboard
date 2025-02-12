@@ -631,46 +631,59 @@ def register_callbacks(app):
             prevent_initial_call=True
         )
         def process_data(ohlc_data, seasonality_data, subplot_data, direction, years_range):
-            # Convert stored data back to DataFrames
-            ohlc_df = pd.DataFrame(ohlc_data) if ohlc_data else pd.DataFrame()
-            seasonality_dfs = {years: pd.DataFrame(data) for years, data in (seasonality_data or {}).items()}
-            subplot_dfs = {key: pd.DataFrame(data) for key, data in (subplot_data or {}).items()}
-
-            # Initialize data processor
-            processor = DataProcessor()
-        
-            # Process OHLC data
-            if not ohlc_df.empty:
-                ohlc_df = processor.validate_structure(ohlc_df)
-                ohlc_df = processor.clean_data(ohlc_df)
-                ohlc_df = processor.transform_data(ohlc_df)
-        
-            # Process seasonality data
-            processed_seasonality = {}
-            for years, df in seasonality_dfs.items():
-                if not df.empty:
-                    df = processor.validate_structure(df)
-                    df = processor.clean_data(df)
-                    df = processor.transform_data(df)
-                    processed_seasonality[years] = df.to_dict('records')
-        
-            # Process subplot data
-            processed_subplots = {}
-            for key, df in subplot_dfs.items():
-                if not df.empty:
-                    df = processor.validate_structure(df)
-                    df = processor.clean_data(df)
-                    df = processor.transform_data(df)
-                    processed_subplots[key] = df.to_dict('records')
-        
-            # Return processed data
-            return {
-                'ohlc': ohlc_df.to_dict('records'),
-                'seasonality': processed_seasonality,
-                'subplots': processed_subplots,
+            # Initialize empty data structures
+            processed_data = {
+                'ohlc': [],
+                'seasonality': {},
+                'subplots': {},
                 'direction': direction,
                 'years_range': years_range
             }
+
+            # Initialize data processor
+            processor = DataProcessor()
+
+            # Process OHLC data if available
+            if ohlc_data and isinstance(ohlc_data, list):
+                try:
+                    ohlc_df = pd.DataFrame(ohlc_data)
+                    if not ohlc_df.empty:
+                        ohlc_df = processor.validate_structure(ohlc_df)
+                        ohlc_df = processor.clean_data(ohlc_df)
+                        ohlc_df = processor.transform_data(ohlc_df)
+                        processed_data['ohlc'] = ohlc_df.to_dict('records')
+                except Exception as e:
+                    print(f"Error processing OHLC data: {e}")
+
+            # Process seasonality data if available
+            if seasonality_data and isinstance(seasonality_data, dict):
+                try:
+                    for years, data in seasonality_data.items():
+                        if data and isinstance(data, list):
+                            df = pd.DataFrame(data)
+                            if not df.empty:
+                                df = processor.validate_structure(df)
+                                df = processor.clean_data(df)
+                                df = processor.transform_data(df)
+                                processed_data['seasonality'][years] = df.to_dict('records')
+                except Exception as e:
+                    print(f"Error processing seasonality data: {e}")
+
+            # Process subplot data if available
+            if subplot_data and isinstance(subplot_data, dict):
+                try:
+                    for key, data in subplot_data.items():
+                        if data and isinstance(data, list):
+                            df = pd.DataFrame(data)
+                            if not df.empty:
+                                df = processor.validate_structure(df)
+                                df = processor.clean_data(df)
+                                df = processor.transform_data(df)
+                                processed_data['subplots'][key] = df.to_dict('records')
+                except Exception as e:
+                    print(f"Error processing subplot data: {e}")
+
+            return processed_data
 
         @app.callback(
             [
