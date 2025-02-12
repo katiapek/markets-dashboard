@@ -745,7 +745,7 @@ def register_callbacks(app):
         def perform_analysis_and_update_layout(processed_data, n_clicks, n_intervals,
                                                start_date, end_date, direction, years_range, stored_market):
 
-            # Handle None processed data                                                                                         
+            # Handle None processed data
             if processed_data is None:
                 return tuple([None] * 50)  # Return None for all outputs
 
