@@ -630,25 +630,51 @@ class VisualizationContract(BaseModel):
 
     @staticmethod
     def _json_serializer(obj):
-        """Handle non-serializable types"""
+        """Handle non-serializable types including Plotly figures"""
+        # Handle basic types
         if isinstance(obj, (datetime, pd.Timestamp)):
             return obj.isoformat()
+            
+        # Handle pandas DataFrames
         if isinstance(obj, pd.DataFrame):
             return obj.reset_index().to_dict(orient='split')
+            
+        # Handle numpy types
         if isinstance(obj, np.generic):
+            if isinstance(obj, np.integer):
+                return int(obj)
+            if isinstance(obj, np.floating):
+                return float(obj)
+            if isinstance(obj, np.bool_):
+                return bool(obj)
             return obj.item()
-        if isinstance(obj, (np.integer, np.int_, np.intc, np.intp, np.int8, np.int16, 
-                           np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64)):
-            return int(obj)
-        if isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
-            return float(obj)
-        if isinstance(obj, (np.bool_, np.bool_)):
-            return bool(obj)
-        if isinstance(obj, (np.ndarray, np.void)):
+            
+        # Handle Plotly figures
+        if hasattr(obj, 'to_dict'):  # Check if object has to_dict method
+            try:
+                fig_dict = obj.to_dict()
+                # Add marker to identify this as a Plotly figure
+                fig_dict['_is_plotly_figure'] = True
+                return fig_dict
+            except Exception as e:
+                raise TypeError(f"Could not serialize Plotly figure: {str(e)}")
+                
+        # Handle native Python types
+        if isinstance(obj, (int, float, str, bool, type(None))):
+            return obj
+            
+        # Handle collections that might contain numpy types
+        if isinstance(obj, (list, tuple)):
+            return [VisualizationContract._json_serializer(item) for item in obj]
+            
+        if isinstance(obj, dict):
+            return {k: VisualizationContract._json_serializer(v) for k, v in obj.items()}
+            
+        # Handle numpy arrays
+        if isinstance(obj, np.ndarray):
             return obj.tolist()
-        if isinstance(obj, (np.recarray, np.record)):
-            return obj.tolist()
-        raise TypeError(f"Type {type(obj)} not serializable. Value: {obj}")
+            
+        raise TypeError(f"Type {type(obj)} not serializable. Value: {repr(obj)}")
 
     def __setstate__(self, state):
         """Custom deserialization for stored state"""
@@ -656,7 +682,18 @@ class VisualizationContract(BaseModel):
 
     @classmethod
     def from_dict(cls, data: dict) -> 'VisualizationContract':
-        """Create contract from dict"""
+        """Create contract from dict with Plotly figure deserialization"""
+        # Handle Plotly figures in charts
+        if 'charts' in data:
+            for chart_name, chart_data in data['charts'].items():
+                if isinstance(chart_data, dict) and chart_data.get('_is_plotly_figure'):
+                    try:
+                        import plotly.graph_objects as go
+                        data['charts'][chart_name] = go.Figure(chart_data)
+                    except Exception as e:
+                        print(f"Error deserializing Plotly figure {chart_name}: {str(e)}")
+                        data['charts'][chart_name] = None
+                        
         return cls(**data)
 
 class UIRenderingContract(BaseModel):
