@@ -18,6 +18,17 @@ class TableVisualizer:
         """
         self.table_styles = {}
         self.logger = logging.getLogger(__name__)
+        self._setup_logging()
+
+    def _setup_logging(self):
+        """
+        Configure logging for the TableVisualizer.
+        """
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        self.logger = logging.getLogger(__name__)
 
     def render_yearly_analysis(self, data: pd.DataFrame) -> dash_table.DataTable:
         """
@@ -88,6 +99,35 @@ class TableVisualizer:
             table_type (str): Type of table to generate.
             
         Returns:
-            dash_table.DataTable: Fallback table.
+            dash_table.DataTable: Fallback table with error message.
         """
-        raise NotImplementedError("generate_fallback_table not implemented")
+        self.logger.warning(f"Generating fallback table for {table_type}")
+        
+        fallback_data = pd.DataFrame({
+            "Error": ["Data not available"],
+            "Details": [f"Could not generate {table_type} table"]
+        })
+        
+        return dash_table.DataTable(
+            data=fallback_data.to_dict("records"),
+            columns=[{"name": col, "id": col} for col in fallback_data.columns],
+            style_cell={"textAlign": "center"},
+            style_header={
+                "backgroundColor": "lightgray",
+                "fontWeight": "bold"
+            }
+        )
+
+    def _handle_error(self, error: Exception, table_type: str) -> dash_table.DataTable:
+        """
+        Handle errors during table generation.
+        
+        Args:
+            error (Exception): The error that occurred.
+            table_type (str): Type of table being generated.
+            
+        Returns:
+            dash_table.DataTable: Fallback table with error details.
+        """
+        self.logger.error(f"Error generating {table_type} table: {str(error)}")
+        return self.generate_fallback_table(table_type)
