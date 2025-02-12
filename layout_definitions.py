@@ -889,6 +889,11 @@ def create_sidebar_content(is_premium=False):
 def create_base_layout(is_premium=False):
     """Create unified layout structure for both premium and free versions"""
     return html.Div(style={'display': 'flex'}, children=[
+        # Data stores
+        dcc.Store(id='ohlc-data-store'),
+        dcc.Store(id='seasonality-data-store'),
+        dcc.Store(id='subplot-data-store'),
+        
         html.Div(
             children=[
                 create_main_chart_section(is_premium),
