@@ -6,7 +6,7 @@ from queues import QueueManager, FetchingQueue, ProcessingQueue, AnalysisQueue, 
 from data_contracts import FetchingContract, ProcessingContract, AnalysisContract, VisualizationContract
 from navigation_service import NavigationService
 from state_managers import RangeManager, ViewportHandler, InteractionTracker
-from data_processor import OHLCProcessor
+from data_processor import OHLCProcessor, DataProcessor
 from plotly import graph_objects as go
 from app.config import CANDLESTICK_CONFIG, SEASONALITY_CONFIG, POSITION_CHANGE_CONFIG, Config
 import plotly.subplots as sp
@@ -627,13 +627,18 @@ def register_callbacks(app):
              Input('seasonality-data-store', 'data'),
              Input('subplot-data-store', 'data')],
             [State('direction-dropdown', 'value'),
-             State('years-checklist', 'value')]
+             State('years-checklist', 'value')],
+            prevent_initial_call=True
         )
         def process_data(ohlc_data, seasonality_data, subplot_data, direction, years_range):
+            # Handle None inputs
+            if ohlc_data is None and seasonality_data is None and subplot_data is None:
+                return None
+            
             # Convert stored data back to DataFrames
             ohlc_df = pd.DataFrame(ohlc_data) if ohlc_data else pd.DataFrame()
-            seasonality_dfs = {years: pd.DataFrame(data) for years, data in seasonality_data.items()} if seasonality_data else {}
-            subplot_dfs = {key: pd.DataFrame(data) for key, data in subplot_data.items()} if subplot_data else {}
+            seasonality_dfs = {years: pd.DataFrame(data) for years, data in (seasonality_data or {}).items()}
+            subplot_dfs = {key: pd.DataFrame(data) for key, data in (subplot_data or {}).items()}
 
             # Initialize data processor
             processor = DataProcessor()
