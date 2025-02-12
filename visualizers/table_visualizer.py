@@ -35,7 +35,7 @@ class TableVisualizer:
         Render the yearly analysis table.
         
         Args:
-            data (Union[pd.DataFrame, list]): Processed data for the table.
+            data (Union[pd.DataFrame, list, dict]): Processed data for the table.
             
         Returns:
             dash_table.DataTable: Rendered table component.
@@ -43,19 +43,35 @@ class TableVisualizer:
         self.logger.info("Rendering yearly analysis table")
         
         try:
-            # Convert list to DataFrame if needed
-            if isinstance(data, list):
+            # Convert input to DataFrame
+            if isinstance(data, dict):
+                # If data is a dict of yearly results, convert to DataFrame
+                data = pd.DataFrame.from_dict(data, orient='index').reset_index()
+                data.columns = ['Year', 'Value']  # Set appropriate column names
+            elif isinstance(data, list):
                 data = pd.DataFrame(data)
                 
             if not self.validate_data(data, "yearly_analysis"):
+                self.logger.warning("Invalid data for yearly analysis table")
                 return self.generate_fallback_table("yearly_analysis")
             
+            # Ensure we have numeric data
+            if 'Value' in data.columns:
+                data['Value'] = pd.to_numeric(data['Value'], errors='coerce')
+            
+            # Create table with proper formatting
             table = dash_table.DataTable(
                 data=data.to_dict("records"),
-                columns=[{"name": col, "id": col} for col in data.columns]
+                columns=[{"name": col, "id": col} for col in data.columns],
+                style_cell={'textAlign': 'center'},
+                style_header={
+                    'backgroundColor': 'lightgray',
+                    'fontWeight': 'bold'
+                }
             )
             return self.apply_styles(table)
         except Exception as e:
+            self.logger.error(f"Error rendering yearly analysis table: {str(e)}")
             return self._handle_error(e, "yearly_analysis")
 
     def render_day_trading_stats(self, data: pd.DataFrame) -> list:
