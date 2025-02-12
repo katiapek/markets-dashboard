@@ -40,7 +40,19 @@ class TableVisualizer:
         Returns:
             dash_table.DataTable: Rendered table component.
         """
-        raise NotImplementedError("render_yearly_analysis not implemented")
+        self.logger.info("Rendering yearly analysis table")
+        
+        try:
+            if not self.validate_data(data, "yearly_analysis"):
+                return self.generate_fallback_table("yearly_analysis")
+            
+            table = dash_table.DataTable(
+                data=data.to_dict("records"),
+                columns=[{"name": col, "id": col} for col in data.columns]
+            )
+            return self.apply_styles(table)
+        except Exception as e:
+            return self._handle_error(e, "yearly_analysis")
 
     def render_day_trading_stats(self, data: pd.DataFrame) -> dash_table.DataTable:
         """
@@ -52,7 +64,19 @@ class TableVisualizer:
         Returns:
             dash_table.DataTable: Rendered table component.
         """
-        raise NotImplementedError("render_day_trading_stats not implemented")
+        self.logger.info("Rendering day trading stats table")
+        
+        try:
+            if not self.validate_data(data, "day_trading_stats"):
+                return self.generate_fallback_table("day_trading_stats")
+            
+            table = dash_table.DataTable(
+                data=data.to_dict("records"),
+                columns=[{"name": col, "id": col} for col in data.columns]
+            )
+            return self.apply_styles(table)
+        except Exception as e:
+            return self._handle_error(e, "day_trading_stats")
 
     def render_correlation_table(self, data: pd.DataFrame) -> dash_table.DataTable:
         """
@@ -64,7 +88,19 @@ class TableVisualizer:
         Returns:
             dash_table.DataTable: Rendered table component.
         """
-        raise NotImplementedError("render_correlation_table not implemented")
+        self.logger.info("Rendering correlation table")
+        
+        try:
+            if not self.validate_data(data, "correlation_table"):
+                return self.generate_fallback_table("correlation_table")
+            
+            table = dash_table.DataTable(
+                data=data.to_dict("records"),
+                columns=[{"name": col, "id": col} for col in data.columns]
+            )
+            return self.apply_styles(table)
+        except Exception as e:
+            return self._handle_error(e, "correlation_table")
 
     def apply_styles(self, table: dash_table.DataTable) -> dash_table.DataTable:
         """
@@ -76,7 +112,19 @@ class TableVisualizer:
         Returns:
             dash_table.DataTable: Styled table.
         """
-        raise NotImplementedError("apply_styles not implemented")
+        self.logger.debug("Applying styles to table")
+        
+        table.style_data_conditional = [
+            {
+                "if": {"row_index": "odd"},
+                "backgroundColor": "rgb(248, 248, 248)"
+            }
+        ]
+        table.style_header = {
+            "backgroundColor": "rgb(230, 230, 230)",
+            "fontWeight": "bold"
+        }
+        return table
 
     def validate_data(self, data: pd.DataFrame, table_type: str) -> bool:
         """
@@ -89,7 +137,17 @@ class TableVisualizer:
         Returns:
             bool: True if data is valid, False otherwise.
         """
-        raise NotImplementedError("validate_data not implemented")
+        self.logger.debug(f"Validating data for {table_type}")
+        
+        if data.empty:
+            self.logger.warning(f"Empty data for {table_type}")
+            return False
+        
+        if not isinstance(data, pd.DataFrame):
+            self.logger.warning(f"Invalid data type for {table_type}")
+            return False
+        
+        return True
 
     def generate_fallback_table(self, table_type: str) -> dash_table.DataTable:
         """
