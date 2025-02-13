@@ -3,6 +3,7 @@ import logging
 from dash import html, dcc
 from .error_templates import ErrorTemplate
 from .error_logging import log_error
+import datetime
 
 class ErrorBoundary(html.Div):
     """Error boundary component to catch and display errors instead of crashing"""
