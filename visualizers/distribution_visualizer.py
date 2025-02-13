@@ -348,6 +348,120 @@ class DistributionChartVisualizer:
         
         return fig
 
+    def render_pdhl_distribution(self, data, column='percent_change', title="PD-HL Distribution"):
+        """Render a distribution chart for PD-HL days.
+        
+        Args:
+            data (pd.DataFrame): Data to render
+            column (str): Column name for distribution data
+            title (str): Chart title
+            
+        Returns:
+            go.Figure: The rendered chart
+        """
+        if not self._validate_data(data):
+            return self._create_empty_chart("No PD-HL data available")
+            
+        # Convert data to DataFrame if it's a list
+        if isinstance(data, list):
+            data = pd.DataFrame(data)
+            
+        # Calculate percentiles
+        percentiles = self._calculate_percentiles(data, column, 'PD-HL')
+        
+        # Create figure
+        fig = go.Figure()
+        
+        # Add histogram trace
+        fig.add_trace(go.Histogram(
+            x=data[column],
+            opacity=0.75
+        ))
+        
+        # Add percentile lines
+        self._add_percentile_lines(fig, percentiles, 'PD-HL')
+        
+        # Apply styling
+        self._apply_day_type_styles(fig, 'PD-HL', title)
+        
+        return fig
+
+    def render_dup_distribution(self, data, column='percent_change', title="D-UP Distribution"):
+        """Render a distribution chart for D-UP days.
+        
+        Args:
+            data (pd.DataFrame): Data to render
+            column (str): Column name for distribution data
+            title (str): Chart title
+            
+        Returns:
+            go.Figure: The rendered chart
+        """
+        if not self._validate_data(data):
+            return self._create_empty_chart("No D-UP data available")
+            
+        # Convert data to DataFrame if it's a list
+        if isinstance(data, list):
+            data = pd.DataFrame(data)
+            
+        # Calculate percentiles
+        percentiles = self._calculate_percentiles(data, column, 'D-UP')
+        
+        # Create figure
+        fig = go.Figure()
+        
+        # Add histogram trace
+        fig.add_trace(go.Histogram(
+            x=data[column],
+            opacity=0.75
+        ))
+        
+        # Add percentile lines
+        self._add_percentile_lines(fig, percentiles, 'D-UP')
+        
+        # Apply styling
+        self._apply_day_type_styles(fig, 'D-UP', title)
+        
+        return fig
+
+    def render_ddown_distribution(self, data, column='percent_change', title="D-DOWN Distribution"):
+        """Render a distribution chart for D-DOWN days.
+        
+        Args:
+            data (pd.DataFrame): Data to render
+            column (str): Column name for distribution data
+            title (str): Chart title
+            
+        Returns:
+            go.Figure: The rendered chart
+        """
+        if not self._validate_data(data):
+            return self._create_empty_chart("No D-DOWN data available")
+            
+        # Convert data to DataFrame if it's a list
+        if isinstance(data, list):
+            data = pd.DataFrame(data)
+            
+        # Calculate percentiles
+        percentiles = self._calculate_percentiles(data, column, 'D-DOWN')
+        
+        # Create figure
+        fig = go.Figure()
+        
+        # Add histogram trace
+        fig.add_trace(go.Histogram(
+            x=data[column],
+            opacity=0.75
+        ))
+        
+        # Add percentile lines
+        self._add_percentile_lines(fig, percentiles, 'D-DOWN')
+        
+        # Apply styling
+        self._apply_day_type_styles(fig, 'D-DOWN', title)
+        
+        return fig
+
     def render_optimized_distribution(self, data, years=15):
         """Render a distribution chart for optimized trade results (with stop loss and exit).
         
