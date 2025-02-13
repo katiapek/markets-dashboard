@@ -177,6 +177,177 @@ class DistributionChartVisualizer:
         # Placeholder for implementation
         return go.Figure()
 
+    def _calculate_percentiles(self, data, column, day_type):
+        """Calculate percentiles based on day type.
+        
+        Args:
+            data (pd.DataFrame): Input data
+            column (str): Column name to calculate percentiles on
+            day_type (str): Type of day (PD-H, PD-L, PD-HL, D-UP, D-DOWN)
+            
+        Returns:
+            dict: Percentile values keyed by percentile
+        """
+        if not self._validate_data(data) or column not in data.columns:
+            return {}
+            
+        if day_type in ['PD-H', 'D-UP']:
+            return {
+                '70': np.percentile(data[column], 70),
+                '95': np.percentile(data[column], 95)
+            }
+        elif day_type in ['PD-L', 'D-DOWN']:
+            return {
+                '-70': np.percentile(data[column], 30),  # Equivalent to -70th percentile
+                '-95': np.percentile(data[column], 5)   # Equivalent to -95th percentile
+            }
+        elif day_type == 'PD-HL':
+            return {
+                '70': np.percentile(data[column], 70),
+                '95': np.percentile(data[column], 95),
+                '-70': np.percentile(data[column], 30),
+                '-95': np.percentile(data[column], 5)
+            }
+        return {}
+
+    def _add_percentile_lines(self, fig, percentiles, day_type):
+        """Add percentile lines to the figure based on day type.
+        
+        Args:
+            fig (go.Figure): Figure to add lines to
+            percentiles (dict): Percentile values
+            day_type (str): Type of day (PD-H, PD-L, PD-HL, D-UP, D-DOWN)
+        """
+        colors = {
+            'PD-H': '#4CAF50',  # Green
+            'PD-L': '#FF5252',   # Red
+            'PD-HL': '#FFC107',  # Amber
+            'D-UP': '#2196F3',   # Blue
+            'D-DOWN': '#9C27B0'  # Purple
+        }
+        
+        for pct, value in percentiles.items():
+            fig.add_vline(
+                x=value,
+                line_dash="dot",
+                line_color=colors.get(day_type, '#FFFFFF'),
+                line_width=1.5,
+                annotation_text=f"{pct}%",
+                annotation_position="top right" if float(pct) > 0 else "bottom right",
+                annotation_font_size=12,
+                annotation_font_color=colors.get(day_type, '#FFFFFF'),
+                annotation_bgcolor="rgba(0,0,0,0.7)"
+            )
+
+    def _apply_day_type_styles(self, fig, day_type, title):
+        """Apply consistent styling based on day type.
+        
+        Args:
+            fig (go.Figure): Figure to style
+            day_type (str): Type of day (PD-H, PD-L, PD-HL, D-UP, D-DOWN)
+            title (str): Chart title
+        """
+        colors = {
+            'PD-H': '#4CAF50',  # Green
+            'PD-L': '#FF5252',   # Red
+            'PD-HL': '#FFC107',  # Amber
+            'D-UP': '#2196F3',   # Blue
+            'D-DOWN': '#9C27B0'  # Purple
+        }
+        
+        fig.update_layout(
+            title=title,
+            title_font_size=12,
+            xaxis_title="Return (%)",
+            yaxis_title="Frequency",
+            plot_bgcolor='#1e1e1e',
+            paper_bgcolor='#1e1e1e',
+            font=dict(color='white', family="'Press Start 2P', monospace"),
+            bargap=0.1,
+            margin=dict(l=50, r=50, t=80, b=50)
+        )
+        
+        fig.update_traces(
+            marker_color=colors.get(day_type, '#FFFFFF'),
+            opacity=0.75
+        )
+
+    def render_pdh_distribution(self, data, column='percent_change', title="PD-H Distribution"):
+        """Render a distribution chart for PD-H days.
+        
+        Args:
+            data (pd.DataFrame): Data to render
+            column (str): Column name for distribution data
+            title (str): Chart title
+            
+        Returns:
+            go.Figure: The rendered chart
+        """
+        if not self._validate_data(data):
+            return self._create_empty_chart("No PD-H data available")
+            
+        # Convert data to DataFrame if it's a list
+        if isinstance(data, list):
+            data = pd.DataFrame(data)
+            
+        # Calculate percentiles
+        percentiles = self._calculate_percentiles(data, column, 'PD-H')
+        
+        # Create figure
+        fig = go.Figure()
+        
+        # Add histogram trace
+        fig.add_trace(go.Histogram(
+            x=data[column],
+            opacity=0.75
+        ))
+        
+        # Add percentile lines
+        self._add_percentile_lines(fig, percentiles, 'PD-H')
+        
+        # Apply styling
+        self._apply_day_type_styles(fig, 'PD-H', title)
+        
+        return fig
+
+    def render_pdl_distribution(self, data, column='percent_change', title="PD-L Distribution"):
+        """Render a distribution chart for PD-L days.
+        
+        Args:
+            data (pd.DataFrame): Data to render
+            column (str): Column name for distribution data
+            title (str): Chart title
+            
+        Returns:
+            go.Figure: The rendered chart
+        """
+        if not self._validate_data(data):
+            return self._create_empty_chart("No PD-L data available")
+            
+        # Convert data to DataFrame if it's a list
+        if isinstance(data, list):
+            data = pd.DataFrame(data)
+            
+        # Calculate percentiles
+        percentiles = self._calculate_percentiles(data, column, 'PD-L')
+        
+        # Create figure
+        fig = go.Figure()
+        
+        # Add histogram trace
+        fig.add_trace(go.Histogram(
+            x=data[column],
+            opacity=0.75
+        ))
+        
+        # Add percentile lines
+        self._add_percentile_lines(fig, percentiles, 'PD-L')
+        
+        # Apply styling
+        self._apply_day_type_styles(fig, 'PD-L', title)
+        
+        return fig
+
     def render_optimized_distribution(self, data, years=15):
         """Render a distribution chart for optimized trade results (with stop loss and exit).
         
