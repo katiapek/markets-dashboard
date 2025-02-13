@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -66,6 +67,27 @@ class DistributionChartVisualizer:
         )
         return fig
 
+    def calculate_percentiles(self, data, column):
+        """Calculate key percentiles for distribution analysis.
+        
+        Args:
+            data (pd.DataFrame): Input data
+            column (str): Column name to calculate percentiles on
+            
+        Returns:
+            dict: Percentile values keyed by percentile
+        """
+        if not self._validate_data(data) or column not in data.columns:
+            return {}
+            
+        return {
+            '10': np.percentile(data[column], 10),
+            '25': np.percentile(data[column], 25),
+            '50': np.percentile(data[column], 50),
+            '75': np.percentile(data[column], 75),
+            '90': np.percentile(data[column], 90)
+        }
+
     def render_return_distribution(self, data, years=15):
         """Render a return distribution chart.
         
@@ -84,7 +106,7 @@ class DistributionChartVisualizer:
             data = pd.DataFrame(data)
             
         # Calculate percentiles
-        percentiles = calculate_percentiles(data, 'percent_change')
+        percentiles = self.calculate_percentiles(data, 'percent_change')
         
         # Create figure
         fig = go.Figure()
