@@ -475,8 +475,8 @@ def create_analysis_section():
                                         start_date='2025-01-01',
                                         end_date='2025-12-31',
                                         clearable=False,
-                                        with_portal=True,
-                                        disabled=True,  # Disable keyboard input
+                                        # with_portal=True,
+                                        # disabled=True,  # Disable keyboard input
                                     ),
                                     html.Div(id='date-validation-error', style={
                                         'color': 'red',
