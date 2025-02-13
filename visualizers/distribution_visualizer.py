@@ -519,34 +519,98 @@ class DistributionChartVisualizer:
         self.logger.info(f"Available columns: {data.columns.tolist()}")
         
         # Check for required column
-        if 'open_high' not in data.columns:
-            self.logger.warning(f"'open_high' column not found in data")
-            return self._create_empty_chart("Missing 'open_high' data")
+        col = 'open_high_pct_change'
+        if col not in data.columns:
+            self.logger.warning(f"'{col}' column not found in data")
+            return self._create_empty_chart(f"Missing '{col}' data")
             
         # Filter out NaN values
-        filtered_data = data[data['open_high'].notna()]
+        filtered_data = data[data[col].notna()]
         if filtered_data.empty:
-            self.logger.warning("All 'open_high' values are NaN")
-            return self._create_empty_chart("No valid 'open_high' data")
+            self.logger.warning(f"All '{col}' values are NaN")
+            return self._create_empty_chart(f"No valid '{col}' data")
             
         # Calculate percentiles
-        percentiles = self._calculate_percentiles(filtered_data, 'open_high', day_type, 'open_high')
+        percentiles = self._calculate_percentiles(filtered_data, col, day_type, 'open_high')
         
         # Create figure
         fig = go.Figure()
         
         # Add histogram trace
         fig.add_trace(go.Histogram(
-            x=filtered_data['open_high'],
+            x=filtered_data[col],
+            nbinsx=50,
             opacity=0.75,
             marker_color='#4CAF50'  # Consistent green color
         ))
         
-        # Add percentile lines
-        self._add_percentile_lines(fig, percentiles, day_type)
+        # Add percentile lines and annotations
+        if day_type in ['D-UP', 'PD-H', 'PD-HL']:
+            # Only show upper percentiles for these day types
+            if '70' in percentiles:
+                fig.add_vline(
+                    x=percentiles['70'],
+                    line_dash="dash",
+                    line_color="CornflowerBlue",
+                    annotation_text="70%",
+                    annotation_position="top right"
+                )
+            if '95' in percentiles:
+                fig.add_vline(
+                    x=percentiles['95'],
+                    line_dash="dash",
+                    line_color="Salmon",
+                    annotation_text="95%",
+                    annotation_position="top right"
+                )
+        else:
+            # Show both upper and lower percentiles
+            if '-70' in percentiles:
+                fig.add_vline(
+                    x=percentiles['-70'],
+                    line_dash="dash",
+                    line_color="CornflowerBlue",
+                    annotation_text="-70%",
+                    annotation_position="bottom right"
+                )
+            if '-95' in percentiles:
+                fig.add_vline(
+                    x=percentiles['-95'],
+                    line_dash="dash",
+                    line_color="Salmon",
+                    annotation_text="-95%",
+                    annotation_position="bottom right"
+                )
+            if '70' in percentiles:
+                fig.add_vline(
+                    x=percentiles['70'],
+                    line_dash="dash",
+                    line_color="CornflowerBlue",
+                    annotation_text="70%",
+                    annotation_position="top right"
+                )
+            if '95' in percentiles:
+                fig.add_vline(
+                    x=percentiles['95'],
+                    line_dash="dash",
+                    line_color="Salmon",
+                    annotation_text="95%",
+                    annotation_position="top right"
+                )
         
-        # Apply styling
-        self._apply_day_type_styles(fig, day_type, title)
+        # Update layout
+        fig.update_layout(
+            title=title,
+            xaxis_title="Open-High % Change",
+            yaxis_title="Frequency",
+            plot_bgcolor='#1e1e1e',
+            paper_bgcolor='#1e1e1e',
+            font=dict(
+                color='white',
+                family="'Press Start 2P', monospace"
+            ),
+            bargap=0.1
+        )
         
         return fig
 
