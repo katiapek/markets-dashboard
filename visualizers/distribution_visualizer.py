@@ -116,7 +116,10 @@ class DistributionChartVisualizer:
             
         # Determine the correct column name for returns
         return_column = None
-        possible_columns = ['percent_change', 'returns', 'change', 'pct_change', 'close', 'price']
+        possible_columns = [
+            'percent_change', 'returns', 'change', 'pct_change', 
+            'close', 'price', 'Closing Percentage', 'closing_percentage'
+        ]
         for col in possible_columns:
             if col in data.columns:
                 return_column = col
@@ -126,6 +129,11 @@ class DistributionChartVisualizer:
         if return_column is None:
             self.logger.warning(f"No valid return column found in data. Available columns: {data.columns.tolist()}")
             return self._create_empty_chart(f"No return data found. Available columns: {', '.join(data.columns)}")
+            
+        # Rename the column to 'returns' for consistency
+        if return_column != 'returns':
+            data = data.rename(columns={return_column: 'returns'})
+            return_column = 'returns'
             
         # Calculate percentiles
         percentiles = self.calculate_percentiles(data, return_column)
