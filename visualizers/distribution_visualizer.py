@@ -92,29 +92,40 @@ class DistributionChartVisualizer:
         """Render a return distribution chart.
         
         Args:
-            data (pd.DataFrame): Data to render.
+            data (pd.DataFrame or list): Data to render.
             years (int): Number of years to include.
             
         Returns:
             go.Figure: The rendered chart.
         """
         if not self._validate_data(data):
-            return self._create_empty_chart()
+            return self._create_empty_chart("Input data is invalid or empty")
             
         # Convert data to DataFrame if it's a list
         if isinstance(data, list):
-            data = pd.DataFrame(data)
+            try:
+                data = pd.DataFrame(data)
+                self.logger.info(f"Converted list data to DataFrame with shape: {data.shape}")
+            except Exception as e:
+                self.logger.error(f"Failed to convert list to DataFrame: {e}")
+                return self._create_empty_chart("Data conversion failed")
+                
+        # Log the received data structure for debugging
+        self.logger.info(f"Received data with columns: {data.columns.tolist()}")
+        self.logger.info(f"First few rows:\n{data.head()}")
             
         # Determine the correct column name for returns
         return_column = None
-        for col in ['percent_change', 'returns', 'change', 'pct_change']:
+        possible_columns = ['percent_change', 'returns', 'change', 'pct_change', 'close', 'price']
+        for col in possible_columns:
             if col in data.columns:
                 return_column = col
+                self.logger.info(f"Using column '{col}' for returns")
                 break
                 
         if return_column is None:
-            self.logger.warning("No valid return column found in data")
-            return self._create_empty_chart("No return data available")
+            self.logger.warning(f"No valid return column found in data. Available columns: {data.columns.tolist()}")
+            return self._create_empty_chart(f"No return data found. Available columns: {', '.join(data.columns)}")
             
         # Calculate percentiles
         percentiles = self.calculate_percentiles(data, return_column)
