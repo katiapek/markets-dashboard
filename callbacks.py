@@ -1110,11 +1110,9 @@ def register_callbacks(app):
 
             # Distribution Charts for 15 and 30 years
             distribution_chart_15 = distribution_visualizer.render_return_distribution(yearly_data[:15])
-            optimal_distribution_chart_15 = create_distribution_chart(optimal_trades_results_15y,
-                                                                      "15-Year Stop-Loss and Exit Returns")
+            optimal_distribution_chart_15 = distribution_visualizer.render_optimized_distribution(optimal_trades_results_15y, years=15)
             distribution_chart_30 = distribution_visualizer.render_return_distribution(yearly_data[:30], years=30)
-            optimal_distribution_chart_30 = create_distribution_chart(optimal_trades_results_30y,
-                                                                      "30-Year Stop-Loss and Exit Returns")
+            optimal_distribution_chart_30 = distribution_visualizer.render_optimized_distribution(optimal_trades_results_30y, years=30)
 
             # Cumulative return charts for 15 and 30 years
             (fig_15y, fig_30y, daily_returns_15, daily_returns_30, daily_returns_15_stoploss, daily_returns_30_stoploss,

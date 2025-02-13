@@ -177,17 +177,65 @@ class DistributionChartVisualizer:
         # Placeholder for implementation
         return go.Figure()
 
-    def render_high_low_distribution(self, data, type="D-UP"):
-        """Render a high-low distribution chart.
+    def render_optimized_distribution(self, data, years=15):
+        """Render a distribution chart for optimized trade results (with stop loss and exit).
         
         Args:
-            data (pd.DataFrame): Data to render.
-            type (str): Type of distribution (e.g., "D-UP", "PD-H").
+            data (pd.DataFrame): Optimized trade results data to render.
+            years (int): Number of years to include in the title.
             
         Returns:
             go.Figure: The rendered chart.
         """
         if not self._validate_data(data):
-            return self._create_empty_chart()
-        # Placeholder for implementation
-        return go.Figure()
+            return self._create_empty_chart("No optimized trade data available")
+            
+        # Convert data to DataFrame if it's a list
+        if isinstance(data, list):
+            try:
+                data = pd.DataFrame(data)
+                self.logger.info(f"Converted list data to DataFrame with shape: {data.shape}")
+            except Exception as e:
+                self.logger.error(f"Failed to convert list to DataFrame: {e}")
+                return self._create_empty_chart("Data conversion failed")
+                
+        # Determine the correct column name for returns
+        return_column = None
+        possible_columns = [
+            'percent_change', 'returns', 'change', 'pct_change', 
+            'close', 'price', 'Closing Percentage', 'closing_percentage',
+            'optimized_return'  # Specific column for optimized returns
+        ]
+        for col in possible_columns:
+            if col in data.columns:
+                return_column = col
+                self.logger.info(f"Using column '{col}' for optimized returns")
+                break
+                
+        if return_column is None:
+            self.logger.warning(f"No valid return column found in optimized data. Available columns: {data.columns.tolist()}")
+            return self._create_empty_chart(f"No optimized return data found. Available columns: {', '.join(data.columns)}")
+            
+        # Create figure
+        fig = go.Figure()
+        
+        # Add histogram trace
+        fig.add_trace(go.Histogram(
+            x=data[return_column],
+            marker=dict(color='#FF7F0E'),  # Orange color for optimized results
+            opacity=0.75
+        ))
+        
+        # Update layout
+        fig.update_layout(
+            title=f"{years}-Year Optimized Trade Returns",
+            title_font_size=12,
+            xaxis_title="Return (%)",
+            yaxis_title="Frequency",
+            plot_bgcolor='#1e1e1e',
+            paper_bgcolor='#1e1e1e',
+            font=dict(color='white', family="'Press Start 2P', monospace"),
+            bargap=0.1
+        )
+        
+        return fig
