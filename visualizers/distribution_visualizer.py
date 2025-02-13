@@ -23,14 +23,27 @@ class DistributionChartVisualizer:
         """Validate input data for distribution charts.
         
         Args:
-            data (pd.DataFrame): Data to validate.
+            data (pd.DataFrame or list): Data to validate.
             
         Returns:
             bool: True if data is valid, False otherwise.
         """
-        if data is None or data.empty:
-            self.logger.warning("Input data is empty or None")
+        if data is None:
+            self.logger.warning("Input data is None")
             return False
+            
+        if isinstance(data, pd.DataFrame):
+            if data.empty:
+                self.logger.warning("Input DataFrame is empty")
+                return False
+        elif isinstance(data, list):
+            if not data:
+                self.logger.warning("Input list is empty")
+                return False
+        else:
+            self.logger.warning(f"Invalid data type: {type(data)}")
+            return False
+            
         return True
 
     def _create_empty_chart(self, message="No data available"):
