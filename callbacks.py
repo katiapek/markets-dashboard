@@ -629,7 +629,8 @@ def register_callbacks(app):
         @app.callback(
             [Output('ohlc-data-store', 'data'),
              Output('seasonality-data-store', 'data'),
-             Output('subplot-data-store', 'data')],
+             Output('subplot-data-store', 'data'),
+             Output('date-validation-error', 'children')],
             [Input('perform-analysis-button', 'n_clicks'),
              Input('interval-auto-load', 'n_intervals')],
             [State('date-picker-range', 'start_date'),
@@ -639,7 +640,23 @@ def register_callbacks(app):
         )
         def fetch_all_data(n_clicks, n_intervals, start_date, end_date, stored_market, years_range):
             if not n_clicks and not n_intervals:
-                return None, None, None
+                return None, None, None, ""
+            
+            # Validate date range
+            if start_date and end_date:
+                start_dt = pd.to_datetime(start_date)
+                end_dt = pd.to_datetime(end_date)
+            
+                if start_dt > end_dt:
+                    error_msg = "Error: Start date cannot be after end date"
+                    return None, None, None, error_msg
+                
+                if end_dt < start_dt:
+                    error_msg = "Error: End date cannot be before start date"
+                    return None, None, None, error_msg
+                
+            # Clear any previous error
+            return None, None, None, ""
 
             # Convert dates
             start_month, start_day = pd.to_datetime(start_date).month, pd.to_datetime(start_date).day

@@ -463,18 +463,28 @@ def create_analysis_section():
                             # Date range picker for selecting start and end dates
                             html.Div(children=[
                                 html.Label("Select Date Range", style={'marginBottom': '5px'}),
-                                dcc.DatePickerRange(
-                                    id='date-picker-range',
-                                    start_date_placeholder_text="Start Period",
-                                    end_date_placeholder_text="End Period",
-                                    display_format='MMM-DD',
-                                    month_format='MMMM',
-                                    min_date_allowed='2025-01-01',
-                                    max_date_allowed='2025-12-31',
-                                    start_date='2025-01-01',  # Default to None or a specific start date
-                                    end_date='2025-12-31',  # Default to None or a specific end date
-                                    clearable=False,
-                                )
+                                html.Div([
+                                    dcc.DatePickerRange(
+                                        id='date-picker-range',
+                                        start_date_placeholder_text="Start Period",
+                                        end_date_placeholder_text="End Period",
+                                        display_format='MMM-DD',
+                                        month_format='MMMM',
+                                        min_date_allowed='2025-01-01',
+                                        max_date_allowed='2025-12-31',
+                                        start_date='2025-01-01',
+                                        end_date='2025-12-31',
+                                        clearable=False,
+                                        with_portal=True,
+                                        disabled=True,  # Disable keyboard input
+                                    ),
+                                    html.Div(id='date-validation-error', style={
+                                        'color': 'red',
+                                        'marginTop': '10px',
+                                        'fontSize': '12px',
+                                        'fontFamily': "'Press Start 2P', monospace"
+                                    })
+                                ])
                             ], style={'width': '400px', 'display': 'flex', 'flexDirection': 'column',
                                       'alignItems': 'center'}),
 
