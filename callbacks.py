@@ -134,7 +134,7 @@ class CandlestickRenderer:
 
 
 def register_callbacks(app):
-    table_visualizer = TableVisualizer()
+    # table_visualizer = TableVisualizer()
 
     # Callback to toggle the foldable menu for "Legacy - Combined"
 
@@ -760,10 +760,12 @@ def register_callbacks(app):
             prevent_initial_call=True
         )
         def perform_analysis_and_update_layout(processed_data, n_clicks, n_intervals,
+                                               start_date, end_date, direction, years_range, stored_market):
+
+
             # Initialize visualizers
             table_visualizer = TableVisualizer()
             distribution_visualizer = DistributionChartVisualizer()
-                                               start_date, end_date, direction, years_range, stored_market):
 
             # Handle None processed data
             if processed_data is None:
@@ -1110,7 +1112,7 @@ def register_callbacks(app):
             distribution_chart_15 = distribution_visualizer.render_return_distribution(yearly_data[:15])
             optimal_distribution_chart_15 = create_distribution_chart(optimal_trades_results_15y,
                                                                       "15-Year Stop-Loss and Exit Returns")
-            distribution_chart_30 = create_distribution_chart(yearly_data[:30], "30-Year Returns ")
+            distribution_chart_30 = distribution_visualizer.render_return_distribution(yearly_data[:30], years=30)
             optimal_distribution_chart_30 = create_distribution_chart(optimal_trades_results_30y,
                                                                       "30-Year Stop-Loss and Exit Returns")
 
@@ -1282,6 +1284,7 @@ def register_callbacks(app):
         [Input('interval-auto-load', 'n_intervals')]
     )
     def update_correlation_tables(n_intervals):
+        table_visualizer = TableVisualizer()
         # Fetch only 180-day data
         fetcher = RealDataFetcher()
         raw_data = fetcher.fetch_data({'table_name': "correlation_180_days"})
