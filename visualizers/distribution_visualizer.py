@@ -492,6 +492,44 @@ class DistributionChartVisualizer:
         
         return fig
 
+    def render_open_high_distribution(self, data, day_type, title="Open-High Distribution"):
+        """Render an Open-High distribution chart.
+        
+        Args:
+            data (pd.DataFrame): Data to render
+            day_type (str): Type of day (PD-H, PD-L, PD-HL, D-UP, D-DOWN)
+            title (str): Chart title
+            
+        Returns:
+            go.Figure: The rendered chart
+        """
+        if not self._validate_data(data):
+            return self._create_empty_chart("No data available")
+            
+        # Convert data to DataFrame if it's a list
+        if isinstance(data, list):
+            data = pd.DataFrame(data)
+            
+        # Calculate percentiles
+        percentiles = self._calculate_percentiles(data, 'open_high', day_type, 'open_high')
+        
+        # Create figure
+        fig = go.Figure()
+        
+        # Add histogram trace
+        fig.add_trace(go.Histogram(
+            x=data['open_high'],
+            opacity=0.75
+        ))
+        
+        # Add percentile lines
+        self._add_percentile_lines(fig, percentiles, day_type)
+        
+        # Apply styling
+        self._apply_day_type_styles(fig, day_type, title)
+        
+        return fig
+
     def render_optimized_distribution(self, data, years=15):
         """Render a distribution chart for optimized trade results (with stop loss and exit).
         
