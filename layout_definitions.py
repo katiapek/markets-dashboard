@@ -1,4 +1,5 @@
 # layout_definitions.py
+from datetime import date as _date
 import dash
 from dash import dcc, html, dash_table
 import dash_bootstrap_components as dbc  # Correct import
@@ -470,10 +471,10 @@ def create_analysis_section():
                                         end_date_placeholder_text="End Period",
                                         display_format='MMM-DD',
                                         month_format='MMMM',
-                                        min_date_allowed='2025-01-01',
-                                        max_date_allowed='2025-12-31',
-                                        start_date='2025-01-01',
-                                        end_date='2025-12-31',
+                                        min_date_allowed=f'{_date.today().year}-01-01',
+                                        max_date_allowed=f'{_date.today().year}-12-31',
+                                        start_date=f'{_date.today().year}-01-01',
+                                        end_date=f'{_date.today().year}-12-31',
                                         clearable=False,
                                         # with_portal=True,
                                         # disabled=True,  # Disable keyboard input
@@ -891,7 +892,7 @@ def create_sidebar_content(is_premium=False):
         create_cot_section('TFF', 'Combined', 'tff-combined-toggle'),
         create_cot_section('TFF', 'Futures-Only', 'tff-futures-only-toggle'),
         create_social_links(),
-        dcc.Store(id='current-year', data=2025),
+        dcc.Store(id='current-year', data=_date.today().year),
         dcc.Store(id='stored-market', data=DEFAULT_MARKET),
         dcc.Store(id='active-subplots', data=[])
     ], className='content')

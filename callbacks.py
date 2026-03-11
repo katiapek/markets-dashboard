@@ -37,9 +37,9 @@ input_handler.register_input(
 
 input_handler.register_input(
     'year', 
-    {'type': int, 'required': True, 'min': 1994, 'max': 2025},
-    {'type': 'Year must be a number', 'required': 'Year is required', 
-     'min': 'Year must be >= 1994', 'max': 'Year must be <= 2025'}
+    {'type': int, 'required': True, 'min': 1994, 'max': datetime.now().year},
+    {'type': 'Year must be a number', 'required': 'Year is required',
+     'min': 'Year must be >= 1994', 'max': f'Year must be <= {datetime.now().year}'}
 )
 import re
 
@@ -552,19 +552,19 @@ def register_callbacks(app):
             if 'prev-year-button' in button_id:
                 new_year = max(1994, current_year - 1)
             elif 'next-year-button' in button_id:
-                new_year = min(2025, current_year + 1)
-                
+                new_year = min(datetime.now().year, current_year + 1)
+
             if not input_handler.validate_input('year', new_year):
                 print(f"Invalid year selection: {new_year}")
                 return current_year
-                
+
         return new_year
         if ctx.triggered:
             button_id = ctx.triggered[0]['prop_id'].split('.')[0]
             if 'prev-year-button-main' in button_id or 'prev-year-button-right-panel' in button_id:
                 return max(1994, current_year - 1)
             elif 'next-year-button-main' in button_id or 'next-year-button-right-panel' in button_id:
-                return min(2025, current_year + 1)
+                return min(datetime.now().year, current_year + 1)
         return current_year
 
     # Combined callback for market updates
@@ -678,7 +678,7 @@ def register_callbacks(app):
                     seasonality_data[years] = seasonality_fetcher.fetch_data({
                         'market': format_market_name(stored_market),
                         'years': years,
-                        'base_year': 2025
+                        'base_year': datetime.now().year
                         # Current year
                     }).to_dict('records')
 
@@ -923,7 +923,7 @@ def register_callbacks(app):
                 return tuple(empty_components)
             
             # Create and enqueue fetching contracts
-            current_year = 2025
+            current_year = datetime.now().year
             ohlc_data_all_years = pd.DataFrame()
             
             # Try years in reverse order (most recent first)

@@ -1,5 +1,6 @@
 import subprocess
 import datetime
+import sys
 
 # Check if today is Friday in UTC
 # if datetime.datetime.now(datetime.timezone.utc).weekday() != 4:  # 4 is Friday
@@ -23,7 +24,7 @@ scripts_to_run = [
 def run_scripts():
     for script in scripts_to_run:
         print(f"Running {script}...")
-        subprocess.run(['python', script], check=True)
+        subprocess.run([sys.executable, script], check=True)
 
 
 if __name__ == '__main__':

@@ -1,105 +1,9 @@
+# config.py
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from a .env file if present
-load_dotenv()
-
-class LayoutTheme:
-    """
-    Centralized theme configuration for consistent styling across the app.
-    """
-    def __init__(self):
-        # Define color palette
-        self.colors = {
-            'background': '#1e1e1e',  # Dark background
-            'text': 'white',          # White text
-            'grid': '#333333',       # Grid lines
-            'accent': '#FF7F0E',     # Accent color (orange)
-            'success': '#4CAF50',    # Success color (green)
-            'error': '#FF5733',      # Error color (red)
-        }
-
-        # Define font settings
-        self.fonts = {
-            'family': "'Press Start 2P', monospace",  # Default font
-            'size': 10,                              # Font size
-            'color': 'white',                       # Font color
-        }
-
-        # Define spacing settings
-        self.spacing = {
-            'margin': 50,  # Margin around components
-            'padding': 10,  # Padding inside components
-        }
-
-class LegendConfig:
-    """
-    Centralized legend configuration for consistent styling and positioning.
-    """
-    def __init__(self, orientation='v', yanchor='top', xanchor='left', bgcolor='rgba(0,0,0,0)'):
-        self.orientation = orientation
-        self.yanchor = yanchor
-        self.xanchor = xanchor
-        self.bgcolor = bgcolor
-
-class LegendConfig:
-    """
-    Centralized legend configuration for consistent styling and positioning.
-    """
-    def __init__(self, orientation='v', yanchor='top', xanchor='left', bgcolor='rgba(0,0,0,0)'):
-        self.orientation = orientation  # Vertical or horizontal
-        self.yanchor = yanchor  # Vertical anchor (top, middle, bottom)
-        self.xanchor = xanchor  # Horizontal anchor (left, center, right)
-        self.bgcolor = bgcolor  # Background color
-
-class AxisPreset:
-    """
-    Centralized axis configuration for consistent styling and behavior.
-    """
-    def __init__(self, show_grid=False, show_line=False, show_ticks=True, fixed_range=True):
-        self.gridcolor = '#333333' if show_grid else 'rgba(0,0,0,0)'  # Grid lines color
-        self.showline = show_line  # Show axis line
-        self.showticklabels = show_ticks  # Show tick labels
-        self.fixedrange = fixed_range  # Fix axis range (no auto-scaling)
-        self.zeroline = False  # Hide zero line
-
-class Config:
-    """
-    Global configuration class for the app.
-    """
-    theme = LayoutTheme()  # Initialize the theme
-    legend = LegendConfig()  # Initialize the legend config
-    
-    # Common legend presets
-    LEGEND_PRESETS = {
-        'top_left': LegendConfig(yanchor='top', xanchor='left'),
-        'bottom_right': LegendConfig(yanchor='bottom', xanchor='right'),
-        'inline': LegendConfig(orientation='h', yanchor='bottom', xanchor='center'),
-        'top_right': LegendConfig(yanchor='top', xanchor='right'),
-        'bottom_left': LegendConfig(yanchor='bottom', xanchor='left'),
-        'center': LegendConfig(yanchor='middle', xanchor='center')
-    }
-
-    # Common axis presets
-    AXIS_PRESETS = {
-        'default': AxisPreset(show_grid=False, show_line=False, fixed_range=True),
-        'minimal': AxisPreset(show_grid=False, show_line=False, show_ticks=False, fixed_range=True),
-        'detailed': AxisPreset(show_grid=True, show_line=True, show_ticks=True, fixed_range=False),
-    }
-
-    """
-    Configuration settings for the application.
-    """
-    # Environment can be 'production' or 'testing'
-    ENVIRONMENT = os.getenv('APP_ENVIRONMENT', 'production').lower()
-
-    @staticmethod
-    def is_production():
-        return Config.ENVIRONMENT == 'production'
-
-    @staticmethod
-    def is_testing():
-        return Config.ENVIRONMENT == 'testing'
+load_dotenv(Path(__file__).parent.parent / '.env')
 
 db_path_str = 'DATABASE_URL'
 
@@ -118,8 +22,7 @@ COLORS = {
 }
 
 DEFAULT_MARKET = 'SP 500'
-from datetime import datetime as _dt
-DEFAULT_YEAR = _dt.now().year
+DEFAULT_YEAR = 2024
 
 # Market tickers used by yfinance
 market_tickers = {
@@ -225,65 +128,7 @@ market_codes = {
     'Gold': '088691',
     'Silver': '084691',
     'Copper': '085692',
-    # 'Platinum': '076651',
-}
-
-SEASONALITY_CONFIG = {
-    'colors': {
-        5: '#1f77b4',
-        10: '#ff7f0e', 
-        15: '#2ca02c',
-        20: '#d62728',
-        25: '#9467bd',
-        30: '#8c564b'
-    },
-    'line_width': 1.5,
-    'opacity': 0.8,
-    'line_dash': 'solid'
-}
-
-POSITION_CHANGE_CONFIG = {
-    'legacy': {
-        'columns': [
-            ('pct_change_noncomm_long', '% Change Non-Commercials Long', 'noncomm_long'),
-            ('pct_change_noncomm_short', '% Change Non-Commercials Short', 'noncomm_short'),
-            ('pct_change_comm_long', '% Change Commercials Long', 'comm_long'),
-            ('pct_change_comm_short', '% Change Commercials Short', 'comm_short')
-        ],
-        'colors': COLORS,
-        'bar_width': 70000000
-    },
-    'disaggregated': {
-        'columns': [
-            ('pct_change_m_money_long', '% Change Managed Money Long', 'noncomm_long'),
-            ('pct_change_m_money_short', '% Change Managed Money Short', 'noncomm_short'),
-            ('pct_change_prod_merc_long', '% Change Producers / Merchants Long', 'comm_long'),
-            ('pct_change_prod_merc_short', '% Change Producers / Merchants Short', 'comm_short'),
-            ('pct_change_swap_long', '% Change Swap Dealers Long', 'other_long'),
-            ('pct_change_swap_short', '% Change Swap Dealers Short', 'other_short')
-        ],
-        'colors': COLORS,
-        'bar_width': 60000000
-    },
-    'tff': {
-        'columns': [
-            ('pct_change_lev_money_long', '% Change Managed Money Long', 'noncomm_long'),
-            ('pct_change_lev_money_short', '% Change Managed Money Short', 'noncomm_short'),
-            ('pct_change_asset_mgr_long', '% Change Asset Mgrs Long', 'comm_long'),
-            ('pct_change_asset_mgr_short', '% Change Asset Mgrs Short', 'comm_short'),
-            ('pct_change_dealer_long', '% Change Dealers Long', 'other_long'),
-            ('pct_change_dealer_short', '% Change Dealers Short', 'other_short')
-        ],
-        'colors': COLORS,
-        'bar_width': 60000000
-    }
-}
-
-CANDLESTICK_CONFIG = {
-    'increasing_color': 'green',
-    'decreasing_color': 'red',
-    'line_width': 1,
-    'opacity': 0.8
+    'Platinum': '076651',
 }
 
 TRACE_CONFIG = {

@@ -114,9 +114,9 @@ def fetch_ohlc_for_2024(ticker, market_name, engine):
 
     # Determine the start date for fetching new data
     if last_date:
-        start_date = last_date.strftime('%Y-%m-%d')  # last_date + timedelta(days=1)
+        start_date = (last_date + timedelta(days=1)).strftime('%Y-%m-%d')
     else:
-        start_date = "2025-01-01"  # Start from the beginning if the table is empty
+        start_date = (datetime.now() - timedelta(days=365 * 35)).strftime('%Y-%m-%d')
 
     # Define the end date as yesterday
     end_date = (datetime.now()).strftime('%Y-%m-%d')
@@ -276,8 +276,9 @@ def collect_pct_changes(engine, market_tickers, days=180):
         """
         df = pd.read_sql(query, engine, parse_dates=['date'])
 
-        # Only store percentage changes
-        pct_changes[market_name] = df.set_index('date')['close_close_pct_change']
+        # Only store percentage changes, drop duplicate dates keeping last
+        series = df.set_index('date')['close_close_pct_change']
+        pct_changes[market_name] = series[~series.index.duplicated(keep='last')]
 
     # Combine all percentage changes into one DataFrame with markets as columns
     pct_changes_df = pd.DataFrame(pct_changes)

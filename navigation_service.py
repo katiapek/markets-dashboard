@@ -21,7 +21,8 @@ class NavigationService:
         
     def validate_year(self, year):
         """Validate year is within allowed range"""
-        return 1994 <= year <= 2025
+        from datetime import datetime
+        return 1994 <= year <= datetime.now().year
         
     def next_market(self):
         """Move to next market with wrap-around"""
