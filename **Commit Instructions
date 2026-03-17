@@ -1,2 +1,0 @@
-git add app/config.py .env  # Add `.env` only if you created it and it's not in .gitignore
-git commit -m "chore: Set up configuration management for environment-based data fetcher switching"

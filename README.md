@@ -1,9 +1,9 @@
-# ClockTrades Markets Dashboard
+# Markets Dashboard
 
 An interactive web dashboard for analyzing futures markets through **Commitment of Traders (COT) reports**, **OHLC price data**, **seasonality patterns**, and **day-trading statistics**. Built with Dash/Plotly and backed by PostgreSQL.
 
-<!-- Add screenshots here -->
-<!-- ![Dashboard Screenshot](docs/screenshot.png) -->
+![OHLC with Seasonality Overlays](screenshots/1.png)
+*OHLC candlestick chart with 15-year and 35-year seasonal pattern overlays*
 
 ## Features
 
@@ -18,16 +18,42 @@ An interactive web dashboard for analyzing futures markets through **Commitment 
 - Custom date range analysis
 
 ### Day Trading Statistics
+
+![Day Trading Statistics](screenshots/7.png)
+*Yearly day-type breakdown: D-UP/D-DN days, PD-H, PD-L, PD-HL, PD-nHL patterns*
+
 - Day type classification (D-UP, D-DN)
 - Previous-day relationship patterns (PD-H, PD-L, PD-HL, PD-nHL)
 - Advanced patterns: CaPD, CbPD, BISI, SIBI
 
-### Analytics
-- Distribution charts with 70th & 95th percentile analysis
-- Scatter plots with optimal stop-loss / entry levels
-- Drawdown & gain analysis with yearly breakdowns
-- Cumulative return charts
-- 180-day cross-market correlation matrix
+### Distribution & Scatter Analysis
+
+![D-UP Day Distribution](screenshots/8.png)
+*Distribution charts with 70th and 95th percentile markers for Open-Low, Open-High, and Open-Close % changes*
+
+![Scatter Analysis with Optimal Levels](screenshots/9.png)
+*Previous-day distributions and scatter plots showing optimal stop-loss and exit levels*
+
+### Drawdown & Gain Analysis
+
+![Yearly Drawdown & Gain Analysis](screenshots/2.png)
+*Per-year max drawdown, max gain, and closing performance breakdown*
+
+### Risk Metrics & Cumulative Returns
+
+![Risk Metrics Summary](screenshots/3.png)
+*15-year and 30-year summary: win rate, optimal stop-loss/exit, and points gained*
+
+![Return Distribution](screenshots/4.png)
+*Return distribution histograms with and without optimized stop-loss*
+
+![Cumulative Returns](screenshots/5.png)
+*Cumulative return curves with Sharpe, Sortino, Calmar ratios and max drawdown metrics*
+
+### Market Correlation
+
+![180-Day Correlation Matrix](screenshots/6.png)
+*Cross-market correlation matrix across 40+ futures contracts*
 
 ## Supported Markets (44)
 
@@ -61,12 +87,11 @@ An interactive web dashboard for analyzing futures markets through **Commitment 
 
 ```bash
 git clone https://github.com/katiapek/markets-dashboard.git
-cd MarketsDashboard
+cd markets-dashboard
 
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-cd app
 pip install -r requirements.txt
 ```
 
@@ -87,7 +112,7 @@ Required environment variables:
 
 ### Populate the Database
 
-Run the data pipeline scripts from `app/scripts/`:
+Run the data pipeline scripts:
 
 ```bash
 # 1. Fetch OHLC price data
@@ -110,7 +135,6 @@ python scripts/Calc_COT_TFF.py
 ### Run
 
 ```bash
-cd app
 python app.py
 ```
 
@@ -129,7 +153,6 @@ git push heroku main
 ## Project Structure
 
 ```
-app/
 ├── app.py                  # Dash app entry point
 ├── callbacks.py            # Dash callbacks (UI interactivity)
 ├── callback_helpers.py     # Callback utilities & chart helpers
@@ -137,8 +160,8 @@ app/
 ├── data_fetchers.py        # Database queries (OHLC, COT, correlations)
 ├── scripts/
 │   ├── config.py           # Market codes, tickers, trace config
-│   ├── Fetch_OHLC.py       # Yahoo Finance → PostgreSQL
-│   ├── Fetch_COT_*.py      # CFTC API → PostgreSQL (6 variants)
+│   ├── Fetch_OHLC.py       # Yahoo Finance -> PostgreSQL
+│   ├── Fetch_COT_*.py      # CFTC API -> PostgreSQL (6 variants)
 │   └── Calc_COT_*.py       # Derived metric calculations (3 variants)
 ├── assets/                 # CSS, JS, favicon
 ├── Procfile                # Heroku process definition
@@ -148,7 +171,7 @@ app/
 
 ## Data Sources
 
-- **CFTC Commitment of Traders:** [publicreporting.cftc.gov](https://publicreporting.cftc.gov) — weekly trader positioning data for regulated futures markets
+- **CFTC Commitment of Traders:** [publicreporting.cftc.gov](https://publicreporting.cftc.gov) -- weekly trader positioning data for regulated futures markets
 - **Yahoo Finance:** Historical OHLC price data via [yfinance](https://github.com/ranaroussi/yfinance)
 
 ## Disclaimer
