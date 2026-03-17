@@ -1,12 +1,25 @@
-# Ignore environment file
+# Environment
 .env
+.aider*
 
-# Ignore Python cache and temporary files
+# Python
 __pycache__/
 *.pyc
 
-# Ignore log files
+# Database files
+*.db
+*.sql
+*.dump
+*.sqbpro
+
+# Logs
 *.log
 
-#Ignore database files
-*.db
+# Profiling
+*.prof
+
+# Certificates
+*.crt
+
+# OS files
+.DS_Store

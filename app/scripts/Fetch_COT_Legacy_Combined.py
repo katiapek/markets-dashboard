@@ -1,8 +1,18 @@
 import requests
 import pandas as pd
-import sqlite3
-from pathlib import Path
-from config import market_codes
+from sqlalchemy import create_engine, text
+from config import market_codes, db_path_str
+import os
+
+
+db_url = os.environ.get(db_path_str)
+if not db_url:
+    raise ValueError("Database URL not found. Please set the variable correctly.")
+
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+engine = create_engine(db_url)
+
 
 def fetch_all_data(base_url, headers=None, limit=1000):
     """
@@ -35,35 +45,60 @@ def load_data_to_dataframe(all_data):
     """
     return pd.DataFrame(all_data)
 
-def filter_and_save_by_market(df, market_codes, conn):
+
+def filter_and_save_by_market(df, market_codes):
     """
     Filter the DataFrame for each market code, sort by date, and save to the database.
     """
-    for commodity_name, market_code in market_codes.items():
-        filtered_df = df[df['cftc_contract_market_code'] == market_code].copy()  # Make a copy of the DataFrame
+    with engine.connect() as conn:
+        for commodity_name, market_code in market_codes.items():
+            filtered_df = df[df['cftc_contract_market_code'] == market_code].copy()  # Make a copy of the DataFrame
 
-        # Ensure sorting by the 'report_date_as_yyyy_mm_dd' column
-        if 'report_date_as_yyyy_mm_dd' in filtered_df.columns:
-            filtered_df.loc[:, 'report_date_as_yyyy_mm_dd'] = pd.to_datetime(
-                filtered_df['report_date_as_yyyy_mm_dd'].str[:10])  # Convert to datetime
-            filtered_df.sort_values('report_date_as_yyyy_mm_dd', inplace=True)  # Sort by date
+            # Ensure sorting by the 'report_date_as_yyyy_mm_dd' column
+            if 'report_date_as_yyyy_mm_dd' in filtered_df.columns:
+                filtered_df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(
+                    filtered_df['report_date_as_yyyy_mm_dd'].str[:10], errors='coerce'
+                ).dt.strftime('%Y-%m-%d %H:%M:%S')  # Convert to datetime
+                filtered_df.sort_values('report_date_as_yyyy_mm_dd', inplace=True)  # Sort by date
 
-        # Convert datetime to string for SQLite compatibility
-        filtered_df['report_date_as_yyyy_mm_dd'] = filtered_df['report_date_as_yyyy_mm_dd'].astype(str)
+            table_name = commodity_name.replace(" ", "_").lower() + '_cot_legacy_combined'
 
-        table_name = commodity_name.replace(" ", "_").lower() + '_cot_legacy_combined'
-        save_to_database(filtered_df, table_name, conn)
+            query = f"SELECT MAX(report_date_as_yyyy_mm_dd) FROM {table_name}"
+            try:
+                latest_date = conn.execute(text(query)).scalar()
+                if latest_date:
+                    latest_date = pd.to_datetime(latest_date)
+            except Exception:
+                latest_date = None
 
-def save_to_database(df, table_name, conn):
-    """
-    Save the DataFrame to the SQLite database in the specified table.
-    """
-    df.to_sql(table_name, conn, if_exists='replace', index=False)
-    print(f"Data for {table_name} saved to the database.")
+            # Filter new rows based on the latest found date in the report
+            if latest_date:
+                latest_date = pd.to_datetime(latest_date)
+                filtered_df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(filtered_df['report_date_as_yyyy_mm_dd'])
+                filtered_df = filtered_df[filtered_df['report_date_as_yyyy_mm_dd'] > latest_date]
+
+            if 'report_date_as_yyyy_mm_dd' in filtered_df.columns:
+                filtered_df['report_date_as_yyyy_mm_dd'] = filtered_df['report_date_as_yyyy_mm_dd'].dt.strftime(
+                    '%Y-%m-%d')
+
+            # Save data to the database
+            if not filtered_df.empty:
+                # Reformat to ensure the database always receives consistent format
+                filtered_df['report_date_as_yyyy_mm_dd'] = pd.to_datetime(
+                    filtered_df['report_date_as_yyyy_mm_dd']
+                ).dt.strftime('%Y-%m-%d %H:%M:%S')
+
+                try:
+                    filtered_df.to_sql(table_name, conn, if_exists='append', index=False)
+                    conn.commit()
+                    print(f"Saved {len(filtered_df)} rows to {table_name}.")
+                except Exception as e:
+                    print(f"Error saving data to {table_name}: {e}")
+
 
 def main():
     base_url = "https://publicreporting.cftc.gov/resource/jun7-fc8e.json"
-    app_token = "DpRffv2Bz276EwYjvO0EutvuP"
+    app_token = os.environ.get("CFTC_TOKEN")
     headers = {"X-App-Token": app_token}
 
     # Fetch all data from the API
@@ -72,37 +107,9 @@ def main():
     # Load the data into a DataFrame
     df = load_data_to_dataframe(all_data)
 
-    """""
-    # Market codes for filtering
-    market_codes = {
-        'Australian Dollar': '232741',
-        'British Pound': '096742',
-        'Canadian Dollar': '090741',
-        'Cocoa': '073732',
-        'Coffee': '083731',
-        'Corn': '002602',
-        'Crude Oil': '067651',
-        'Euro FX': '099741',
-        'Gold': '088691',
-        'Japanese Yen': '097741',
-        'New Zealand Dollar': '112741',
-        'Silver': '084691',
-        'Soybeans': '005602',
-        'Swiss Franc': '092741',
-        'Wheat': '001602'
-    }
-    """""
-
-    # Connect to the SQLite database
-    db_path = Path(__file__).parent.parent / 'data/markets_data.db'
-    conn = sqlite3.connect(db_path)
-
     # Filter and save data for each market into the database
-    filter_and_save_by_market(df, market_codes, conn)
+    filter_and_save_by_market(df, market_codes)
 
-    # Commit the changes and close the database connection
-    conn.commit()
-    conn.close()
 
 if __name__ == "__main__":
     main()

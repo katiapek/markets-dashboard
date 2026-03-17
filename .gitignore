@@ -1,0 +1,43 @@
+# Environment
+.env
+.aider*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+venv/
+.venv/
+
+# Database files
+*.db
+*.sql
+*.dump
+*.sqbpro
+*.sqlite
+*.sqlite3
+
+# Profiling
+*.prof
+
+# Certificates (keep public CA certs tracked if needed)
+*.crt
+*.pem
+*.key
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+
+# Logs
+*.log
+
+# Data files
+*.csv
+
+# Heroku
+heroku info
